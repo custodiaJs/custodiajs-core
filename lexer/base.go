@@ -1,77 +1,6 @@
-package main
+package lexer
 
-type TokenType string
-
-const (
-	ILLEGAL TokenType = "ILLEGAL"
-	EOF     TokenType = "EOF"
-
-	// Identifiers + literals
-	IDENT    TokenType = "IDENT"  // add, foobar, x, y, ...
-	INT      TokenType = "INT"    // 123456
-	STRING   TokenType = "STRING" // "foobar"
-	TRUE     TokenType = "TRUE"   // True
-	FALSE    TokenType = "FALSE"  // False
-	NULL     TokenType = "NULL"   // Null
-	LBRACKET TokenType = "["
-	RBRACKET TokenType = "]"
-
-	// Operatoren
-	ASSIGN      TokenType = "="
-	EQ          TokenType = "=="
-	ASSIGN_INIT TokenType = ":="
-
-	// Delimiters
-	PERIOD    TokenType = "."
-	COMMA     TokenType = ","
-	SEMICOLON TokenType = ";"
-	LPAREN    TokenType = "("
-	RPAREN    TokenType = ")"
-	LBRACE    TokenType = "{"
-	RBRACE    TokenType = "}"
-	LT        TokenType = "<"
-	GT        TokenType = ">"
-
-	// Schlüsselwörter
-	FUNCTION   TokenType = "FUNCTION"
-	LET        TokenType = "LET"
-	IF         TokenType = "IF"
-	ELSE       TokenType = "ELSE"
-	RETURN     TokenType = "RETURN"
-	CONST      TokenType = "CONST"
-	ISNULL     TokenType = "ISNULL"
-	THIRPF     TokenType = "THIRPF"
-	RBLOCKCALL TokenType = "RBLOCKCALL"
-	CATCH      TokenType = "CATCH"
-	FINAL      TokenType = "FINAL"
-	SWITCH     TokenType = "SWITCH"
-	CASE       TokenType = "CASE"
-	DEFAULT    TokenType = "DEFAULT"
-	READSTORE  TokenType = "READSTORE"
-	PACKAGE    TokenType = "PACKAGE"
-
-	// Kommentare
-	COMMENT TokenType = "COMMENT"
-)
-
-var keywords = map[string]TokenType{
-	"const":      CONST,
-	"isnull":     ISNULL,
-	"thirpf":     THIRPF,
-	"rblockcall": RBLOCKCALL,
-	"catch":      CATCH,
-	"final":      FINAL,
-	"switch":     SWITCH,
-	"case":       CASE,
-	"default":    DEFAULT,
-	"readStore":  READSTORE,
-	"package":    PACKAGE,
-}
-
-type Token struct {
-	Type    TokenType
-	Literal string
-}
+import "vnh1/types"
 
 type Lexer struct {
 	input        string
@@ -170,8 +99,8 @@ func (l *Lexer) readString() string {
 	return l.input[startPosition:l.position]
 }
 
-func (l *Lexer) NextToken() Token {
-	var tok Token
+func (l *Lexer) NextToken() types.Token {
+	var tok types.Token
 
 	l.skipWhitespace()
 
@@ -180,52 +109,61 @@ func (l *Lexer) NextToken() Token {
 		if l.peekChar() == '=' {
 			ch := l.ch
 			l.readChar()
-			tok = Token{Type: EQ, Literal: string(ch) + string(l.ch)}
+			tok = types.Token{Type: types.EQ, Literal: string(ch) + string(l.ch)}
 		} else {
-			tok = newToken(ASSIGN, l.ch)
+			tok = newToken(types.ASSIGN, l.ch)
+		}
+	case '!':
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()                         // Gehe zum '=' Zeichen
+			literal := string(ch) + string(l.ch) // Kombiniere '!' und '=' zu "!="
+			tok = types.Token{Type: types.NOT_EQ, Literal: literal}
+		} else {
+			tok = newToken(types.ILLEGAL, l.ch) // oder behandele '!' als eigenständiges types.Token, falls erforderlich
 		}
 	case ';':
-		tok = newToken(SEMICOLON, l.ch)
+		tok = newToken(types.SEMICOLON, l.ch)
 	case ',':
-		tok = newToken(COMMA, l.ch)
+		tok = newToken(types.COMMA, l.ch)
 	case '(':
-		tok = newToken(LPAREN, l.ch)
+		tok = newToken(types.LPAREN, l.ch)
 	case ')':
-		tok = newToken(RPAREN, l.ch)
+		tok = newToken(types.RPAREN, l.ch)
 	case '{':
-		tok = newToken(LBRACE, l.ch)
+		tok = newToken(types.LBRACE, l.ch)
 	case '}':
-		tok = newToken(RBRACE, l.ch)
+		tok = newToken(types.RBRACE, l.ch)
 	case '<':
-		tok = newToken(LT, l.ch)
+		tok = newToken(types.LT, l.ch)
 	case '>':
-		tok = newToken(GT, l.ch)
+		tok = newToken(types.GT, l.ch)
 	case 0:
 		tok.Literal = ""
-		tok.Type = EOF
+		tok.Type = types.EOF
 	case '/':
 		if l.peekChar() == '/' {
 			tok.Literal = l.readLineComment()
-			tok.Type = COMMENT
+			tok.Type = types.COMMENT
 		} else if l.peekChar() == '*' {
 			tok.Literal = l.readBlockComment()
-			tok.Type = COMMENT
+			tok.Type = types.COMMENT
 		} else {
-			tok = newToken(ILLEGAL, l.ch)
+			tok = newToken(types.ILLEGAL, l.ch)
 		}
 	case '.':
-		tok = newToken(PERIOD, l.ch)
+		tok = newToken(types.PERIOD, l.ch)
 	case '"':
-		tok.Type = STRING
+		tok.Type = types.STRING
 		tok.Literal = l.readString()
 	case ':':
 		if l.peekChar() == '=' {
 			ch := l.ch
 			l.readChar()                         // Gehe zum '=' Zeichen
 			literal := string(ch) + string(l.ch) // Kombiniere ':' und '=' zu ":="
-			tok = Token{Type: ASSIGN_INIT, Literal: literal}
+			tok = types.Token{Type: types.ASSIGN_INIT, Literal: literal}
 		} else {
-			tok = newToken(ILLEGAL, l.ch)
+			tok = newToken(types.ILLEGAL, l.ch)
 		}
 	default:
 		if isLetter(l.ch) {
@@ -234,15 +172,23 @@ func (l *Lexer) NextToken() Token {
 			return tok
 		} else if isDigit(l.ch) {
 			tok.Literal = l.readNumber()
-			tok.Type = INT
+			tok.Type = types.INT
 			return tok
 		} else {
-			tok = newToken(ILLEGAL, l.ch)
+			tok = newToken(types.ILLEGAL, l.ch)
 		}
 	}
 
 	l.readChar()
 	return tok
+}
+
+func (l *Lexer) LexTokenList() []types.Token {
+	retriveList := make([]types.Token, 0)
+	for tok := l.NextToken(); tok.Type != types.EOF; tok = l.NextToken() {
+		retriveList = append(retriveList, tok)
+	}
+	return retriveList
 }
 
 func NewLexer(input string) *Lexer {
@@ -251,11 +197,11 @@ func NewLexer(input string) *Lexer {
 	return l
 }
 
-func LookupIdent(ident string) TokenType {
-	if tok, ok := keywords[ident]; ok {
+func LookupIdent(ident string) types.TokenType {
+	if tok, ok := types.Keywords[ident]; ok {
 		return tok
 	}
-	return IDENT
+	return types.IDENT
 }
 
 func isDigit(ch byte) bool {
@@ -266,6 +212,6 @@ func isLetter(ch byte) bool {
 	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
 }
 
-func newToken(tokenType TokenType, ch byte) Token {
-	return Token{Type: tokenType, Literal: string(ch)}
+func newToken(tokenType types.TokenType, ch byte) types.Token {
+	return types.Token{Type: tokenType, Literal: string(ch)}
 }

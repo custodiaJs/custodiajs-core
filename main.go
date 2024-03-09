@@ -2,37 +2,29 @@ package main
 
 import (
 	"fmt"
+	"vnh1/ast"
+	"vnh1/lexer"
 )
 
-// Hier sollten alle zuvor definierten Typen und Methoden eingefügt werden
-// Token, TokenType, Lexer, newToken, isLetter, isDigit,
-// skipWhitespace, readIdentifier, readNumber, readLineComment, readBlockComment,
-// und alle anderen benötigten Funktionen.
-
 func main() {
-	// Beispieltext, der analysiert werden soll
-	_ = `
-rblockcall ("server uri", {}, <userPub:=userPub, host:=store.host, agent:=store.agent>) {}
-catch(error) {}
-final(result) {}
-`
 	input := `
-rblockcall ("server uri", {}, <userPub:=userPub, host:=store.host, agent:=store.agent>) {
-	final;
-}
-catch(error) {
+	rblockcall ("server uri", {}, <userPub:=userPub, host:=store.host, agent:=store.agent>) {
 
-}
-final(result) {
+	}
+	catch(error) {
 
-}
-`
+	}
+	`
 
 	// Initialisiere den Lexer mit dem Eingabetext
-	lexer := NewLexer(input)
+	lexer := lexer.NewLexer(input)
 
-	// Iteriere durch die Token, bis das Ende der Eingabe erreicht ist
-	for tok := lexer.NextToken(); tok.Type != EOF; tok = lexer.NextToken() {
-		fmt.Println(tok)
-	}
+	// Das Script wird Gelext
+	tokenlist := lexer.LexTokenList()
+
+	// Das Parsen des Tokens wird vorbereitet
+	parser := ast.NewParser(tokenlist)
+
+	// Das Script wird geparst
+	fmt.Println(parser.ParseProgram())
 }
