@@ -36,3 +36,11 @@ type BlockStatement struct {
 type ObjectLiteral struct {
 	// Felder je nach Bedarf
 }
+
+type RBlockCallOptions struct {
+}
+
+type RBlockCallPassParms struct {
+	Key   string
+	Value Param
+}
