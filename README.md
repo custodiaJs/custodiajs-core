@@ -18,7 +18,7 @@ Before diving into `vnh1`, ensure you have the necessary runtime environment and
 
 Create a simple `vnh1` script that demonstrates variable declaration, control flow, and a remote block call:
 
-\```vnh1
+```
 // Variable declarations
 greeting := "Hello, World!"
 age := 30
@@ -45,7 +45,7 @@ switch (age) {
   default:
     println("Your age is unknown.")
 }
-\```
+```
 
 ### Compilation and Execution
 
