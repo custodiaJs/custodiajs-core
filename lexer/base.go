@@ -130,6 +130,8 @@ func (l *Lexer) NextToken() types.Token {
 		tok = newToken(types.LPAREN, l.ch)
 	case ')':
 		tok = newToken(types.RPAREN, l.ch)
+	case '&':
+		tok = newToken(types.AND, l.ch)
 	case '{':
 		tok = newToken(types.LBRACE, l.ch)
 	case '}':

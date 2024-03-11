@@ -8,7 +8,7 @@ import (
 
 func main() {
 	input := `
-rblockcall ("server uri", {}, userPub:=userPub, host:=store.host, agent:=store.agent) {
+rblockcall ("server uri", {}) &(userPub:=userPub, host:=store.host, agent:=store.agent) {
 
 }
 catch(error) {

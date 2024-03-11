@@ -30,6 +30,7 @@ const (
 	RPAREN    TokenType = ")"
 	LBRACE    TokenType = "{"
 	RBRACE    TokenType = "}"
+	AND       TokenType = "&"
 	LT        TokenType = "<"
 	GT        TokenType = ">"
 

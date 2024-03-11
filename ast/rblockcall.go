@@ -5,7 +5,53 @@ import (
 	"vnh1/types"
 )
 
-func (p *Parser) parseRBlockCallStatementParmOptions() *types.RBlockCallPassParms {
+func (p *Parser) parseRBlockCallStatementParmOptions() map[string]interface{} {
+	options := make(map[string]interface{})
+
+	// Erwarte, dass das aktuelle Token eine öffnende geschweifte Klammer '{' ist
+	if !p.currentTokenIs(types.LBRACE) {
+		return nil
+	}
+	p.nextToken() // Gehe zur nächsten Token
+
+	// Verarbeite die Token, bis eine schließende geschweifte Klammer '}' gefunden wird
+	for !p.currentTokenIs(types.RBRACE) {
+		if p.currentTokenIs(types.STRING) {
+			key := p.currentToken().Literal
+			// Erwarte ASSIGN_INIT Token (:=)
+			if !p.expectPeek(types.ASSIGN_INIT) {
+				return nil
+			}
+			p.nextToken() // Zum Wert-Token gehen
+			// Hier verarbeiten wir den Wert. Wir unterstützen Strings und geschachtelte Objekte
+			var value interface{}
+			if p.currentTokenIs(types.STRING) {
+				value = p.currentToken().Literal
+			} else if p.currentTokenIs(types.LBRACE) { // Start eines geschachtelten Objekts
+				value = p.parseRBlockCallStatementParmOptions()
+				if value == nil {
+					return nil
+				}
+			} else {
+				// Behandle andere Typen oder gib einen Fehler zurück
+				return nil
+			}
+			options[key] = value
+			p.nextToken() // Weiter zum nächsten Token
+		}
+
+		// Wenn ein Komma gefunden wird, überspringe es und mache weiter (Optionale Logik, basierend auf deiner Syntax)
+		if p.currentTokenIs(types.COMMA) {
+			p.nextToken()
+		}
+	}
+
+	// Überspringe die schließende geschweifte Klammer '}'
+	p.nextToken()
+	return options
+}
+
+func (p *Parser) parseRBlockCallStatementPassedParms() []*types.RBlockCallPassParms {
 	// Prüfung auf Beginn der Argumentliste '('
 	if !p.currentTokenIs(types.LBRACE) {
 		return nil
@@ -16,24 +62,10 @@ func (p *Parser) parseRBlockCallStatementParmOptions() *types.RBlockCallPassParm
 	}
 
 	p.nextToken()
-	return &types.RBlockCallPassParms{}
+	return []*types.RBlockCallPassParms{}
 }
 
-func (p *Parser) parseRBlockCallStatementPassedParms() *types.RBlockCallPassParms {
-	// Prüfung auf Beginn der Argumentliste '('
-	if !p.currentTokenIs(types.LBRACE) {
-		return nil
-	}
-
-	if !p.expectPeek(types.RBRACE) {
-		return nil
-	}
-
-	p.nextToken()
-	return &types.RBlockCallPassParms{}
-}
-
-func (p *Parser) parseRBlockCallStatementParameterParents() (string, *types.RBlockCallOptions, *types.RBlockCallPassParms, bool) {
+func (p *Parser) parseRBlockCallStatementParameterParents() (string, map[string]interface{}, []*types.RBlockCallPassParms, bool) {
 	// Prüfung auf Beginn der Argumentliste '('
 	if !p.currentTokenIsAndNext(types.LPAREN) {
 		fmt.Println("HERE", p.currentToken())
@@ -68,25 +100,26 @@ func (p *Parser) parseRBlockCallStatementParameterParents() (string, *types.RBlo
 		return "", nil, nil, false
 	}
 
-	fmt.Println(p.currentToken())
-
 	// Prüfe ob es sich um ein Komma handelt
-	if !p.currentTokenIsAndNext(types.COMMA) {
-		fmt.Println("HERE 5", p.currentToken())
+	if !p.currentTokenIsAndNext(types.RPAREN) {
+		fmt.Println("HERE 5", p.currentToken().Literal)
 		return "", nil, nil, false
 	}
 
-	fmt.Println(p.currentToken())
+	// Die Passed Parms werden eingelesen
+	currentPassedParms := []*types.RBlockCallPassParms{}
 
-	// Gehe zum nächsten Token, das ein < sein sollte
-	if !p.currentTokenIs(types.LT) {
-		fmt.Println("HERE 6", p.currentToken())
-		return "", nil, nil, false
+	// Es wird geprüft ob als nächstes eine Zulässige Kette vorhanden ist, wenn ja wird das Token entfernt
+	if p.expectNextTokenChain(types.AND, types.LPAREN) {
+		// Nächster Token
+		p.nextToken()
+
+		// Die Vorhandenen Parameter werden eigneleesn
+		currentPassedParms = append(currentPassedParms, p.parseRBlockCallStatementPassedParms()...)
 	}
 
 	// Die Passed Parms werden ermittelt
-
-	return uri, nil, nil, true
+	return uri, options, currentPassedParms, true
 }
 
 func (p *Parser) parseRBlockCallStatement() *types.RBlockCallStatement {
@@ -116,12 +149,6 @@ func (p *Parser) parseRBlockCallStatement() *types.RBlockCallStatement {
 	if !p.expectPeek(types.LBRACE) {
 		return nil
 	}
-
-	// Parsen des Körpers des rblockcall
-	// Auch hier überspringen wir die Details des Körper-Parsings für dieses Beispiel
-
-	// Suche nach dem Ende des Körpers '}'
-	// Dies setzt voraus, dass der Körper korrekt geparst wurde
 
 	// Stelle sicher, dass der gesamte rblockcall korrekt geparst wurde,
 	// und kehre dann das Statement zurück

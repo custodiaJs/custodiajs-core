@@ -51,35 +51,3 @@ func (p *Parser) ParseProgram() *types.Program {
 	}
 	return program
 }
-
-func (p *Parser) expectPeek(t types.TokenType) bool {
-	if p.current < len(p.tokens) {
-		tok := p.tokens[p.current+1]
-		if tok.Type == t {
-			p.nextToken()
-			return true
-		} else {
-			return false
-		}
-	}
-	return false
-}
-
-func (p *Parser) currentTokenIs(t types.TokenType) bool {
-	return p.currentToken().Type == t
-}
-
-func (p *Parser) currentTokenIsAndNext(t types.TokenType) bool {
-	if p.currentToken().Type == t {
-		p.nextToken()
-		return true
-	} else {
-		return false
-	}
-}
-
-func (p *Parser) currentTokenAndNext() types.Token {
-	cToken := p.currentToken()
-	p.nextToken()
-	return cToken
-}
