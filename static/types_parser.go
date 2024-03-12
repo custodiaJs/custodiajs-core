@@ -1,4 +1,4 @@
-package types
+package static
 
 type Token struct {
 	Type    TokenType

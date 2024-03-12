@@ -1,6 +1,6 @@
 package lexer
 
-import "vnh1/types"
+import "vnh1/static"
 
 type Lexer struct {
 	input        string
@@ -99,8 +99,8 @@ func (l *Lexer) readString() string {
 	return l.input[startPosition:l.position]
 }
 
-func (l *Lexer) NextToken() types.Token {
-	var tok types.Token
+func (l *Lexer) NextToken() static.Token {
+	var tok static.Token
 
 	l.skipWhitespace()
 
@@ -109,63 +109,63 @@ func (l *Lexer) NextToken() types.Token {
 		if l.peekChar() == '=' {
 			ch := l.ch
 			l.readChar()
-			tok = types.Token{Type: types.EQ, Literal: string(ch) + string(l.ch)}
+			tok = static.Token{Type: static.EQ, Literal: string(ch) + string(l.ch)}
 		} else {
-			tok = newToken(types.ASSIGN, l.ch)
+			tok = newToken(static.ASSIGN, l.ch)
 		}
 	case '!':
 		if l.peekChar() == '=' {
 			ch := l.ch
 			l.readChar()                         // Gehe zum '=' Zeichen
 			literal := string(ch) + string(l.ch) // Kombiniere '!' und '=' zu "!="
-			tok = types.Token{Type: types.NOT_EQ, Literal: literal}
+			tok = static.Token{Type: static.NOT_EQ, Literal: literal}
 		} else {
-			tok = newToken(types.ILLEGAL, l.ch) // oder behandele '!' als eigenständiges types.Token, falls erforderlich
+			tok = newToken(static.ILLEGAL, l.ch) // oder behandele '!' als eigenständiges static.Token, falls erforderlich
 		}
 	case ';':
-		tok = newToken(types.SEMICOLON, l.ch)
+		tok = newToken(static.SEMICOLON, l.ch)
 	case ',':
-		tok = newToken(types.COMMA, l.ch)
+		tok = newToken(static.COMMA, l.ch)
 	case '(':
-		tok = newToken(types.LPAREN, l.ch)
+		tok = newToken(static.LPAREN, l.ch)
 	case ')':
-		tok = newToken(types.RPAREN, l.ch)
+		tok = newToken(static.RPAREN, l.ch)
 	case '&':
-		tok = newToken(types.AND, l.ch)
+		tok = newToken(static.AND, l.ch)
 	case '{':
-		tok = newToken(types.LBRACE, l.ch)
+		tok = newToken(static.LBRACE, l.ch)
 	case '}':
-		tok = newToken(types.RBRACE, l.ch)
+		tok = newToken(static.RBRACE, l.ch)
 	case '<':
-		tok = newToken(types.LT, l.ch)
+		tok = newToken(static.LT, l.ch)
 	case '>':
-		tok = newToken(types.GT, l.ch)
+		tok = newToken(static.GT, l.ch)
 	case 0:
 		tok.Literal = ""
-		tok.Type = types.EOF
+		tok.Type = static.EOF
 	case '/':
 		if l.peekChar() == '/' {
 			tok.Literal = l.readLineComment()
-			tok.Type = types.COMMENT
+			tok.Type = static.COMMENT
 		} else if l.peekChar() == '*' {
 			tok.Literal = l.readBlockComment()
-			tok.Type = types.COMMENT
+			tok.Type = static.COMMENT
 		} else {
-			tok = newToken(types.ILLEGAL, l.ch)
+			tok = newToken(static.ILLEGAL, l.ch)
 		}
 	case '.':
-		tok = newToken(types.PERIOD, l.ch)
+		tok = newToken(static.PERIOD, l.ch)
 	case '"':
-		tok.Type = types.STRING
+		tok.Type = static.STRING
 		tok.Literal = l.readString()
 	case ':':
 		if l.peekChar() == '=' {
 			ch := l.ch
 			l.readChar()                         // Gehe zum '=' Zeichen
 			literal := string(ch) + string(l.ch) // Kombiniere ':' und '=' zu ":="
-			tok = types.Token{Type: types.ASSIGN_INIT, Literal: literal}
+			tok = static.Token{Type: static.ASSIGN_INIT, Literal: literal}
 		} else {
-			tok = newToken(types.ILLEGAL, l.ch)
+			tok = newToken(static.ILLEGAL, l.ch)
 		}
 	default:
 		if isLetter(l.ch) {
@@ -174,10 +174,10 @@ func (l *Lexer) NextToken() types.Token {
 			return tok
 		} else if isDigit(l.ch) {
 			tok.Literal = l.readNumber()
-			tok.Type = types.INT
+			tok.Type = static.INT
 			return tok
 		} else {
-			tok = newToken(types.ILLEGAL, l.ch)
+			tok = newToken(static.ILLEGAL, l.ch)
 		}
 	}
 
@@ -185,9 +185,9 @@ func (l *Lexer) NextToken() types.Token {
 	return tok
 }
 
-func (l *Lexer) LexTokenList() []types.Token {
-	retriveList := make([]types.Token, 0)
-	for tok := l.NextToken(); tok.Type != types.EOF; tok = l.NextToken() {
+func (l *Lexer) LexTokenList() []static.Token {
+	retriveList := make([]static.Token, 0)
+	for tok := l.NextToken(); tok.Type != static.EOF; tok = l.NextToken() {
 		retriveList = append(retriveList, tok)
 	}
 	return retriveList
@@ -199,11 +199,11 @@ func NewLexer(input string) *Lexer {
 	return l
 }
 
-func LookupIdent(ident string) types.TokenType {
-	if tok, ok := types.Keywords[ident]; ok {
+func LookupIdent(ident string) static.TokenType {
+	if tok, ok := static.Keywords[ident]; ok {
 		return tok
 	}
-	return types.IDENT
+	return static.IDENT
 }
 
 func isDigit(ch byte) bool {
@@ -214,6 +214,6 @@ func isLetter(ch byte) bool {
 	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
 }
 
-func newToken(tokenType types.TokenType, ch byte) types.Token {
-	return types.Token{Type: tokenType, Literal: string(ch)}
+func newToken(tokenType static.TokenType, ch byte) static.Token {
+	return static.Token{Type: tokenType, Literal: string(ch)}
 }

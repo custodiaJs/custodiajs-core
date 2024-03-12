@@ -1,4 +1,4 @@
-package types
+package static
 
 type RBlockCallStatement struct {
 	URI        string // Die URI als String

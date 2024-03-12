@@ -2,32 +2,32 @@ package ast
 
 import (
 	"fmt"
-	"vnh1/types"
+	"vnh1/static"
 )
 
 func (p *Parser) parseRBlockCallStatementParmOptions() map[string]interface{} {
 	options := make(map[string]interface{})
 
 	// Erwarte, dass das aktuelle Token eine öffnende geschweifte Klammer '{' ist
-	if !p.currentTokenIs(types.LBRACE) {
+	if !p.currentTokenIs(static.LBRACE) {
 		return nil
 	}
 	p.nextToken() // Gehe zur nächsten Token
 
 	// Verarbeite die Token, bis eine schließende geschweifte Klammer '}' gefunden wird
-	for !p.currentTokenIs(types.RBRACE) {
-		if p.currentTokenIs(types.STRING) {
+	for !p.currentTokenIs(static.RBRACE) {
+		if p.currentTokenIs(static.STRING) {
 			key := p.currentToken().Literal
 			// Erwarte ASSIGN_INIT Token (:=)
-			if !p.expectPeek(types.ASSIGN_INIT) {
+			if !p.expectPeek(static.ASSIGN_INIT) {
 				return nil
 			}
 			p.nextToken() // Zum Wert-Token gehen
 			// Hier verarbeiten wir den Wert. Wir unterstützen Strings und geschachtelte Objekte
 			var value interface{}
-			if p.currentTokenIs(types.STRING) {
+			if p.currentTokenIs(static.STRING) {
 				value = p.currentToken().Literal
-			} else if p.currentTokenIs(types.LBRACE) { // Start eines geschachtelten Objekts
+			} else if p.currentTokenIs(static.LBRACE) { // Start eines geschachtelten Objekts
 				value = p.parseRBlockCallStatementParmOptions()
 				if value == nil {
 					return nil
@@ -41,7 +41,7 @@ func (p *Parser) parseRBlockCallStatementParmOptions() map[string]interface{} {
 		}
 
 		// Wenn ein Komma gefunden wird, überspringe es und mache weiter (Optionale Logik, basierend auf deiner Syntax)
-		if p.currentTokenIs(types.COMMA) {
+		if p.currentTokenIs(static.COMMA) {
 			p.nextToken()
 		}
 	}
@@ -51,29 +51,29 @@ func (p *Parser) parseRBlockCallStatementParmOptions() map[string]interface{} {
 	return options
 }
 
-func (p *Parser) parseRBlockCallStatementPassedParms() []*types.RBlockCallPassParms {
+func (p *Parser) parseRBlockCallStatementPassedParms() []*static.RBlockCallPassParms {
 	// Prüfung auf Beginn der Argumentliste '('
-	if !p.currentTokenIs(types.LBRACE) {
+	if !p.currentTokenIs(static.LBRACE) {
 		return nil
 	}
 
-	if !p.expectPeek(types.RBRACE) {
+	if !p.expectPeek(static.RBRACE) {
 		return nil
 	}
 
 	p.nextToken()
-	return []*types.RBlockCallPassParms{}
+	return []*static.RBlockCallPassParms{}
 }
 
-func (p *Parser) parseRBlockCallStatementParameterParents() (string, map[string]interface{}, []*types.RBlockCallPassParms, bool) {
+func (p *Parser) parseRBlockCallStatementParameterParents() (string, map[string]interface{}, []*static.RBlockCallPassParms, bool) {
 	// Prüfung auf Beginn der Argumentliste '('
-	if !p.currentTokenIsAndNext(types.LPAREN) {
+	if !p.currentTokenIsAndNext(static.LPAREN) {
 		fmt.Println("HERE", p.currentToken())
 		return "", nil, nil, false
 	}
 
 	// Parsen der URI als STRING
-	if !p.currentTokenIs(types.STRING) {
+	if !p.currentTokenIs(static.STRING) {
 		fmt.Println("HERE 1", p.currentToken())
 		return "", nil, nil, false
 	}
@@ -82,13 +82,13 @@ func (p *Parser) parseRBlockCallStatementParameterParents() (string, map[string]
 	uri := p.currentTokenAndNext().Literal
 
 	// Gehe zum nächsten Token, das ein ',' sein sollte
-	if !p.currentTokenIs(types.COMMA) {
+	if !p.currentTokenIs(static.COMMA) {
 		fmt.Println("HERE 2")
 		return "", nil, nil, false
 	}
 
 	// Gehe zum nächsten Token, das ein '{' sein sollte
-	if !p.expectPeek(types.LBRACE) {
+	if !p.expectPeek(static.LBRACE) {
 		fmt.Println("HERE 3")
 		return "", nil, nil, false
 	}
@@ -101,16 +101,16 @@ func (p *Parser) parseRBlockCallStatementParameterParents() (string, map[string]
 	}
 
 	// Prüfe ob es sich um ein Komma handelt
-	if !p.currentTokenIsAndNext(types.RPAREN) {
+	if !p.currentTokenIsAndNext(static.RPAREN) {
 		fmt.Println("HERE 5", p.currentToken().Literal)
 		return "", nil, nil, false
 	}
 
 	// Die Passed Parms werden eingelesen
-	currentPassedParms := []*types.RBlockCallPassParms{}
+	currentPassedParms := []*static.RBlockCallPassParms{}
 
 	// Es wird geprüft ob als nächstes eine Zulässige Kette vorhanden ist, wenn ja wird das Token entfernt
-	if p.expectNextTokenChain(types.AND, types.LPAREN) {
+	if p.expectNextTokenChain(static.AND, static.LPAREN) {
 		// Nächster Token
 		p.nextToken()
 
@@ -122,9 +122,9 @@ func (p *Parser) parseRBlockCallStatementParameterParents() (string, map[string]
 	return uri, options, currentPassedParms, true
 }
 
-func (p *Parser) parseRBlockCallStatement() *types.RBlockCallStatement {
+func (p *Parser) parseRBlockCallStatement() *static.RBlockCallStatement {
 	// Initialisiere ein neues RBlockCallStatement
-	statement := &types.RBlockCallStatement{}
+	statement := &static.RBlockCallStatement{}
 
 	// Überspringe das rblockcall-Token
 	p.nextToken()
@@ -133,8 +133,8 @@ func (p *Parser) parseRBlockCallStatement() *types.RBlockCallStatement {
 	p.parseRBlockCallStatementParameterParents()
 
 	// Parsen der URI als STRING
-	if !p.currentTokenIs(types.STRING) {
-		return nil // Oder Fehlerbehandlung
+	if !p.currentTokenIs(static.STRING) {
+		return nil
 	}
 	statement.URI = p.currentToken().Literal
 
@@ -146,7 +146,7 @@ func (p *Parser) parseRBlockCallStatement() *types.RBlockCallStatement {
 	// Für dieses Beispiel überspringen wir die Details der Argument-Parsing-Logik
 
 	// Suche nach dem Beginn des Körpers '{'
-	if !p.expectPeek(types.LBRACE) {
+	if !p.expectPeek(static.LBRACE) {
 		return nil
 	}
 

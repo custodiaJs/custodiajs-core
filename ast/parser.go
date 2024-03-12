@@ -1,38 +1,36 @@
 package ast
 
-import (
-	"vnh1/types"
-)
+import "vnh1/static"
 
 type Parser struct {
-	tokens  []types.Token
+	tokens  []static.Token
 	current int // Aktuelle Position im tokens slice
 }
 
-func NewParser(tokens []types.Token) *Parser {
+func NewParser(tokens []static.Token) *Parser {
 	return &Parser{tokens: tokens, current: 0}
 }
 
-func (p *Parser) nextToken() types.Token {
+func (p *Parser) nextToken() static.Token {
 	if p.current < len(p.tokens) {
 		tok := p.tokens[p.current]
 		p.current++
 		return tok
 	}
-	return types.Token{Type: "EOF", Literal: ""}
+	return static.Token{Type: "EOF", Literal: ""}
 }
 
-func (p *Parser) currentToken() types.Token {
+func (p *Parser) currentToken() static.Token {
 	if p.current < len(p.tokens) {
 		return p.tokens[p.current]
 	}
-	return types.Token{Type: "EOF", Literal: ""}
+	return static.Token{Type: "EOF", Literal: ""}
 }
 
-func (p *Parser) ParseStatement() types.Statement {
+func (p *Parser) ParseStatement() static.Statement {
 	currentToken := p.currentToken()
 	switch currentToken.Type {
-	case types.RBLOCKCALL:
+	case static.RBLOCKCALL:
 		p.parseRBlockCallStatement()
 		return nil
 	default:
@@ -40,8 +38,8 @@ func (p *Parser) ParseStatement() types.Statement {
 	}
 }
 
-func (p *Parser) ParseProgram() *types.Program {
-	program := &types.Program{}
+func (p *Parser) ParseProgram() *static.Program {
+	program := &static.Program{}
 	for p.currentToken().Type != "EOF" {
 		stmt := p.ParseStatement()
 		if stmt != nil {

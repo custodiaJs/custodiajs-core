@@ -1,4 +1,4 @@
-package types
+package static
 
 type TokenType string
 
@@ -33,6 +33,7 @@ const (
 	AND       TokenType = "&"
 	LT        TokenType = "<"
 	GT        TokenType = ">"
+	SHARP     TokenType = "#"
 
 	// Schlüsselwörter
 	FUNCTION   TokenType = "FUNCTION"
@@ -40,7 +41,7 @@ const (
 	IF         TokenType = "IF"
 	ELSE       TokenType = "ELSE"
 	RETURN     TokenType = "RETURN"
-	CONST      TokenType = "CONST"
+	static     TokenType = "static"
 	ISNULL     TokenType = "ISNULL"
 	THIRPF     TokenType = "THIRPF"
 	RBLOCKCALL TokenType = "RBLOCKCALL"
@@ -55,7 +56,7 @@ const (
 )
 
 var Keywords = map[string]TokenType{
-	"const":      CONST,
+	"static":     static,
 	"isnull":     ISNULL,
 	"thirpf":     THIRPF,
 	"rblockcall": RBLOCKCALL,

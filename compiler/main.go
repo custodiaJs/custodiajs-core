@@ -7,6 +7,20 @@ import (
 )
 
 func main() {
+	_ = `
+#auth prammer {
+	rblockcall ("server uri", {}) &(userPub:=userPub, host:=store.host, agent:=store.agent) {
+
+	}
+	catch(error) {
+
+	}
+}
+
+#streamrauth "ssigner://localhost:7200" {
+	#sigverify prammer;
+}
+`
 	input := `
 rblockcall ("server uri", {}) &(userPub:=userPub, host:=store.host, agent:=store.agent) {
 

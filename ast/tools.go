@@ -1,8 +1,8 @@
 package ast
 
-import "vnh1/types"
+import "vnh1/static"
 
-func (p *Parser) expectPeek(t types.TokenType) bool {
+func (p *Parser) expectPeek(t static.TokenType) bool {
 	if p.current+1 < len(p.tokens) {
 		tok := p.tokens[p.current+1]
 		if tok.Type == t {
@@ -15,11 +15,11 @@ func (p *Parser) expectPeek(t types.TokenType) bool {
 	return false
 }
 
-func (p *Parser) currentTokenIs(t types.TokenType) bool {
+func (p *Parser) currentTokenIs(t static.TokenType) bool {
 	return p.currentToken().Type == t
 }
 
-func (p *Parser) currentTokenIsAndNext(t types.TokenType) bool {
+func (p *Parser) currentTokenIsAndNext(t static.TokenType) bool {
 	if p.currentToken().Type == t {
 		p.nextToken()
 		return true
@@ -28,13 +28,13 @@ func (p *Parser) currentTokenIsAndNext(t types.TokenType) bool {
 	}
 }
 
-func (p *Parser) currentTokenAndNext() types.Token {
+func (p *Parser) currentTokenAndNext() static.Token {
 	cToken := p.currentToken()
 	p.nextToken()
 	return cToken
 }
 
-func (p *Parser) expectNextTokenChain(types ...types.TokenType) bool {
+func (p *Parser) expectNextTokenChain(types ...static.TokenType) bool {
 	tempPosition := p.current // Speichere die aktuelle Position, um keine Änderungen am Parser-Zustand vorzunehmen
 
 	for _, t := range types {
@@ -49,7 +49,7 @@ func (p *Parser) expectNextTokenChain(types ...types.TokenType) bool {
 	return true
 }
 
-func (p *Parser) matchAndUpdateForTokenChain(types ...types.TokenType) bool {
+func (p *Parser) matchAndUpdateForTokenChain(types ...static.TokenType) bool {
 	tempPosition := p.current // Speichere die aktuelle Position, um keine Änderungen am Parser-Zustand vorzunehmen
 
 	for _, t := range types {
