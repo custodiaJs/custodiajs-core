@@ -30,6 +30,7 @@ func main() {
 	vnh1Obj := vm.NewObject()
 	vnh1Obj.Set("com", vnh1com)
 	vm.Set("vnh1", vnh1Obj)
+	vm.Set("exports", vm.NewObject())
 
 	// JavaScript-Code aus einer Datei laden
 	jsCode, err := ioutil.ReadFile("index.js")

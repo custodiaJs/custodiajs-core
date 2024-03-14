@@ -1,3 +1,5 @@
+if (vnh1 === undefined || window) throw new Error("not supported runtime");
+
 declare namespace vnh1 {
     function com(message: string, ...data:any): any;
 }

@@ -1,3 +1,13 @@
 vnh1
 compiler/compiler
 core/core
+
+# Ignore node_modules directory
+node_modules/
+
+# Ignore generated JavaScript files
+*.js
+*.js.map
+
+# Ignore TypeScript build output directory
+dist/

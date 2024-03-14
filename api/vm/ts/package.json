@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/index.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.2"
+  }
+}
