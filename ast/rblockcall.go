@@ -130,16 +130,14 @@ func (p *Parser) parseRBlockCallStatement() *static.RBlockCallStatement {
 	p.nextToken()
 
 	// Die Parameter werden eingelesen
-	p.parseRBlockCallStatementParameterParents()
-
-	// Parsen der URI als STRING
-	if !p.currentTokenIs(static.STRING) {
+	uri, options, passedParms, isOk := p.parseRBlockCallStatementParameterParents()
+	if !isOk {
+		fmt.Println("is not ok")
 		return nil
 	}
-	statement.URI = p.currentToken().Literal
 
-	// Gehe zum nächsten Token, das entweder ',' oder ')' sein sollte
-	p.nextToken()
+	fmt.Println(uri, options, passedParms)
+	fmt.Println(p.currentToken())
 
 	// Parsen weiterer Argumente oder schließen der Argumentliste
 	// Dies würde erfordern, dass du durch die Token iterierst, bis du ')' findest
