@@ -1,92 +1,72 @@
-if (vnh1 === undefined || window) throw new Error("not supported runtime");
+if (typeof vnh1 === undefined) throw new Error("not supported runtime");
 
 declare namespace vnh1 {
     function com(message: string, ...data:any): any;
+    let version:string;
 }
 
-// Console
+// Die VM Importe werden imporiert
+const vnh1VMRootSignal = vnh1.com("root/vm");
+
+// Console Imports
+const vnh1ConsoleLog = vnh1.com("console/log");
+const vnh1ConsoleInfo = vnh1.com("console/info");
+const vnh1ConsoleError = vnh1.com("console/error");
+
+// Share Function Imports
+const vnha1ShareFunction = vnh1.com("root/sharefunction");
+
+// S3 Imports
+const vnh1S3Init = vnh1.com("s3/initobject");
+const vnh1S3Upload = vnh1.com("s3/initobject");
+const vnh1S3Download = vnh1.com("s3/initobject");
+const vnh1S3Delete = vnh1.com("s3/initobject");
+
+// Share Function Exports
+export function shareFunction(functionName: string, passedFunction:Function) {
+    try {vnha1ShareFunction(functionName, passedFunction)}
+    catch(e) {throw e;}
+}
+
+// Console Exports
 export const console = {
-    log : (...args: any[]): void => vnh1.com("console/log", ...args),
-    info : (...args: any[]): void => vnh1.com("console/info", ...args),
-    error : (...args: any[]): void => vnh1.com("console/error", ...args),
+    log : (...args: any[]): void => vnh1ConsoleLog(...args),
+    info : (...args: any[]): void => vnh1ConsoleInfo(...args),
+    error : (...args: any[]): void => vnh1ConsoleError(...args),
 }
 
-// Websocket
-type EventHandler = (event?: any) => void;
-export class WebSocket {
-    // Ereignishandler
-    private onopenHandler: EventHandler | null = null;
-    private onmessageHandler: EventHandler | null = null;
-    private onerrorHandler: EventHandler | null = null;
-    private oncloseHandler: EventHandler | null = null;
+// S3 Exports
+export interface S3Object {
+    key: string;
+    data: string;
+    metadata: Record<string, string>; // Metadatenfelder als Schlüssel-Wert-Paare
+}
 
-    // Konstruktor
-    constructor(public url: string) {
-        console.log(`WebSocket connection to '${url}' will be simulated.`);
+export class S3Client {
+    private registerId: number;
+
+    constructor(bucketName: string) {
+        // Der Vorgang wird registriert
+        var result:any;
+        try{result=vnh1S3Init(bucketName);}
+        catch(e) {}
+    
+        // Die ID wird zwischengespeichert
+        this.registerId = result;
     }
 
-    // Methoden zum Setzen der Ereignishandler
-    set onopen(handler: EventHandler) {
-        this.onopenHandler = handler;
+    async uploadObject(key: string, data: string, metadata: Record<string, string>): Promise<void> {
+        await vnh1S3Upload(this.registerId, key, data, metadata)
     }
 
-    set onmessage(handler: EventHandler) {
-        this.onmessageHandler = handler;
+    async downloadObject(key: string, metadata: Record<string, string>): Promise<S3Object | null> {
+        return await vnh1S3Download(this.registerId, key, metadata)
     }
 
-    set onerror(handler: EventHandler) {
-        this.onerrorHandler = handler;
-    }
-
-    set onclose(handler: EventHandler) {
-        this.oncloseHandler = handler;
-    }
-
-    // Methode zum Simulieren des Sendens einer Nachricht
-    send(data: string) {
-        console.log(`Sending message: ${data}`);
-        // Simulieren Sie eine Antwort vom Server nach einer kurzen Verzögerung
-        setTimeout(() => {
-            this.onmessageHandler?.({ data: `Echo: ${data}` });
-        }, 500);
-    }
-
-    // Methode zum Simulieren des Öffnens der Verbindung
-    open() {
-        console.log(`Simulating open WebSocket connection to ${this.url}`);
-        this.onopenHandler?.();
-    }
-
-    // Methode zum Simulieren des Schließens der Verbindung
-    close() {
-        console.log(`Closing WebSocket connection to ${this.url}`);
-        this.oncloseHandler?.({ code: 1000, reason: "Normal closure" });
-    }
-
-    // Methode zum Simulieren eines Fehlers
-    error() {
-        console.log(`Simulating WebSocket error`);
-        this.onerrorHandler?.(new Error("Simulated error"));
+    async deleteObject(key: string, metadata: Record<string, string>): Promise<void> {
+        return await vnh1S3Delete(this.registerId, key, metadata)
     }
 }
 
-// HTTP
-export interface HttpRequestOptions {
-    headers?: Record<string, string>;
-    body?: any;
-    queryParams?: URLSearchParams | Record<string, string>;
-}
-
-export interface HttpResponse<T = any> {
-    status: number;
-    statusText: string;
-    headers: Record<string, string>;
-    data: T;
-}
-
-export interface HttpClient {
-    get<T>(url: string, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
-    post<T>(url: string, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
-    put<T>(url: string, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
-    delete<T>(url: string, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
-}
+// Der VM wird Signalisiert dass der Vorgang erfolgreich durchgeführt wurde
+vnh1VMRootSignal("100000");
