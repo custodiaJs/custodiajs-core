@@ -1,119 +1,139 @@
 // Es wird geprüft ob es sich um eine VNH1 Umgebung handelt
 if (typeof vnh1 === undefined) throw new Error("not supported runtime");
 
+// Die VNh1 Namespaces werden deklariert
 declare namespace vnh1 {
     function com(message: string, ...data:any): any;
     let version:string;
 }
 
-// Die VM Importe werden imporiert
-const vnh1VMRootSignal = vnh1.com("root/vm");
-const vnh1VMModule = vnh1.com("root/modules");
+// Das S3 Interface für die Bridge wird erezugt
+interface S3IoBridge {
+    uploadObject(key: string, data: any, metadata: Record<string, string>): Promise<void>
+    downloadObject(key: string, metadata: Record<string, string>): Promise<S3Object | null> 
+    deleteObject(key: string, metadata: Record<string, string>): Promise<void>
+}
 
 // Console Imports
-const vnh1ConsoleLog = vnh1.com("console/log");
-const vnh1ConsoleInfo = vnh1.com("console/info");
-const vnh1ConsoleError = vnh1.com("console/error");
-
-// Share Function Imports
-const vnha1ShareFunction = vnh1.com("root/sharefunction");
-
-// S3 Imports
-const vnh1S3Init = vnh1.com("s3/initobject");
-const vnh1S3Upload = vnh1.com("s3/initobject");
-const vnh1S3Download = vnh1.com("s3/initobject");
-const vnh1S3Delete = vnh1.com("s3/initobject");
-
-// HTTP Importe
-const vnh1HttpClientGet = vnh1.com("s3/initobject");
-const vnh1HttpClientPost = vnh1.com("s3/initobject");
-const vnh1HttpClientPut = vnh1.com("s3/initobject");
-const vnh1HttpClientDelete = vnh1.com("s3/initobject");
+const consoleModule = vnh1.com("console");
 
 // Cache Importe
-const vnh1CacheWrite = vnh1.com("s3/initobject");
-const vnh1CacheRead = vnh1.com("s3/initobject");
+const cacheModule = vnh1.com("cache");
 
-// Share Function Exports
-export function shareFunction(functionName: string, passedFunction:Function) {
-    // Es wird geprüft ob die Sharing Funktion aktiv ist
-    if (!vnh1VMModule("function_share")) throw new Error("function sharing is disabeld");
+// Die VM Importe werden imporiert
+const rootModule = vnh1.com("root");
 
-    // Die Funktion wird geteilt
-    try {vnha1ShareFunction(functionName, passedFunction)}
-    catch(e) {throw e;}
-}
+// S3 Imports
+const s3Module = vnh1.com("s3");
 
-// Console Exports
+// Console Export
 export const console = {
-    log : (...args: any[]): void => vnh1ConsoleLog(...args),
-    info : (...args: any[]): void => vnh1ConsoleInfo(...args),
-    error : (...args: any[]): void => vnh1ConsoleError(...args),
+    log : function(...args:any) {
+        consoleModule("log", ...args);
+    },
+    info : function(...args:any) {
+        consoleModule("info", ...args);
+    },
+    error : function(...args:any) {
+        consoleModule("error", ...args);
+    }
 }
 
-// S3 Exports
+// Cache Export
+export const cache = {
+    write: function(name:string, ...args:any) {
+        cacheModule("write", name, ...args);
+    },
+    read: function(name:string):any {
+        return cacheModule("read", name);
+    },
+}
+
+// S3 Export
 export interface S3Object {
     key: string;
     data: string;
     metadata: Record<string, string>; // Metadatenfelder als Schlüssel-Wert-Paare
 }
 
+// S3 Client Export
 export class S3Client {
-    private registerId: number;
+    private ioBridge: S3IoBridge;
 
-    constructor(bucketName: string) {
+    constructor(bucketNameOrUrl: string) {
         // Es wird geprüft ob der S3 Dienst verfügbar ist
-        if (!vnh1VMModule("s3")) throw new Error("s3 is disabeld");
+        if (!rootModule("mavail", "s3")) throw new Error("s3 is disabeld");
+
+        // Es wird geprüft ob die S3 Modul Funktionen bereitstehen
+        if (s3Module === undefined) throw new Error("s3 is disabeld");
 
         // Der Vorgang wird registriert
-        var result:any;
-        try{result=vnh1S3Init(bucketName);}
-        catch(e) {}
-    
-        // Die ID wird zwischengespeichert
-        this.registerId = result;
+        try{this.ioBridge = (s3Module("init", bucketNameOrUrl) as S3IoBridge);}
+        catch(e) { throw e; }
     }
 
-    async uploadObject(key: string, data: string, metadata: Record<string, string>): Promise<void> {
+    async uploadObject(key: string, data: string | number | ArrayBuffer, metadata: Record<string, string>): Promise<void> {
         // Es wird geprüft ob der S3 Dienst verfügbar ist
-        if (!vnh1VMModule("s3")) throw new Error("s3 is disabeld");
-        await vnh1S3Upload(this.registerId, key, data, metadata)
+        if (!rootModule("mavail", "s3")) throw new Error("s3 is disabeld");
+
+        // Es wird geprüft ob die S3 Modul Funktionen bereitstehen
+        if (s3Module === undefined) throw new Error("s3 is disabeld");
+
+        await this.ioBridge.uploadObject(key, data, metadata);
     }
 
     async downloadObject(key: string, metadata: Record<string, string>): Promise<S3Object | null> {
         // Es wird geprüft ob der S3 Dienst verfügbar ist
-        if (!vnh1VMModule("s3")) throw new Error("s3 is disabeld");
-        return await vnh1S3Download(this.registerId, key, metadata)
+        if (!rootModule("mavail", "s3")) throw new Error("s3 is disabeld");
+
+        // Es wird geprüft ob die S3 Modul Funktionen bereitstehen
+        if (s3Module === undefined) throw new Error("s3 is disabeld");
+
+        return await this.ioBridge.downloadObject(key, metadata)
     }
 
     async deleteObject(key: string, metadata: Record<string, string>): Promise<void> {
         // Es wird geprüft ob der S3 Dienst verfügbar ist
-        if (!vnh1VMModule("s3")) throw new Error("s3 is disabeld");
-        return await vnh1S3Delete(this.registerId, key, metadata)
+        if (!rootModule("mavail", "s3")) throw new Error("s3 is disabeld");
+
+        // Es wird geprüft ob die S3 Modul Funktionen bereitstehen
+        if (s3Module === undefined) throw new Error("s3 is disabeld");
+
+        return await this.ioBridge.deleteObject(key, metadata)
     }
 }
 
-// HTTP Exporte
-export interface HttpRequestOptions {
-    headers?: Record<string, string>;
-    body?: any;
-    queryParams?: URLSearchParams | Record<string, string>;
+// Share Function Export
+export function localFunctionShare(functionName: string, passedFunction:Function) {
+    // Es wird geprüft ob die Sharing Funktion aktiv ist
+    if (!rootModule("mavail", "function_share")) throw new Error("function sharing is disabeld");
+
+    // Die Funktion wird geteilt
+    try {rootModule("fshare", "local", functionName, passedFunction)}
+    catch(e) {throw e;}
 }
 
-export interface HttpResponse<T = any> {
-    status: number;
-    statusText: string;
-    headers: Record<string, string>;
-    data: T;
+// Share Function Export
+export function publicFunctionShare(functionName: string, passedFunction:Function) {
+    // Es wird geprüft ob die Sharing Funktion aktiv ist
+    if (!rootModule("mavail", "function_share")) throw new Error("function sharing is disabeld");
+
+    // Die Funktion wird geteilt
+    try {rootModule("fshare", "local", functionName, passedFunction)}
+    catch(e) {throw e;}
 }
 
-export interface HttpClient {
-    get<T>(url: string, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
-    post<T>(url: string, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
-    put<T>(url: string, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
-    delete<T>(url: string, options?: HttpRequestOptions): Promise<HttpResponse<T>>;
-    // Zusätzliche Methoden können hier hinzugefügt werden, z.B. PATCH
-}
+// Es wird der VM Signalisiert dass die Initalisierung der API Erfolgreich abgeschlossen wurde
+if (!rootModule("finsh")) throw new Error("api initalization failed");
 
-// Der VM wird Signalisiert dass der Vorgang erfolgreich durchgeführt wurde
-vnh1VMRootSignal("100000");
+// Tests
+const test = new S3Client("uri");
+test.uploadObject("test", "data", {"arga":"value"});
+
+localFunctionShare("test", () => {
+    console.log("test");
+});
+
+cache.write("test", true)
+const a = cache.read("test");
+console.log(a)
