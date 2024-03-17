@@ -1,23 +1,13 @@
 package jsvm
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/dop251/goja"
 )
 
-func root_mavail(moduleName string, runtime *goja.Runtime, vm *JsVM) goja.Value {
-	switch moduleName {
-	case "function_share":
-		return runtime.ToValue(vm.config.EnableFunctionSharing)
-	case "s3":
-		return runtime.ToValue(vm.config.EnableS3)
-	default:
-		return runtime.ToValue(false)
-	}
-}
-
-func root_fshare(methode string, functionName string, function goja.Value, runtime *goja.Runtime, vm *JsVM) goja.Value {
+func root_fshare(methode string, functionName string, parameterTypes goja.Value, function goja.Value, runtime *goja.Runtime, vm *JsVM) goja.Value {
 	// Die JS Funktion wird geprüft und abgespeichert
 	jsFunc, ok := goja.AssertFunction(function)
 	if !ok {
@@ -30,14 +20,21 @@ func root_fshare(methode string, functionName string, function goja.Value, runti
 		panic(runtime.NewTypeError("Zweites Argument ist keine Funktion"))
 	}
 
+	// Die Anzahl der Parameter werden ermittelt
+	paramCount := function.ToObject(runtime).Get("length")
+
+	// Die Parametertypen werden ausgelesen
+	parameterDType := parameterTypes.ExportType()
+	fmt.Println(paramCount, parameterDType)
+
 	// Die Funktion wird geteilt
 	switch strings.ToLower(methode) {
 	case "local":
-		if err := vm.sharLocalFunction(functionName, jsFunc); err != nil {
+		if err := vm.sharLocalFunction(functionName, jsFunc, []string{}); err != nil {
 			panic(runtime.NewTypeError(err.Error()))
 		}
 	case "public":
-		if err := vm.sharePublicFunction(functionName, jsFunc); err != nil {
+		if err := vm.sharePublicFunction(functionName, jsFunc, []string{}); err != nil {
 			panic(runtime.NewTypeError(err.Error()))
 		}
 	default:
@@ -48,6 +45,23 @@ func root_fshare(methode string, functionName string, function goja.Value, runti
 	return goja.Undefined()
 }
 
+func root_mavail(moduleName string, runtime *goja.Runtime, vm *JsVM) goja.Value {
+	switch moduleName {
+	case "function_share":
+		return runtime.ToValue(vm.config.EnableFunctionSharing)
+	case "s3":
+		return runtime.ToValue(vm.config.EnableS3)
+	default:
+		return runtime.ToValue(false)
+	}
+}
+
+func root_funcrefltotalparms(function goja.Value, runtime *goja.Runtime) int64 {
+	// Die Anzahl der Parameter werden ermittelt
+	paramCount := function.ToObject(runtime).Get("length")
+	return paramCount.ToNumber().ToInteger()
+}
+
 func root_base(runtime *goja.Runtime, call goja.FunctionCall, vm *JsVM) goja.Value {
 	_ = call
 	return runtime.ToValue(func(parms goja.FunctionCall) goja.Value {
@@ -55,10 +69,12 @@ func root_base(runtime *goja.Runtime, call goja.FunctionCall, vm *JsVM) goja.Val
 		case "mavail":
 			return root_mavail(parms.Arguments[1].String(), runtime, vm)
 		case "fshare":
-			return root_fshare(parms.Arguments[1].String(), parms.Arguments[2].String(), parms.Arguments[3], runtime, vm)
+			return root_fshare(parms.Arguments[1].String(), parms.Arguments[2].String(), parms.Arguments[3], parms.Arguments[4], runtime, vm)
 		case "finsh":
 			vm.gojaVM.Set("vnh1", goja.Undefined())
 			return runtime.ToValue(true)
+		case "funcrefltotalparms":
+			return runtime.ToValue(root_funcrefltotalparms(parms.Arguments[1], runtime))
 		default:
 			return goja.Undefined()
 		}

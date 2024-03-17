@@ -104,19 +104,75 @@ export class S3Client {
 }
 
 // Share Function Export
-export function localFunctionShare(functionName: string, passedFunction:Function) {
+export function localFunctionShare(functionName: string, datatTypes:Array<string>, passedFunction:Function) {
     // Es wird geprüft ob die Sharing Funktion aktiv ist
     if (!rootModule("mavail", "function_share")) throw new Error("function sharing is disabeld");
 
+    // Es wird geprüft ob es sich um einen zulässigen Parameter handelt
+    var checkedList:string[] = [];
+    for (var item of datatTypes) {
+        switch (item) {
+            case "boolean":
+                checkedList.push(item);
+                break
+            case "number":
+                checkedList.push(item);
+                break
+            case "string":
+                checkedList.push(item);
+                break
+            case "array":
+                checkedList.push(item);
+                break
+            case "object":
+                checkedList.push(item);
+                break
+            default:
+                throw new Error("unsuported datatype");
+        }
+    }
+
+    // Die Anzahl der Funktionsparameter werden mittels Refelection ermittelt
+    const refelctTotalParms:number = rootModule("funcrefltotalparms", passedFunction);
+    if (refelctTotalParms != checkedList.length) throw new Error("invalid function share");
+
     // Die Funktion wird geteilt
-    try {rootModule("fshare", "local", functionName, passedFunction)}
-    catch(e) {throw e;}
+    try { rootModule("fshare", "local", functionName, datatTypes, passedFunction); }
+    catch(e) { throw e; }
 }
 
 // Share Function Export
-export function publicFunctionShare(functionName: string, passedFunction:Function) {
+export function publicFunctionShare(functionName: string, datatTypes:Array<string>, passedFunction:Function) {
     // Es wird geprüft ob die Sharing Funktion aktiv ist
     if (!rootModule("mavail", "function_share")) throw new Error("function sharing is disabeld");
+
+    // Es wird geprüft ob es sich um einen zulässigen Parameter handelt
+    var checkedList:string[] = [];
+    for (var item of datatTypes) {
+        switch (item) {
+            case "boolean":
+                checkedList.push(item);
+                break
+            case "number":
+                checkedList.push(item);
+                break
+            case "string":
+                checkedList.push(item);
+                break
+            case "array":
+                checkedList.push(item);
+                break
+            case "object":
+                checkedList.push(item);
+                break
+            default:
+                throw new Error("unsuported datatype");
+        }
+    }
+
+    // Die Anzahl der Funktionsparameter werden mittels Refelection ermittelt
+    const refelctTotalParms:number = rootModule("funcrefltotalparms", passedFunction);
+    if (refelctTotalParms != checkedList.length) throw new Error("invalid function share");
 
     // Die Funktion wird geteilt
     try {rootModule("fshare", "local", functionName, passedFunction)}
@@ -130,7 +186,7 @@ if (!rootModule("finsh")) throw new Error("api initalization failed");
 const test = new S3Client("uri");
 test.uploadObject("test", "data", {"arga":"value"});
 
-localFunctionShare("test", () => {
+localFunctionShare("test", ["string"], (test:string) => {
     console.log("test");
 });
 

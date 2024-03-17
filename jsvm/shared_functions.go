@@ -25,7 +25,7 @@ func (o *JsVM) functionIsSharing(functionName string) bool {
 	return found
 }
 
-func (o *JsVM) sharLocalFunction(funcName string, function goja.Callable) error {
+func (o *JsVM) sharLocalFunction(funcName string, function goja.Callable, totalParms []string) error {
 	// Es wird geprüft ob diese Funktion bereits registriert wurde
 	if _, found := o.sharedFunctions[funcName]; found {
 		return fmt.Errorf("function always registrated")
@@ -36,11 +36,13 @@ func (o *JsVM) sharLocalFunction(funcName string, function goja.Callable) error 
 		callFunction: function,
 	}
 
+	fmt.Println(function)
+
 	// Der Vorgang wurde ohne Fehler durchgeführt
 	return nil
 }
 
-func (o *JsVM) sharePublicFunction(funcName string, function goja.Callable) error {
+func (o *JsVM) sharePublicFunction(funcName string, function goja.Callable, totalParms []string) error {
 	// Es wird geprüft ob diese Funktion bereits registriert wurde
 	if _, found := o.sharedFunctions[funcName]; found {
 		return fmt.Errorf("function always registrated")
