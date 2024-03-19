@@ -103,6 +103,24 @@ export class S3Client {
     }
 }
 
+// Validiert einen Datentypstring
+function validateDatatypeString(dType:string):boolean {
+    switch (dType) {
+        case "boolean":
+            return true
+        case "number":
+            return true
+        case "string":
+            return true
+        case "array":
+            return true
+        case "object":
+            return true
+        default:
+            return false
+    }
+}
+
 // Share Function Export
 export function localFunctionShare(functionName: string, datatTypes:Array<string>, passedFunction:Function) {
     // Es wird geprüft ob die Sharing Funktion aktiv ist
@@ -111,25 +129,8 @@ export function localFunctionShare(functionName: string, datatTypes:Array<string
     // Es wird geprüft ob es sich um einen zulässigen Parameter handelt
     var checkedList:string[] = [];
     for (var item of datatTypes) {
-        switch (item) {
-            case "boolean":
-                checkedList.push(item);
-                break
-            case "number":
-                checkedList.push(item);
-                break
-            case "string":
-                checkedList.push(item);
-                break
-            case "array":
-                checkedList.push(item);
-                break
-            case "object":
-                checkedList.push(item);
-                break
-            default:
-                throw new Error("unsuported datatype");
-        }
+        if (validateDatatypeString(item)) { checkedList.push(item); }
+        else { throw new Error("unsuported datatype"); }
     }
 
     // Die Anzahl der Funktionsparameter werden mittels Refelection ermittelt
@@ -186,10 +187,11 @@ if (!rootModule("finsh")) throw new Error("api initalization failed");
 const test = new S3Client("uri");
 test.uploadObject("test", "data", {"arga":"value"});
 
+// Die Lokale Funktion wird bereitgestellt
 localFunctionShare("test", ["string"], (test:string) => {
     console.log("test");
 });
 
-cache.write("test", true)
+cache.write("test", true);
 const a = cache.read("test");
-console.log(a)
+console.log(a);
