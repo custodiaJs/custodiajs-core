@@ -22,7 +22,13 @@ func tryToLoadVM(path string) (*VmDBEntry, error) {
 	signatureFile := filepath.Join(path, "signature")
 	mainJSFile := filepath.Join(path, "main.js")
 
-	fmt.Println("TRYTOLOAD", manifestVMJsonFile, configurationFile, signatureFile, mainJSFile)
+	// Es wird versucht die Manifestdatei einzulesen
+
+	// Es wird geprüft ob der Scriptsordner vorhanden ist, wenn ja werden diese eingelesen
+	if existsDir(scriptFolderPath) {
+
+	}
+
 	fmt.Println(scriptFolderPath)
 	return nil, nil
 }

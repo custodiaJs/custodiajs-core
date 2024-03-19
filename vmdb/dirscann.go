@@ -33,3 +33,14 @@ func scanVmDir(rpath string) ([]string, error) {
 
 	return dirs, nil
 }
+
+func existsDir(path string) bool {
+	f, err := os.Stat(path)
+	if err == nil {
+		return f.IsDir()
+	}
+	if os.IsNotExist(err) {
+		return false
+	}
+	return false
+}
