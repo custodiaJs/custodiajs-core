@@ -7,21 +7,39 @@ import (
 	"github.com/dop251/goja"
 )
 
+type CoreService interface {
+	RegisterSharedLocalFunction(*JsVM, string, []string, goja.Callable) error
+}
+
 type JsVM struct {
 	sharedFunctions map[string]SharedFunctionInterface
+	coreService     CoreService
 	cache           map[string]interface{}
 	allowedBuckets  []string
 	config          *JsVMConfig
 	gojaVM          *goja.Runtime
 	exports         *goja.Object
+	loadRootLib     bool
 	scriptLoaded    bool
 }
 
 func (o *JsVM) prepareVM() error {
+	// Die Standardobjekte werden erzeugt
 	vnh1Obj := o.gojaVM.NewObject()
+
+	// Die VNH1 Funktionen werden bereitgestellt
 	vnh1Obj.Set("com", o.gojaCOMFunctionModule)
 	o.gojaVM.Set("vnh1", vnh1Obj)
+
+	// Die JS Exports werden bereitgestellt
 	o.gojaVM.Set("exports", o.exports)
+
+	/* Es wird geprüft ob das API Root Script durch die VM bereitgestellt werden soll
+	if o.loadRootLib {
+
+	}*/
+
+	// Der Vorgang ist ohne Fehler durchgeführt wurden
 	return nil
 }
 
@@ -83,16 +101,40 @@ func (o *JsVM) gojaCOMFunctionModule(call goja.FunctionCall) goja.Value {
 	}
 }
 
-func NewVM(config *JsVMConfig) (*JsVM, error) {
+func (o *JsVM) GetVMID() string {
+	return "<VM-ID>"
+}
+
+func NewVM(core CoreService, config *JsVMConfig) (*JsVM, error) {
 	// Die GoJA VM wird erstellt
 	gojaVM := goja.New()
 
 	// Das Basisobjekt wird erzeugt
 	var vmObject *JsVM
 	if config == nil {
-		vmObject = &JsVM{config: &defaultConfig, gojaVM: gojaVM, scriptLoaded: false, exports: gojaVM.NewObject(), sharedFunctions: make(map[string]SharedFunctionInterface), allowedBuckets: make([]string, 0), cache: make(map[string]interface{})}
+		vmObject = &JsVM{
+			config:          &defaultConfig,
+			gojaVM:          gojaVM,
+			scriptLoaded:    false,
+			exports:         gojaVM.NewObject(),
+			sharedFunctions: make(map[string]SharedFunctionInterface),
+			allowedBuckets:  make([]string, 0),
+			cache:           make(map[string]interface{}),
+			loadRootLib:     false,
+			coreService:     core,
+		}
 	} else {
-		vmObject = &JsVM{config: config, gojaVM: gojaVM, scriptLoaded: false, exports: gojaVM.NewObject(), sharedFunctions: make(map[string]SharedFunctionInterface), allowedBuckets: make([]string, 0), cache: make(map[string]interface{})}
+		vmObject = &JsVM{
+			config:          config,
+			gojaVM:          gojaVM,
+			scriptLoaded:    false,
+			exports:         gojaVM.NewObject(),
+			sharedFunctions: make(map[string]SharedFunctionInterface),
+			allowedBuckets:  make([]string, 0),
+			cache:           make(map[string]interface{}),
+			loadRootLib:     false,
+			coreService:     core,
+		}
 	}
 
 	// Die Funktionen werden hinzugefügt
