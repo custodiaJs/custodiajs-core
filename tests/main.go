@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"sync"
 	"syscall"
 	"vnh1/core"
 	"vnh1/identkeydatabase"
+	"vnh1/static"
 	"vnh1/vmdb"
 	"vnh1/webservice"
 
@@ -75,6 +77,31 @@ func printLocalHostTlsMetaData(cert *tls.Certificate) {
 }
 
 func main() {
+	// Gibt an ob das Programm in einem Linux Container ausgeführt wird
+	isRunningInLinuxContainer := false
+
+	// Die Hostinformationen werden ausgelesen
+	if runtime.GOOS == "linux" {
+		// Die Linux Informationen werden ausgelesen
+		hostInfo, err := static.DetectLinuxDist()
+		if err != nil {
+			panic(err)
+		}
+
+		// Die Host Informationen werden angezigt
+		fmt.Println("Host OS:", hostInfo)
+
+		// Es wird ermittelt ob das Programm in einem Container ausgeführt wird
+		isRunningInLinuxContainer = static.IsRunningInContainer()
+
+		// Die Info wird angezeigt
+		if isRunningInLinuxContainer {
+			fmt.Println("Running in container: yes")
+		} else {
+			fmt.Println("Running in container: no")
+		}
+	}
+
 	// Das HostCert und der Privatekey werden geladen
 	fmt.Print("Loading host certificate: ")
 	hostCert, err := loadHostTlsCert()
@@ -112,7 +139,7 @@ func main() {
 	}
 
 	// Der Localhost Webservice wird erzeugt
-	fmt.Print("Webservice (localhost): enabled")
+	fmt.Println("Webservice (localhost): enabled")
 	localhostWebservice, err := webservice.NewLocalWebservice(true, true, hostCert)
 	if err != nil {
 		panic(err)

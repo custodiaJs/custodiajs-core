@@ -2,6 +2,7 @@ package vmdb
 
 import (
 	"fmt"
+	"vnh1/static"
 )
 
 type VmDatabase struct {
@@ -11,7 +12,7 @@ type VmDatabase struct {
 
 func (o *VmDatabase) LoadAllVirtualMachines() ([]*VmDBEntry, error) {
 	// Die VM's werden geladen
-	vms, err := scanVmDir(o.vmRootDir)
+	vms, err := static.ScanVmDir(o.vmRootDir)
 	if err != nil {
 		return nil, fmt.Errorf("LoadAllVirtualMachines: " + err.Error())
 	}
@@ -28,8 +29,6 @@ func (o *VmDatabase) LoadAllVirtualMachines() ([]*VmDBEntry, error) {
 		// Die VM wird zwischengespeichert
 		retrivedVms = append(retrivedVms, vm)
 	}
-
-	// Die VM's werden in der VM-Map zwischengespeichert
 
 	// Die Virtuellen Machinen werden zurückgegeben
 	return retrivedVms, nil

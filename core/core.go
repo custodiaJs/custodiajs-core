@@ -44,7 +44,7 @@ type Core struct {
 
 func (o *Core) AddNewVM(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 	// Die Datei wird zusammengefasst
-	fullPath := filepath.Join(vmDbEntry.Path, "indes.js")
+	fullPath := filepath.Join(vmDbEntry.Path, "main.js")
 
 	// Die Virtuelle Maschine wird geprüft
 	if !vmDbEntry.ValidateVM() {
