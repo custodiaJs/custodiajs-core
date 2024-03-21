@@ -11,6 +11,7 @@ type VmDBEntry struct {
 	mainJSFile    *MainJsFile
 	manifestFile  *ManifestFile
 	signatureFile *SignatureFile
+	nodeJsModules []*NodeJsModule
 }
 
 func (o *VmDBEntry) ValidateVM() bool {
@@ -20,7 +21,7 @@ func (o *VmDBEntry) ValidateVM() bool {
 func tryToLoadVM(path string) (*VmDBEntry, error) {
 	// Die Kernpfade für die VM werden erstellt
 	manifestVMJsonFilePath := filepath.Join(path, "manifest.json")
-	scriptFolderPath := filepath.Join(path, "scripts")
+	nodeJsModulesPath := filepath.Join(path, "nodejs")
 	signatureFilePath := filepath.Join(path, "signature")
 	mainJSFilePath := filepath.Join(path, "main.js")
 
@@ -43,33 +44,35 @@ func tryToLoadVM(path string) (*VmDBEntry, error) {
 	}
 
 	// Es wird geprüft ob die Manifestdatei Scripte angibt
-	if manifestFile.ScriptsEnable() {
+	extractedNodejSModules := make([]*NodeJsModule, 0)
+	if manifestFile.NodeJsEnable() {
 		// Sollte der Scriptsordner nicht vorhanden sein, wird der Vorgang abgebrochen
-		if !static.FolderExists(scriptFolderPath) {
+		if !static.FolderExists(nodeJsModulesPath) {
 			return nil, fmt.Errorf("tryToLoadVM: no scripts found")
 		}
 
 		// Es werden die Verfügbaren Scripte eingelesen
-		scripts, err := loadScripts(scriptFolderPath)
+		scripts, err := tryToLoadNodeJsModules(nodeJsModulesPath)
 		if err != nil {
 			return nil, fmt.Errorf("tryToLoadVM: " + err.Error())
 		}
 
-		// Es wird geprüft ob Python Scripts vorhanden sein müssen
-		if manifestFile.manifest.Scripts.Python.Enable {
-			// Es wird geprüft ob alle Module welche das Manifest angibt, vorhanden sind
-			if len(manifestFile.manifest.Scripts.Python.Modules) != len(scripts.NodeJsModules) {
-				//return nil, fmt.Errorf("tryToLoadVM: invalid vm container, not all scriptes avail")
+		// Es wird geprüft ob NodeJs Scripte vorhanden sein müssen
+		if manifestFile.manifest.NodeJS.Enable {
+			// Es wird geprüft ob alle NodeJs Module welche das Manifest angibt, vorhanden sind
+			if len(manifestFile.manifest.NodeJS.Modules) != len(scripts) {
+				return nil, fmt.Errorf("tryToLoadVM: invalid vm container, not all scriptes avail")
 			}
 
-			// Es wird geprüft ob es für jedes Python Script welche im Manifest angegeben wurde, vorhanden ist
-			for _, item := range manifestFile.manifest.Scripts.Python.Modules {
-				fmt.Println(item.Alias)
+			// Speichert alle NodeJs Module ab, welche die Manifestdatei angibt
+			validateNodeJsModules := make(map[string]bool)
+			for _, scriptItem := range manifestFile.manifest.NodeJS.Modules {
+				validateNodeJsModules[scriptItem.Name] = false
 			}
 		}
 	} else {
 		// Sollte der Scriptsordner vorhanden sein, wird der Vorgang abgebrochen
-		if static.FolderExists(scriptFolderPath) {
+		if static.FolderExists(nodeJsModulesPath) {
 			return nil, fmt.Errorf("tryToLoadVM: scripts not allowed")
 		}
 	}
@@ -80,6 +83,7 @@ func tryToLoadVM(path string) (*VmDBEntry, error) {
 		mainJSFile:    mainJsFile,
 		manifestFile:  manifestFile,
 		signatureFile: sigFile,
+		nodeJsModules: extractedNodejSModules,
 	}
 
 	// Das Objekt wird zurückgegeben

@@ -10,7 +10,7 @@ type Manifest struct {
 	Whitelist    []Whitelist  `json:"whitelist"`
 	HostCAMember []CAMember   `json:"hostcamember"`
 	Databases    []Database   `json:"databases"`
-	Scripts      ScriptConfig `json:"scripts"`
+	NodeJS       ScriptDetail `json:"nodejs"`
 }
 
 type Whitelist struct {
@@ -32,11 +32,6 @@ type Database struct {
 	Password string `json:"password"`
 	Database string `json:"database"`
 	Alias    string `json:"alias"`
-}
-
-type ScriptConfig struct {
-	Python ScriptDetail `json:"python"`
-	NodeJS ScriptDetail `json:"nodejs"`
 }
 
 type ScriptDetail struct {

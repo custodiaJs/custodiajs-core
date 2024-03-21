@@ -25,21 +25,13 @@ func (o *ManifestFile) GetFileHash() string {
 	return o.fileHash
 }
 
-func (o *ManifestFile) ScriptsEnable() bool {
-	return o.manifest.Scripts.NodeJS.Enable || o.manifest.Scripts.Python.Enable
-}
-
-func (o *ManifestFile) GetPythonScriptAlias() []string {
-	resolv := []string{}
-	for _, item := range o.manifest.Scripts.Python.Modules {
-		resolv = append(resolv, item.Alias)
-	}
-	return resolv
+func (o *ManifestFile) NodeJsEnable() bool {
+	return o.manifest.NodeJS.Enable
 }
 
 func (o *ManifestFile) GetNodeJsScriptAlias() []string {
 	resolv := []string{}
-	for _, item := range o.manifest.Scripts.NodeJS.Modules {
+	for _, item := range o.manifest.NodeJS.Modules {
 		resolv = append(resolv, item.Alias)
 	}
 	return resolv

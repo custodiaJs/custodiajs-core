@@ -1,78 +1,60 @@
 package static
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-
-	"golang.org/x/crypto/sha3"
+	"time"
 )
 
-// Funktion zum Berechnen des SHA3-Hashes einer Datei, ohne sie komplett in den Speicher zu laden
-func HashFile(filePath string) ([]byte, error) {
-	// Öffne die Datei zum Lesen
-	file, err := os.Open(filePath)
+type FileInfo struct {
+	Path             string    // Der vollständige Pfad der Datei
+	Name             string    // Der Name der Datei
+	Size             int64     // Die Größe der Datei in Bytes
+	ModificationTime time.Time // Das letzte Änderungsdatum der Datei
+	FileHash         string
+}
+
+func WalkDir(dirPath string, withHash bool) ([]FileInfo, error) {
+	var files []FileInfo
+	absDirPath, err := filepath.Abs(dirPath) // Ermittelt den absoluten Pfad des Startordners
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 
-	// Erstelle eine neue Instanz des SHA3-256 Hashers
-	hasher := sha3.New256()
-
-	// Lese die Datei in Teilen und aktualisiere den Hasher nach jedem gelesenen Teil
-	buf := make([]byte, 4096) // Puffer für das Lesen in Teilen; Größe kann angepasst werden
-	for {
-		n, err := file.Read(buf)
-		if err != nil && err != io.EOF {
-			return nil, err
+	err = filepath.Walk(absDirPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
 		}
-		if n == 0 {
-			break
+		if absPath, err := filepath.Abs(path); err == nil && absPath != absDirPath {
+			// Sollte es sich um einen Ordner handeln, wird ein Hash aus dem Namen erzeugt, ansonsten wird der Dateiinhalt gehast
+			var hash string
+			if info.IsDir() {
+				hash = HashOfString(info.Name())
+			} else {
+				fHash, err := HashFile(path)
+				if err != nil {
+					return err
+				}
+				hash = hex.EncodeToString(fHash)
+			}
+
+			files = append(files, FileInfo{
+				Path:             path,
+				Name:             info.Name(),
+				Size:             info.Size(),
+				ModificationTime: info.ModTime(),
+				FileHash:         hash,
+			})
 		}
-		// Aktualisiere den Hasher mit dem Inhalt des aktuellen Teils
-		hasher.Write(buf[:n])
-	}
+		return nil
+	})
 
-	// Finalisiere den Hash-Prozess und erhalte den resultierenden Hash
-	return hasher.Sum(nil), nil
-}
-func HashOSFile(file *os.File) ([]byte, error) {
-	// Lesezeiger zurücksetzen
-	_, err := file.Seek(0, io.SeekStart)
-	if err != nil {
-		return nil, fmt.Errorf("HashOSFile: " + err.Error())
-	}
-
-	// Erstelle eine neue Instanz des SHA3-256 Hashers
-	hasher := sha3.New256()
-
-	// Lese die Datei in Teilen und aktualisiere den Hasher nach jedem gelesenen Teil
-	buf := make([]byte, 4096) // Puffer für das Lesen in Teilen; Größe kann angepasst werden
-	for {
-		n, err := file.Read(buf)
-		if err != nil && err != io.EOF {
-			return nil, err
-		}
-		if n == 0 {
-			break
-		}
-		// Aktualisiere den Hasher mit dem Inhalt des aktuellen Teils
-		hasher.Write(buf[:n])
-	}
-
-	// Lesezeiger zurücksetzen
-	_, err = file.Seek(0, io.SeekStart)
-	if err != nil {
-		return nil, fmt.Errorf("HashOSFile: " + err.Error())
-	}
-
-	// Finalisiere den Hash-Prozess und erhalte den resultierenden Hash
-	return hasher.Sum(nil), nil
+	return files, err
 }
 
-// Funktion, die prüft, ob eine Datei existiert
 func FileExists(filePath string) bool {
 	f, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
@@ -144,7 +126,6 @@ func ScanVmDir(rpath string) ([]string, error) {
 	return dirs, nil
 }
 
-// Ließt Bytes aus einer Datei aus
 func ReadFileBytes(file *os.File) ([]byte, error) {
 	// Lesezeiger zurücksetzen
 	_, err := file.Seek(0, io.SeekStart)
