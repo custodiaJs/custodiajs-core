@@ -30,10 +30,20 @@ func (o *VmDatabase) LoadAllVirtualMachines() ([]*VmDBEntry, error) {
 		retrivedVms = append(retrivedVms, vm)
 	}
 
+	// Log
+	fmt.Printf("Total VM's loaded: %d\n", len(retrivedVms))
+
 	// Die Virtuellen Machinen werden zurückgegeben
 	return retrivedVms, nil
 }
 
 func OpenFilebasedVmDatabase() (*VmDatabase, error) {
-	return &VmDatabase{vmMap: map[string]*VmDBEntry{}, vmRootDir: "/var/lib/vnh1"}, nil
+	// Das VM Datenbankobjekt wird erstellt
+	resolv := &VmDatabase{
+		vmMap:     map[string]*VmDBEntry{},
+		vmRootDir: "/var/lib/vnh1",
+	}
+
+	// Das Objekt wird zurückgegeben
+	return resolv, nil
 }

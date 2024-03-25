@@ -6,7 +6,8 @@ core/core
 node_modules/
 
 # Ignore generated JavaScript files
-*.js
+api/vm/ts/*.js
+api/vm/client/*.js
 *.js.map
 
 # Ignore TypeScript build output directory

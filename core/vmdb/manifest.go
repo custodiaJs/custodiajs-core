@@ -15,6 +15,7 @@ type ManifestFile struct {
 	fileLock *flock.Flock
 	fileHash string
 	manifest *Manifest
+	fSize    uint64
 }
 
 func (o *ManifestFile) GetManifestObject() *Manifest {
@@ -35,6 +36,10 @@ func (o *ManifestFile) GetNodeJsScriptAlias() []string {
 		resolv = append(resolv, item.Alias)
 	}
 	return resolv
+}
+
+func (o *ManifestFile) GetFileSize() uint64 {
+	return o.fSize
 }
 
 func loadManifestFile(path string) (*ManifestFile, error) {
@@ -79,12 +84,19 @@ func loadManifestFile(path string) (*ManifestFile, error) {
 		return nil, fmt.Errorf(fmt.Sprintf("loadManifestFile: converting to object %s", err.Error()))
 	}
 
+	// Die Größe der Datei wird ermittelt
+	fsize, err := static.GetFileSize(path)
+	if err != nil {
+		return nil, fmt.Errorf("loadMainJsFile: " + err.Error())
+	}
+
 	// Das Objekt wird gebaut
 	resolvObject := &ManifestFile{
 		osFile:   openFile,
 		fileLock: fileLock,
 		fileHash: hex.EncodeToString(fileHash),
 		manifest: &config,
+		fSize:    uint64(fsize),
 	}
 
 	// Das Objekt wird zurückgegeben

@@ -45,3 +45,7 @@ type ScriptModule struct {
 	InstallCommand string `json:"installcommand,omitempty"`
 	Name           string `json:"name"`
 }
+
+type Config struct {
+	Scripts map[string]string `json:"scripts"`
+}

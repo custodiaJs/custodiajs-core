@@ -6,9 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"vnh1/identkeydatabase"
-	"vnh1/jsvm"
-	"vnh1/vmdb"
+	"vnh1/core/identkeydatabase"
+	"vnh1/core/vmdb"
+
+	"vnh1/core/jsvm"
 
 	"github.com/dop251/goja"
 )
@@ -26,14 +27,11 @@ type APISocketInterface interface {
 	Serve(chan struct{}) error
 }
 
-type CoreVM struct {
-	*jsvm.JsVM
-	jsCode string
-}
-
 type Core struct {
 	hostIdentKeyDatabase *identkeydatabase.IdenKeyDatabase
-	vms                  map[string]*CoreVM
+	vmsByID              map[string]*CoreVM
+	vmsByName            map[string]*CoreVM
+	vms                  []*CoreVM
 	vmSyncWaitGroup      sync.WaitGroup
 	apiSyncWaitGroup     sync.WaitGroup
 	apiSockets           []APISocketInterface
@@ -64,10 +62,12 @@ func (o *Core) AddNewVM(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 	}
 
 	// Das Detailspaket wird erzeugt
-	vmobject := &CoreVM{JsVM: tvmobj, jsCode: string(fileData)}
+	vmobject := &CoreVM{JsVM: tvmobj, jsCode: string(fileData), vmDbEntry: vmDbEntry, jsMainFilePath: fullPath}
 
 	// Das VMObjekt wird zwischengespeichert
-	o.vms["newvm"] = vmobject
+	o.vmsByID[vmDbEntry.GetVMContainerMerkleHash()] = vmobject
+	o.vmsByName[vmDbEntry.GetVMName()] = vmobject
+	o.vms = append(o.vms, vmobject)
 
 	// Das VM Objekt wird zwischengespeichert
 	return vmobject, nil
@@ -86,7 +86,9 @@ func (o *Core) AddAPISocket(apiSocket APISocketInterface) error {
 func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase.IdenKeyDatabase) (*Core, error) {
 	// Das Coreobjekt wird erstellt
 	coreObj := &Core{
-		vms:        make(map[string]*CoreVM),
+		vmsByID:    make(map[string]*CoreVM),
+		vmsByName:  make(map[string]*CoreVM),
+		vms:        make([]*CoreVM, 0),
 		apiSockets: make([]APISocketInterface, 0),
 		state:      NEW,
 		// Chans

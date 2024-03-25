@@ -10,14 +10,16 @@ import (
 	"runtime"
 	"sync"
 	"syscall"
+	"vnh1/apiservices/webservice"
 	"vnh1/core"
-	"vnh1/identkeydatabase"
+	"vnh1/core/identkeydatabase"
+	"vnh1/core/vmdb"
 	"vnh1/static"
-	"vnh1/vmdb"
-	"vnh1/webservice"
 
 	"golang.org/x/crypto/sha3"
 )
+
+const spaces = "   "
 
 func loadHostTlsCert() (*tls.Certificate, error) {
 	// Das Host Cert wird geladen
@@ -73,7 +75,7 @@ func printLocalHostTlsMetaData(cert *tls.Certificate) {
 	sigAlgo := x509Cert.SignatureAlgorithm.String()
 
 	// Ausgabe
-	fmt.Printf("   Fingerprint (SHA3-256): %s\n   Algorithm: %s\n", fingerprint, sigAlgo)
+	fmt.Printf("%sFingerprint (SHA3-256): %s\n   Algorithm: %s\n", spaces, fingerprint, sigAlgo)
 }
 
 func main() {
@@ -167,7 +169,7 @@ func main() {
 		}
 
 		// Log
-		fmt.Printf("VM %s loaded\n", newVM.GetVMID())
+		fmt.Printf("%s-> VM '%s' <-> %s loaded %d bytes\n%s%s--> Total NodeJS submodules: %d\n", spaces, newVM.GetVMName(), newVM.GetFingerprint(), item.GetBaseSize(), spaces, spaces, item.GetTotalNodeJsModules())
 	}
 
 	// Der Core wird gestartet

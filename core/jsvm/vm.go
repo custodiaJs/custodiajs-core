@@ -101,10 +101,6 @@ func (o *JsVM) gojaCOMFunctionModule(call goja.FunctionCall) goja.Value {
 	}
 }
 
-func (o *JsVM) GetVMID() string {
-	return "<VM-ID>"
-}
-
 func NewVM(core CoreService, config *JsVMConfig) (*JsVM, error) {
 	// Die GoJA VM wird erstellt
 	gojaVM := goja.New()

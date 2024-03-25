@@ -9,9 +9,14 @@ import (
 )
 
 type MainJsFile struct {
-	fileLock       *flock.Flock
-	mainJsFileHash string
-	filePath       string
+	fileLock *flock.Flock
+	fileSize uint64
+	fileHash string
+	filePath string
+}
+
+func (o *MainJsFile) GetFileSize() uint64 {
+	return o.fileSize
 }
 
 func loadMainJsFile(path string) (*MainJsFile, error) {
@@ -38,11 +43,18 @@ func loadMainJsFile(path string) (*MainJsFile, error) {
 		return nil, fmt.Errorf("loadMainJsFile: " + err.Error())
 	}
 
+	// Die Größe der Datei wird ermittelt
+	fsize, err := static.GetFileSize(path)
+	if err != nil {
+		return nil, fmt.Errorf("loadMainJsFile: " + err.Error())
+	}
+
 	// Die Daten werden zusammengefasst
 	newObj := &MainJsFile{
-		mainJsFileHash: hex.EncodeToString(fileHash),
-		fileLock:       fileLock,
-		filePath:       path,
+		fileHash: hex.EncodeToString(fileHash),
+		fileLock: fileLock,
+		fileSize: uint64(fsize),
+		filePath: path,
 	}
 
 	// Das Objekt wird zurückgegeben
