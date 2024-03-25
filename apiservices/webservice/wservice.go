@@ -3,16 +3,10 @@ package webservice
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"embed"
 	"fmt"
 	"net/http"
-	"path"
-	"strings"
 	"vnh1/static"
 )
-
-//go:embed www/*
-var wwwEmbedDir embed.FS
 
 type Webservice struct {
 }
@@ -23,37 +17,7 @@ type NodeStateResponse struct {
 }
 
 func (o *Webservice) _handler_index(w http.ResponseWriter, r *http.Request) {
-	// Ermittle den Pfad der angeforderten Datei
-	requestedFile := strings.TrimPrefix(r.URL.Path, "/console/name")
 
-	// Behandle den Sonderfall, wenn kein spezifischer Dateiname angegeben wurde oder "/console/name/"
-	if requestedFile == "" || requestedFile == "/" {
-		requestedFile = "/index.html" // Standarddatei
-	}
-
-	// Pfad korrigieren, um auf das Verzeichnis innerhalb des eingebetteten Dateisystems zu verweisen
-	filePath := "www" + requestedFile
-
-	// Versuche, die angeforderte Datei aus den eingebetteten Ressourcen zu lesen
-	fileContent, err := wwwEmbedDir.ReadFile(filePath)
-	if err != nil {
-		// Datei nicht gefunden oder ein anderer Fehler
-		http.Error(w, "Datei nicht gefunden", http.StatusNotFound)
-		return
-	}
-
-	// Content-Type setzen basierend auf der Dateierweiterung
-	switch path.Ext(filePath) {
-	case ".js":
-		w.Header().Set("Content-Type", "application/javascript")
-	case ".css":
-		w.Header().Set("Content-Type", "text/css")
-	case ".html":
-		w.Header().Set("Content-Type", "text/html")
-	}
-
-	// Schreibe den Inhalt der Datei in die Antwort
-	w.Write(fileContent)
 }
 
 func (o *Webservice) Serve(closeSignal chan struct{}) error {
