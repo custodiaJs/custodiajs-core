@@ -8,10 +8,9 @@ import (
 	"sync"
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
+	"vnh1/static"
 
 	"vnh1/core/jsvm"
-
-	"github.com/dop251/goja"
 )
 
 type CoreState int
@@ -23,10 +22,6 @@ const (
 	CLOSED
 )
 
-type APISocketInterface interface {
-	Serve(chan struct{}) error
-}
-
 type Core struct {
 	hostIdentKeyDatabase *identkeydatabase.IdenKeyDatabase
 	vmsByID              map[string]*CoreVM
@@ -34,31 +29,31 @@ type Core struct {
 	vms                  []*CoreVM
 	vmSyncWaitGroup      sync.WaitGroup
 	apiSyncWaitGroup     sync.WaitGroup
-	apiSockets           []APISocketInterface
+	apiSockets           []static.APISocketInterface
 	serviceSignaling     chan struct{}
 	holdOpenChan         chan struct{}
 	state                CoreState
 }
 
-func (o *Core) AddNewVM(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
+func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 	// Die Datei wird zusammengefasst
 	fullPath := filepath.Join(vmDbEntry.Path, "main.js")
 
 	// Die Virtuelle Maschine wird geprüft
 	if !vmDbEntry.ValidateVM() {
-		return nil, fmt.Errorf("AddNewVM: Broken Virtual Machine")
+		return nil, fmt.Errorf("AddScriptContainer: Broken Virtual Machine")
 	}
 
 	// Es wird versucht die Manifestdatei zuladen
 	fileData, err := os.ReadFile(fullPath)
 	if err != nil {
-		return nil, fmt.Errorf("AddNewVM: " + err.Error())
+		return nil, fmt.Errorf("AddScriptContainer: " + err.Error())
 	}
 
 	// Es wird eine neue VM erzeugt
 	tvmobj, err := jsvm.NewVM(o, nil)
 	if err != nil {
-		return nil, fmt.Errorf("AddNewVM: " + err.Error())
+		return nil, fmt.Errorf("AddScriptContainer: " + err.Error())
 	}
 
 	// Das Detailspaket wird erzeugt
@@ -73,14 +68,37 @@ func (o *Core) AddNewVM(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 	return vmobject, nil
 }
 
-func (o *Core) RegisterSharedLocalFunction(vm *jsvm.JsVM, funcName string, totalParms []string, function goja.Callable) error {
-	fmt.Println("CORE:SHARE_LOCAL_FUNCTION:", funcName, totalParms)
+func (o *Core) AddAPISocket(apiSocket static.APISocketInterface) error {
+	// Der Core wird in dem API-Socket Registriert
+	err := apiSocket.SetupCore(o)
+	if err != nil {
+		return fmt.Errorf("AddAPISocket: ")
+	}
+
+	// Der API Socket wird zwischengespeichert
+	o.apiSockets = append(o.apiSockets, apiSocket)
+
+	// Es ist kein Fehler aufgetreten
 	return nil
 }
 
-func (o *Core) AddAPISocket(apiSocket APISocketInterface) error {
-	o.apiSockets = append(o.apiSockets, apiSocket)
-	return nil
+func (o *Core) GetScriptContainerVMByID(vmid string) (static.CoreVMInterface, error) {
+	// Es wird geprüft ob die VM exestiert
+	vmObj, found := o.vmsByID[vmid]
+	if !found {
+		return nil, fmt.Errorf("GetScriptContainerVMByID: unkown vm")
+	}
+
+	// Das Objekt wird zurückgegeben
+	return vmObj, nil
+}
+
+func (o *Core) GetAllActiveScriptContainerIDs() []string {
+	extr := make([]string, 0)
+	for _, item := range o.vmsByID {
+		extr = append(extr, item.GetFingerprint())
+	}
+	return extr
 }
 
 func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase.IdenKeyDatabase) (*Core, error) {
@@ -89,7 +107,7 @@ func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase
 		vmsByID:    make(map[string]*CoreVM),
 		vmsByName:  make(map[string]*CoreVM),
 		vms:        make([]*CoreVM, 0),
-		apiSockets: make([]APISocketInterface, 0),
+		apiSockets: make([]static.APISocketInterface, 0),
 		state:      NEW,
 		// Chans
 		holdOpenChan:     make(chan struct{}),

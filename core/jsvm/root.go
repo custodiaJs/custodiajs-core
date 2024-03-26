@@ -48,7 +48,7 @@ func root_fshare(methode string, functionName string, parameterTypes goja.Value,
 	// Die Funktion wird geteilt
 	switch strings.ToLower(methode) {
 	case "local":
-		if err := vm.sharLocalFunction(functionName, extractedData, jsFunc); err != nil {
+		if err := vm.shareLocalFunction(functionName, extractedData, jsFunc); err != nil {
 			panic(runtime.NewTypeError(err.Error()))
 		}
 	case "public":

@@ -9,20 +9,21 @@ import (
 )
 
 type Webservice struct {
-}
-
-type NodeStateResponse struct {
-	ID   string `json:"id"`
-	Wert string `json:"wert"`
-}
-
-func (o *Webservice) _handler_index(w http.ResponseWriter, r *http.Request) {
-
+	core static.CoreInterface
 }
 
 func (o *Webservice) Serve(closeSignal chan struct{}) error {
 	// Die Basis Urls werden hinzugefügt
-	http.HandleFunc("/", o._handler_index)
+	http.HandleFunc("/", o.indexHandler)
+
+	// Gibt die einzelnenen VM Informationen aus
+	http.HandleFunc("/vm", o.vmInfo)
+
+	// Der VM-RPC Handler wird erstellt
+	http.HandleFunc("/rpc", o.vmRPCHandler)
+
+	// Der Websocket handler wird hinzugefügt
+	http.HandleFunc("/containerstream", o.handlerWebSocket)
 
 	// Der HTTP Server wird gestartet
 	if err := http.ListenAndServe(":8080", nil); err != nil {
@@ -30,6 +31,19 @@ func (o *Webservice) Serve(closeSignal chan struct{}) error {
 	}
 
 	// Der Vorgagn wurde ohne Fehler durchgeführt
+	return nil
+}
+
+func (o *Webservice) SetupCore(coreObj static.CoreInterface) error {
+	// Es wird geprüft ob der Core festgelegt wurde
+	if o.core != nil {
+		return fmt.Errorf("SetupCore: always linked with core")
+	}
+
+	// Das Objekt wird zwischengespeichert
+	o.core = coreObj
+
+	// Der Vorgang ist ohne fehler durchgeführt wurden
 	return nil
 }
 
@@ -72,5 +86,10 @@ func NewLocalWebservice(ipv4 bool, ipv6 bool, localCert *tls.Certificate) (*Webs
 	}
 
 	// Das Webservice Objekt wird zurückgegeben
-	return &Webservice{}, nil
+	webs := &Webservice{
+		core: nil,
+	}
+
+	// Die Daten werden zurückgegeben
+	return webs, nil
 }

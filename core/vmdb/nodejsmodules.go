@@ -18,6 +18,10 @@ func (o *NodeJsModule) GetBaseSize() uint64 {
 	return o.baseSize
 }
 
+func (o *NodeJsModule) GetName() string {
+	return o.name
+}
+
 func tryToLoadNodeJsModules(path string) ([]*NodeJsModule, error) {
 	// Es wird geprüft ob es sich um einen gültigen Path handelt
 	if !static.FolderExists(path) {

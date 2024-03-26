@@ -37,6 +37,10 @@ func (o *VmDBEntry) GetTotalNodeJsModules() uint64 {
 	return uint64(len(o.nodeJsModules))
 }
 
+func (o *VmDBEntry) GetNodeJsModules() []*NodeJsModule {
+	return o.nodeJsModules
+}
+
 func tryToLoadVM(path string) (*VmDBEntry, error) {
 	// Die Kernpfade für die VM werden erstellt
 	manifestVMJsonFilePath := filepath.Join(path, "manifest.json")

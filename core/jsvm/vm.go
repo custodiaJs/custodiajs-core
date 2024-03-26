@@ -3,24 +3,24 @@ package jsvm
 import (
 	"fmt"
 	"log"
+	"vnh1/static"
 
 	"github.com/dop251/goja"
 )
 
-type CoreService interface {
-	RegisterSharedLocalFunction(*JsVM, string, []string, goja.Callable) error
-}
-
 type JsVM struct {
-	sharedFunctions map[string]SharedFunctionInterface
-	coreService     CoreService
-	cache           map[string]interface{}
-	allowedBuckets  []string
-	config          *JsVMConfig
-	gojaVM          *goja.Runtime
-	exports         *goja.Object
-	loadRootLib     bool
-	scriptLoaded    bool
+	sharedLocalFunctions  map[string]*SharedLocalFunction
+	sharedPublicFunctions map[string]*SharedPublicFunction
+	coreService           static.CoreInterface
+	cache                 map[string]interface{}
+	allowedBuckets        []string
+	config                *JsVMConfig
+	gojaVM                *goja.Runtime
+	exports               *goja.Object
+	loadRootLib           bool
+	scriptLoaded          bool
+	isRunning             bool
+	wasStarted            bool
 }
 
 func (o *JsVM) prepareVM() error {
@@ -101,7 +101,35 @@ func (o *JsVM) gojaCOMFunctionModule(call goja.FunctionCall) goja.Value {
 	}
 }
 
-func NewVM(core CoreService, config *JsVMConfig) (*JsVM, error) {
+func (o *JsVM) GetLocalShareddFunctions() []static.SharedLocalFunctionInterface {
+	extracted := make([]static.SharedLocalFunctionInterface, 0)
+	for _, item := range o.sharedLocalFunctions {
+		extracted = append(extracted, item)
+	}
+	return extracted
+}
+
+func (o *JsVM) GetPublicShareddFunctions() []static.SharedPublicFunctionInterface {
+	extracted := make([]static.SharedPublicFunctionInterface, 0)
+	for _, item := range o.sharedPublicFunctions {
+		extracted = append(extracted, item)
+	}
+	return extracted
+}
+
+func (o *JsVM) GetState() static.VmState {
+	if o.isRunning {
+		return static.Running
+	} else {
+		if o.wasStarted {
+			return static.Closed
+		} else {
+			return static.StillWait
+		}
+	}
+}
+
+func NewVM(core static.CoreInterface, config *JsVMConfig) (*JsVM, error) {
 	// Die GoJA VM wird erstellt
 	gojaVM := goja.New()
 
@@ -109,27 +137,33 @@ func NewVM(core CoreService, config *JsVMConfig) (*JsVM, error) {
 	var vmObject *JsVM
 	if config == nil {
 		vmObject = &JsVM{
-			config:          &defaultConfig,
-			gojaVM:          gojaVM,
-			scriptLoaded:    false,
-			exports:         gojaVM.NewObject(),
-			sharedFunctions: make(map[string]SharedFunctionInterface),
-			allowedBuckets:  make([]string, 0),
-			cache:           make(map[string]interface{}),
-			loadRootLib:     false,
-			coreService:     core,
+			config:                &defaultConfig,
+			gojaVM:                gojaVM,
+			scriptLoaded:          false,
+			exports:               gojaVM.NewObject(),
+			sharedLocalFunctions:  make(map[string]*SharedLocalFunction),
+			sharedPublicFunctions: make(map[string]*SharedPublicFunction),
+			allowedBuckets:        make([]string, 0),
+			cache:                 make(map[string]interface{}),
+			wasStarted:            false,
+			isRunning:             false,
+			loadRootLib:           false,
+			coreService:           core,
 		}
 	} else {
 		vmObject = &JsVM{
-			config:          config,
-			gojaVM:          gojaVM,
-			scriptLoaded:    false,
-			exports:         gojaVM.NewObject(),
-			sharedFunctions: make(map[string]SharedFunctionInterface),
-			allowedBuckets:  make([]string, 0),
-			cache:           make(map[string]interface{}),
-			loadRootLib:     false,
-			coreService:     core,
+			config:                config,
+			gojaVM:                gojaVM,
+			scriptLoaded:          false,
+			exports:               gojaVM.NewObject(),
+			sharedLocalFunctions:  make(map[string]*SharedLocalFunction),
+			sharedPublicFunctions: make(map[string]*SharedPublicFunction),
+			allowedBuckets:        make([]string, 0),
+			cache:                 make(map[string]interface{}),
+			wasStarted:            false,
+			isRunning:             false,
+			loadRootLib:           false,
+			coreService:           core,
 		}
 	}
 

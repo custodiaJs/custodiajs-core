@@ -162,7 +162,7 @@ func main() {
 	// Die Einzelnen VM's werden gestartet
 	for _, item := range vms {
 		// Die VM wird erzeugt
-		newVM, err := core.AddNewVM(item)
+		newVM, err := core.AddScriptContainer(item)
 		if err != nil {
 			fmt.Print("error@ ")
 			panic(err)

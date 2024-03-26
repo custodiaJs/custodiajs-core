@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"vnh1/static"
 )
 
 func (o *Core) Serve() error {
@@ -11,7 +12,7 @@ func (o *Core) Serve() error {
 	// Es werden alle Socketservices gestartet
 	for _, item := range o.apiSockets {
 		o.apiSyncWaitGroup.Add(1)
-		go func(pitem APISocketInterface) {
+		go func(pitem static.APISocketInterface) {
 			if err := pitem.Serve(o.serviceSignaling); err != nil {
 				fmt.Println("Core:Serve: " + err.Error())
 			}
