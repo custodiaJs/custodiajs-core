@@ -1,7 +1,6 @@
 package jsvm
 
 import (
-	"log"
 	"strings"
 
 	"github.com/dop251/goja"
@@ -18,11 +17,11 @@ func console_base(runtime *goja.Runtime, call goja.FunctionCall, vm *JsVM) goja.
 
 		switch parms.Arguments[1].String() {
 		case "info":
-			vm.consoleError(output)
+			vm.consoleCache.InfoLog(output)
 		case "error":
-			log.Fatalln(output)
+			vm.consoleCache.ErrorLog(output)
 		default:
-			vm.consoleLog(output)
+			vm.consoleCache.Log(output)
 		}
 
 		return goja.Undefined()

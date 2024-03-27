@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+	"sync"
 	"vnh1/core/jsvm"
 	"vnh1/core/vmdb"
 	"vnh1/static"
@@ -11,6 +13,7 @@ type CoreVM struct {
 	vmDbEntry      *vmdb.VmDBEntry
 	jsMainFilePath string
 	jsCode         string
+	state          static.VmState
 }
 
 func (o *CoreVM) GetVMName() string {
@@ -22,6 +25,9 @@ func (o *CoreVM) GetFingerprint() string {
 }
 
 func (o *CoreVM) GetVMModuleNames() []string {
+	if o.vmDbEntry.GetTotalNodeJsModules() < 1 {
+		return make([]string, 0)
+	}
 	modNames := make([]string, 0)
 	for _, item := range o.vmDbEntry.GetNodeJsModules() {
 		modNames = append(modNames, item.GetName())
@@ -29,6 +35,33 @@ func (o *CoreVM) GetVMModuleNames() []string {
 	return modNames
 }
 
-func (o *CoreVM) GetLocalShareddFunctions() []static.SharedLocalFunctionInterface {
-	return o.JsVM.GetLocalShareddFunctions()
+func (o *CoreVM) GetState() static.VmState {
+	return o.state
+}
+
+func (o *CoreVM) serveGorutine(syncWaitGroup *sync.WaitGroup) error {
+	// Es wird geprüft ob der Server bereits gestartet wurde
+	if o.state != static.StillWait && o.state != static.Closed {
+		return fmt.Errorf("serveGorutine: vm always running")
+	}
+
+	// Es wird der SyncWaitGroup Signalisiert dass eine weitere Routine ausgeführt wird
+	syncWaitGroup.Add(1)
+
+	// Der Aktuelle Status wird festgelegt
+	o.state = static.Starting
+
+	// Diese Funktion wird als Goroutine ausgeführt
+	go func(item *CoreVM) {
+		o.state = static.Running
+		item.RunScript(item.jsCode)
+		syncWaitGroup.Done()
+	}(o)
+
+	// Es ist kein Fehler aufgetreten
+	return nil
+}
+
+func (o *CoreVM) GetConsoleOutputWatcher() static.WatcherInterface {
+	return o.JsVM.GetConsoleOutputWatcher()
 }

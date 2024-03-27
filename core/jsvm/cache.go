@@ -24,10 +24,11 @@ func cache_base(runtime *goja.Runtime, call goja.FunctionCall, vm *JsVM) goja.Va
 	return runtime.ToValue(func(parms goja.FunctionCall) goja.Value {
 		switch parms.Arguments[0].String() {
 		case "write":
+			fmt.Println("VM_CACHE: WRITE")
 			return cache_write(parms, vm)
 		case "read":
+			fmt.Println("VM_CACHE: READ")
 			c := cache_read(runtime, parms, vm)
-			fmt.Println(c)
 			return c
 		default:
 			return goja.Undefined()

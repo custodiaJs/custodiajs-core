@@ -22,8 +22,8 @@ func (o *Webservice) Serve(closeSignal chan struct{}) error {
 	// Der VM-RPC Handler wird erstellt
 	http.HandleFunc("/rpc", o.vmRPCHandler)
 
-	// Der Websocket handler wird hinzugefügt
-	http.HandleFunc("/containerstream", o.handlerWebSocket)
+	// Der Websocket Console Stream wird erzeugt
+	http.HandleFunc("/consolestream", o.handleConsoleStreamWebsocket)
 
 	// Der HTTP Server wird gestartet
 	if err := http.ListenAndServe(":8080", nil); err != nil {

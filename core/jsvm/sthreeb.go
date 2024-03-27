@@ -19,7 +19,7 @@ type LocalVMS3Bucket struct {
 }
 
 func (o *LocalVMS3Bucket) UploadObject(name string, data interface{}, mData interface{}) error {
-	fmt.Println("Upload", name, data, mData)
+	fmt.Println("S3_BUCKET:Upload", name, data, mData)
 	return nil
 }
 

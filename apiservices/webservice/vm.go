@@ -72,6 +72,8 @@ func (o *Webservice) vmInfo(w http.ResponseWriter, r *http.Request) {
 		stateStrValue = "RUNNING"
 	case static.Starting:
 		stateStrValue = "STARTING"
+	case static.StillWait:
+		stateStrValue = "STILL_WAIT"
 	default:
 		stateStrValue = "UNKOWN"
 	}

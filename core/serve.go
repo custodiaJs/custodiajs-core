@@ -22,11 +22,9 @@ func (o *Core) Serve() error {
 
 	// Es werden alle Virtual Machines gestartet
 	for _, item := range o.vms {
-		o.vmSyncWaitGroup.Add(1)
-		go func(item *CoreVM) {
-			item.RunScript(item.jsCode)
-			o.vmSyncWaitGroup.Done()
-		}(item)
+		if err := item.serveGorutine(&o.vmSyncWaitGroup); err != nil {
+			return fmt.Errorf("Serve: " + err.Error())
+		}
 	}
 
 	// Es wird gewartet bis das Hold open geschlossen wird

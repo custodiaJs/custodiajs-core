@@ -49,3 +49,7 @@ func validatePOSTRequestAndGetVMId(w http.ResponseWriter, r *http.Request) (stri
 func validateGETRequestAndGetVMId(w http.ResponseWriter, r *http.Request) (string, bool) {
 	return validateRequestAndGetVMID("GET", w, r)
 }
+
+func validateWSRequestAndGetVMId(w http.ResponseWriter, r *http.Request) (string, bool) {
+	return validateRequestAndGetVMID("GET", w, r)
+}

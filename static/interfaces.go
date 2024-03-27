@@ -17,6 +17,7 @@ type CoreVMInterface interface {
 	GetVMModuleNames() []string
 	GetLocalShareddFunctions() []SharedLocalFunctionInterface
 	GetPublicShareddFunctions() []SharedPublicFunctionInterface
+	GetConsoleOutputWatcher() WatcherInterface
 	GetState() VmState
 }
 
@@ -33,4 +34,8 @@ type SharedLocalFunctionInterface interface {
 type SharedPublicFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
+}
+
+type WatcherInterface interface {
+	Read() string
 }

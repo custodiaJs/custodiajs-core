@@ -2,7 +2,7 @@ package jsvm
 
 import (
 	"fmt"
-	"log"
+	"vnh1/core/consolecache"
 	"vnh1/static"
 
 	"github.com/dop251/goja"
@@ -13,14 +13,13 @@ type JsVM struct {
 	sharedPublicFunctions map[string]*SharedPublicFunction
 	coreService           static.CoreInterface
 	cache                 map[string]interface{}
+	consoleCache          *consolecache.ConsoleOutputCache
 	allowedBuckets        []string
 	config                *JsVMConfig
 	gojaVM                *goja.Runtime
 	exports               *goja.Object
 	loadRootLib           bool
 	scriptLoaded          bool
-	isRunning             bool
-	wasStarted            bool
 }
 
 func (o *JsVM) prepareVM() error {
@@ -44,23 +43,22 @@ func (o *JsVM) prepareVM() error {
 }
 
 func (o *JsVM) RunScript(script string) error {
+	// Es wird geprüft ob das Script beretis geladen wurden
 	if o.scriptLoaded {
 		return fmt.Errorf("LoadScript: always script loaded")
 	}
+
+	// Es wird markiert dass das Script geladen wurde
 	o.scriptLoaded = true
+
+	// Das Script wird ausgeführt
 	_, err := o.gojaVM.RunString(script)
 	if err != nil {
 		panic(err)
 	}
+
+	// Es ist kein Fehler aufgetreten
 	return nil
-}
-
-func (o *JsVM) consoleLog(output string) {
-	log.Println(output)
-}
-
-func (o *JsVM) consoleError(output string) {
-	log.Println(output)
 }
 
 func (o *JsVM) gojaCOMFunctionModule(call goja.FunctionCall) goja.Value {
@@ -117,16 +115,8 @@ func (o *JsVM) GetPublicShareddFunctions() []static.SharedPublicFunctionInterfac
 	return extracted
 }
 
-func (o *JsVM) GetState() static.VmState {
-	if o.isRunning {
-		return static.Running
-	} else {
-		if o.wasStarted {
-			return static.Closed
-		} else {
-			return static.StillWait
-		}
-	}
+func (o *JsVM) GetConsoleOutputWatcher() static.WatcherInterface {
+	return o.consoleCache.GetOutputStream()
 }
 
 func NewVM(core static.CoreInterface, config *JsVMConfig) (*JsVM, error) {
@@ -143,10 +133,9 @@ func NewVM(core static.CoreInterface, config *JsVMConfig) (*JsVM, error) {
 			exports:               gojaVM.NewObject(),
 			sharedLocalFunctions:  make(map[string]*SharedLocalFunction),
 			sharedPublicFunctions: make(map[string]*SharedPublicFunction),
+			consoleCache:          consolecache.NewConsoleOutputCache(),
 			allowedBuckets:        make([]string, 0),
 			cache:                 make(map[string]interface{}),
-			wasStarted:            false,
-			isRunning:             false,
 			loadRootLib:           false,
 			coreService:           core,
 		}
@@ -158,10 +147,9 @@ func NewVM(core static.CoreInterface, config *JsVMConfig) (*JsVM, error) {
 			exports:               gojaVM.NewObject(),
 			sharedLocalFunctions:  make(map[string]*SharedLocalFunction),
 			sharedPublicFunctions: make(map[string]*SharedPublicFunction),
+			consoleCache:          consolecache.NewConsoleOutputCache(),
 			allowedBuckets:        make([]string, 0),
 			cache:                 make(map[string]interface{}),
-			wasStarted:            false,
-			isRunning:             false,
 			loadRootLib:           false,
 			coreService:           core,
 		}
