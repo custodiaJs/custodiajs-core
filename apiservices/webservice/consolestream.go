@@ -10,6 +10,13 @@ import (
 )
 
 func (o *Webservice) handleConsoleStreamWebsocket(w http.ResponseWriter, r *http.Request) {
+	// Es wird geprüft ob es sich um einen iFrame aufruf handelt
+	if isRequestFromIframe(r) || isRequestFromJS(r) {
+		// Blockiere die Anfrage und sende einen 403 Forbidden Statuscode
+		http.Error(w, "Zugriff verweigert", http.StatusForbidden)
+		return
+	}
+
 	// Es wird geprüft ob es sich um die POST Methode handelt
 	vmid, isValidateRequest := validateWSRequestAndGetVMId(w, r)
 	if !isValidateRequest {
@@ -55,5 +62,7 @@ func (o *Webservice) handleConsoleStreamWebsocket(w http.ResponseWriter, r *http
 			break
 		}
 	}
+
+	// Die Console wurde geschlossen
 	c.Close(websocket.StatusNormalClosure, "")
 }

@@ -31,41 +31,6 @@ func (o *LocalVMS3Bucket) DeleteObject(name string, mData interface{}) error {
 	return nil
 }
 
-func (o *JsVM) validateS3BucketEndPoint(s3Bucket string) bool {
-	// Es wird geprüft ob die S3 Buckets zur verfügung stehen
-	if !o.config.EnableS3 {
-		return false
-	}
-
-	// Es wird ermittelt ob es sich um ein Zulässiges Bucket handelt
-	for _, item := range o.allowedBuckets {
-		if item == s3Bucket {
-			return true
-		}
-	}
-
-	// Es handelt sich nicht um ein Zulässiges Bucket
-	return true
-}
-
-func (o *JsVM) initS3Bucket(s3Bucket string) (S3Bucket, error) {
-	// Es wird geprüft ob die S3 Buckets zur verfügung stehen
-	if !o.config.EnableS3 {
-		return nil, fmt.Errorf("s3 not enabeld")
-	}
-
-	// Es wird geprüft ob es sich um ein Zulässiges Bucket handelt
-	if !o.validateS3BucketEndPoint(s3Bucket) {
-		return nil, fmt.Errorf("s3 bucket unkwon")
-	}
-
-	// Das S3Bucket Objekt wird erstellt
-	s3bucketObject := &LocalVMS3Bucket{}
-
-	// Das Objekt wird zurückgegeben
-	return s3bucketObject, nil
-}
-
 func sthreeb_uploadObject(bucket S3Bucket, call goja.FunctionCall) goja.Value {
 	// Die Parameter werden abgerufen
 	name, data, metaData := call.Arguments[0].String(), call.Arguments[1].Export(), call.Arguments[2].Export()

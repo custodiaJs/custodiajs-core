@@ -29,11 +29,19 @@ type APISocketInterface interface {
 type SharedLocalFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
+	EnterFunctionCall(parms ...interface{}) (interface{}, error)
 }
 
 type SharedPublicFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
+	EnterFunctionCall(parms ...interface{}) (interface{}, error)
+}
+
+type SharedFunctionInterface interface {
+	GetName() string
+	GetParmTypes() []string
+	EnterFunctionCall(parms ...interface{}) (interface{}, error)
 }
 
 type WatcherInterface interface {

@@ -7,12 +7,14 @@ import (
 )
 
 type SharedLocalFunction struct {
+	gojaVM       *goja.Runtime
 	callFunction goja.Callable
 	name         string
 	parmTypes    []string
 }
 
 type SharedPublicFunction struct {
+	gojaVM       *goja.Runtime
 	callFunction goja.Callable
 	name         string
 	parmTypes    []string
@@ -34,50 +36,42 @@ func (o *SharedPublicFunction) GetParmTypes() []string {
 	return o.parmTypes
 }
 
-func (o *JsVM) functionIsSharing(functionName string) bool {
-	// Es wird geprüft ob die Funktion bereits Registriert wurde
-	_, found := o.sharedLocalFunctions[functionName]
+func (o *SharedLocalFunction) EnterFunctionCall(parms ...interface{}) (interface{}, error) {
+	// Es wird geprüft ob die Angeforderte Anzahl an Parametern vorhanden ist
+	if len(parms) != len(o.parmTypes) {
+		return nil, fmt.Errorf("EnterFunctionCall: invalid parameters")
+	}
 
-	// Das Ergebniss wird zurückgegeben
-	return found
+	// Es wird versucht die Paraemter in den Richtigen GoJa Datentypen umzuwandeln
+	convertedValues := make([]goja.Value, 0)
+	for _, item := range parms {
+		// Der Wert wird umgewandelt
+		gojaValue := o.gojaVM.ToValue(item)
+
+		// Es wird geprüft ob es sich um einen Zulässigen Datentypen handelt
+		switch v := gojaValue.Export().(type) {
+		case string:
+		case uint64:
+		case bool:
+		case goja.ArrayBuffer:
+		default:
+			return nil, fmt.Errorf("EnterFunctionCall: unsupported datatype %T", v)
+		}
+
+		// Der Wert wird zwischengespeichert
+		convertedValues = append(convertedValues, gojaValue)
+	}
+
+	// Die Funktion wird aufgerufen
+	result, err := o.callFunction(nil, convertedValues...)
+	if err != nil {
+		return nil, fmt.Errorf("EnterFunctionCall: " + err.Error())
+	}
+
+	fmt.Println("CALL FUNCTION", result)
+	return nil, nil
 }
 
-func (o *JsVM) shareLocalFunction(funcName string, parmTypes []string, function goja.Callable) error {
-	// Es wird geprüft ob diese Funktion bereits registriert wurde
-	if _, found := o.sharedLocalFunctions[funcName]; found {
-		return fmt.Errorf("function always registrated")
-	}
-
-	// Die Funktion wird zwischengespeichert
-	o.sharedLocalFunctions[funcName] = &SharedLocalFunction{
-		callFunction: function,
-		name:         funcName,
-		parmTypes:    parmTypes,
-	}
-
-	// Die Funktion wird im Core registriert
-	fmt.Println("VM:SHARE_LOCAL_FUNCTION:", funcName, parmTypes)
-
-	// Der Vorgang wurde ohne Fehler durchgeführt
-	return nil
-}
-
-func (o *JsVM) sharePublicFunction(funcName string, parmTypes []string, function goja.Callable) error {
-	// Es wird geprüft ob diese Funktion bereits registriert wurde
-	if _, found := o.sharedPublicFunctions[funcName]; found {
-		return fmt.Errorf("function always registrated")
-	}
-
-	// Die Funktion wird zwischengespeichert
-	o.sharedPublicFunctions[funcName] = &SharedPublicFunction{
-		callFunction: function,
-		name:         funcName,
-		parmTypes:    parmTypes,
-	}
-
-	// Die Funktion wird im Core registriert
-	fmt.Println("VM:SHARE_PUBLIC_FUNCTION:", funcName, parmTypes)
-
-	// Der Vorgang wurde ohne Fehler durchgeführt
-	return nil
+func (o *SharedPublicFunction) EnterFunctionCall(parms ...interface{}) (interface{}, error) {
+	return nil, nil
 }

@@ -53,3 +53,14 @@ func validateGETRequestAndGetVMId(w http.ResponseWriter, r *http.Request) (strin
 func validateWSRequestAndGetVMId(w http.ResponseWriter, r *http.Request) (string, bool) {
 	return validateRequestAndGetVMID("GET", w, r)
 }
+
+func isRequestFromIframe(r *http.Request) bool {
+	referer := r.Header.Get("Referer")
+	return referer != "" && referer != r.URL.String()
+}
+
+func isRequestFromJS(r *http.Request) bool {
+	// Überprüfe den X-Requested-With Header, typischerweise gesetzt für AJAX-Anfragen
+	requestedWith := r.Header.Get("X-Requested-With")
+	return requestedWith == "XMLHttpRequest"
+}

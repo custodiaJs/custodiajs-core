@@ -22,45 +22,6 @@ type JsVM struct {
 	scriptLoaded          bool
 }
 
-func (o *JsVM) prepareVM() error {
-	// Die Standardobjekte werden erzeugt
-	vnh1Obj := o.gojaVM.NewObject()
-
-	// Die VNH1 Funktionen werden bereitgestellt
-	vnh1Obj.Set("com", o.gojaCOMFunctionModule)
-	o.gojaVM.Set("vnh1", vnh1Obj)
-
-	// Die JS Exports werden bereitgestellt
-	o.gojaVM.Set("exports", o.exports)
-
-	/* Es wird geprüft ob das API Root Script durch die VM bereitgestellt werden soll
-	if o.loadRootLib {
-
-	}*/
-
-	// Der Vorgang ist ohne Fehler durchgeführt wurden
-	return nil
-}
-
-func (o *JsVM) RunScript(script string) error {
-	// Es wird geprüft ob das Script beretis geladen wurden
-	if o.scriptLoaded {
-		return fmt.Errorf("LoadScript: always script loaded")
-	}
-
-	// Es wird markiert dass das Script geladen wurde
-	o.scriptLoaded = true
-
-	// Das Script wird ausgeführt
-	_, err := o.gojaVM.RunString(script)
-	if err != nil {
-		panic(err)
-	}
-
-	// Es ist kein Fehler aufgetreten
-	return nil
-}
-
 func (o *JsVM) gojaCOMFunctionModule(call goja.FunctionCall) goja.Value {
 	// Es wird ermittelt um welchen vorgang es sich handelt
 	if len(call.Arguments) < 1 {
@@ -97,6 +58,75 @@ func (o *JsVM) gojaCOMFunctionModule(call goja.FunctionCall) goja.Value {
 	default:
 		return goja.Undefined()
 	}
+}
+
+func (o *JsVM) functionIsSharing(functionName string) bool {
+	// Es wird geprüft ob die Funktion bereits Registriert wurde
+	_, found := o.sharedLocalFunctions[functionName]
+
+	// Das Ergebniss wird zurückgegeben
+	return found
+}
+
+func (o *JsVM) shareLocalFunction(funcName string, parmTypes []string, function goja.Callable) error {
+	// Es wird geprüft ob diese Funktion bereits registriert wurde
+	if _, found := o.sharedLocalFunctions[funcName]; found {
+		return fmt.Errorf("function always registrated")
+	}
+
+	// Die Funktion wird zwischengespeichert
+	o.sharedLocalFunctions[funcName] = &SharedLocalFunction{
+		callFunction: function,
+		name:         funcName,
+		parmTypes:    parmTypes,
+		gojaVM:       o.gojaVM,
+	}
+
+	// Die Funktion wird im Core registriert
+	fmt.Println("VM:SHARE_LOCAL_FUNCTION:", funcName, parmTypes)
+
+	// Der Vorgang wurde ohne Fehler durchgeführt
+	return nil
+}
+
+func (o *JsVM) sharePublicFunction(funcName string, parmTypes []string, function goja.Callable) error {
+	// Es wird geprüft ob diese Funktion bereits registriert wurde
+	if _, found := o.sharedPublicFunctions[funcName]; found {
+		return fmt.Errorf("function always registrated")
+	}
+
+	// Die Funktion wird zwischengespeichert
+	o.sharedPublicFunctions[funcName] = &SharedPublicFunction{
+		callFunction: function,
+		name:         funcName,
+		parmTypes:    parmTypes,
+		gojaVM:       o.gojaVM,
+	}
+
+	// Die Funktion wird im Core registriert
+	fmt.Println("VM:SHARE_PUBLIC_FUNCTION:", funcName, parmTypes)
+
+	// Der Vorgang wurde ohne Fehler durchgeführt
+	return nil
+}
+
+func (o *JsVM) RunScript(script string) error {
+	// Es wird geprüft ob das Script beretis geladen wurden
+	if o.scriptLoaded {
+		return fmt.Errorf("LoadScript: always script loaded")
+	}
+
+	// Es wird markiert dass das Script geladen wurde
+	o.scriptLoaded = true
+
+	// Das Script wird ausgeführt
+	_, err := o.gojaVM.RunString(script)
+	if err != nil {
+		panic(err)
+	}
+
+	// Es ist kein Fehler aufgetreten
+	return nil
 }
 
 func (o *JsVM) GetLocalShareddFunctions() []static.SharedLocalFunctionInterface {
