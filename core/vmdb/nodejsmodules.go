@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"vnh1/static"
+	"vnh1/utils"
 )
 
 type NodeJsModule struct {
 	merkleRoot string
-	files      []static.FileInfo
+	files      []utils.FileInfo
 	baseSize   uint64
 	name       string
 }
@@ -24,12 +24,12 @@ func (o *NodeJsModule) GetName() string {
 
 func tryToLoadNodeJsModules(path string) ([]*NodeJsModule, error) {
 	// Es wird geprüft ob es sich um einen gültigen Path handelt
-	if !static.FolderExists(path) {
+	if !utils.FolderExists(path) {
 		return nil, fmt.Errorf("tryToLoadNodeJsModule: no nodejs modules folder found")
 	}
 
 	// Es wird eine übersicht über alle Ordner estellt
-	folders, err := static.ListAllFolders(path)
+	folders, err := utils.ListAllFolders(path)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func tryToLoadNodeJsModules(path string) ([]*NodeJsModule, error) {
 	loadedNodeJsModules := make([]*NodeJsModule, 0)
 	for _, folderPath := range folders {
 		// Es wird eine Übersicht über den Ordnerinhalt erstellt
-		folderOverview, err := static.WalkDir(folderPath, true)
+		folderOverview, err := utils.WalkDir(folderPath, true)
 		if err != nil {
 			return nil, fmt.Errorf("tryToLoadNodeJsModules: " + err.Error())
 		}
@@ -81,19 +81,19 @@ func tryToLoadNodeJsModules(path string) ([]*NodeJsModule, error) {
 		}
 
 		// Die Liste wird Sortiert
-		sortedHashList, err := static.SortHexStrings(unsortedHashList)
+		sortedHashList, err := utils.SortHexStrings(unsortedHashList)
 		if err != nil {
 			return nil, fmt.Errorf("tryToLoadNodeJsModules: " + err.Error())
 		}
 
 		// Es wird ein Merkle Root estellt
-		merkleRoot, err := static.BuildMerkleRoot(sortedHashList)
+		merkleRoot, err := utils.BuildMerkleRoot(sortedHashList)
 		if err != nil {
 			return nil, fmt.Errorf("tryToLoadNodeJsModules: " + err.Error())
 		}
 
 		// Das Objekt wird zwischegespeichert
-		loadedNodeJsModules = append(loadedNodeJsModules, &NodeJsModule{merkleRoot: merkleRoot, files: folderOverview, name: static.ExtractFileName(folderPath)})
+		loadedNodeJsModules = append(loadedNodeJsModules, &NodeJsModule{merkleRoot: merkleRoot, files: folderOverview, name: utils.ExtractFileName(folderPath)})
 	}
 
 	// Die NodeJS Module werden zurückgegeben

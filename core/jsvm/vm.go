@@ -3,7 +3,7 @@ package jsvm
 import (
 	"fmt"
 	"vnh1/core/consolecache"
-	"vnh1/static"
+	"vnh1/types"
 
 	"github.com/dop251/goja"
 )
@@ -11,7 +11,7 @@ import (
 type JsVM struct {
 	sharedLocalFunctions  map[string]*SharedLocalFunction
 	sharedPublicFunctions map[string]*SharedPublicFunction
-	coreService           static.CoreInterface
+	coreService           types.CoreInterface
 	cache                 map[string]interface{}
 	consoleCache          *consolecache.ConsoleOutputCache
 	allowedBuckets        []string
@@ -129,27 +129,27 @@ func (o *JsVM) RunScript(script string) error {
 	return nil
 }
 
-func (o *JsVM) GetLocalShareddFunctions() []static.SharedLocalFunctionInterface {
-	extracted := make([]static.SharedLocalFunctionInterface, 0)
+func (o *JsVM) GetLocalShareddFunctions() []types.SharedLocalFunctionInterface {
+	extracted := make([]types.SharedLocalFunctionInterface, 0)
 	for _, item := range o.sharedLocalFunctions {
 		extracted = append(extracted, item)
 	}
 	return extracted
 }
 
-func (o *JsVM) GetPublicShareddFunctions() []static.SharedPublicFunctionInterface {
-	extracted := make([]static.SharedPublicFunctionInterface, 0)
+func (o *JsVM) GetPublicShareddFunctions() []types.SharedPublicFunctionInterface {
+	extracted := make([]types.SharedPublicFunctionInterface, 0)
 	for _, item := range o.sharedPublicFunctions {
 		extracted = append(extracted, item)
 	}
 	return extracted
 }
 
-func (o *JsVM) GetConsoleOutputWatcher() static.WatcherInterface {
+func (o *JsVM) GetConsoleOutputWatcher() types.WatcherInterface {
 	return o.consoleCache.GetOutputStream()
 }
 
-func NewVM(core static.CoreInterface, config *JsVMConfig) (*JsVM, error) {
+func NewVM(core types.CoreInterface, config *JsVMConfig) (*JsVM, error) {
 	// Die GoJA VM wird erstellt
 	gojaVM := goja.New()
 

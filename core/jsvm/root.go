@@ -3,7 +3,7 @@ package jsvm
 import (
 	"fmt"
 	"strings"
-	"vnh1/static"
+	"vnh1/utils"
 
 	"github.com/dop251/goja"
 )
@@ -34,7 +34,7 @@ func root_fshare(methode string, functionName string, parameterTypes goja.Value,
 	extractedData := []string{}
 	for _, item := range functionParms {
 		stringItem := item.(string)
-		if !static.ValidateDatatypeString(stringItem) {
+		if !utils.ValidateDatatypeString(stringItem) {
 			panic("not allowed datatype: " + stringItem)
 		}
 		extractedData = append(extractedData, stringItem)

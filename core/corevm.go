@@ -5,7 +5,7 @@ import (
 	"sync"
 	"vnh1/core/jsvm"
 	"vnh1/core/vmdb"
-	"vnh1/static"
+	"vnh1/types"
 )
 
 type CoreVM struct {
@@ -13,7 +13,7 @@ type CoreVM struct {
 	vmDbEntry      *vmdb.VmDBEntry
 	jsMainFilePath string
 	jsCode         string
-	state          static.VmState
+	state          types.VmState
 }
 
 func (o *CoreVM) GetVMName() string {
@@ -35,13 +35,13 @@ func (o *CoreVM) GetVMModuleNames() []string {
 	return modNames
 }
 
-func (o *CoreVM) GetState() static.VmState {
+func (o *CoreVM) GetState() types.VmState {
 	return o.state
 }
 
 func (o *CoreVM) serveGorutine(syncWaitGroup *sync.WaitGroup) error {
 	// Es wird geprüft ob der Server bereits gestartet wurde
-	if o.state != static.StillWait && o.state != static.Closed {
+	if o.state != types.StillWait && o.state != types.Closed {
 		return fmt.Errorf("serveGorutine: vm always running")
 	}
 
@@ -49,11 +49,11 @@ func (o *CoreVM) serveGorutine(syncWaitGroup *sync.WaitGroup) error {
 	syncWaitGroup.Add(1)
 
 	// Der Aktuelle Status wird festgelegt
-	o.state = static.Starting
+	o.state = types.Starting
 
 	// Diese Funktion wird als Goroutine ausgeführt
 	go func(item *CoreVM) {
-		o.state = static.Running
+		o.state = types.Running
 		item.RunScript(item.jsCode)
 		syncWaitGroup.Done()
 	}(o)
@@ -62,6 +62,6 @@ func (o *CoreVM) serveGorutine(syncWaitGroup *sync.WaitGroup) error {
 	return nil
 }
 
-func (o *CoreVM) GetConsoleOutputWatcher() static.WatcherInterface {
+func (o *CoreVM) GetConsoleOutputWatcher() types.WatcherInterface {
 	return o.JsVM.GetConsoleOutputWatcher()
 }

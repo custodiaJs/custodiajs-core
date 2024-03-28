@@ -1,4 +1,4 @@
-package static
+package types
 
 type VmState int
 
@@ -8,3 +8,8 @@ const (
 	Starting  VmState = 3
 	StillWait VmState = 0
 )
+
+type FunctionParameterCapsle struct {
+	Value      interface{}
+	CapsleType string
+}

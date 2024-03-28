@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"vnh1/static"
+	"vnh1/utils"
 )
 
 type VmDBEntry struct {
@@ -70,7 +70,7 @@ func tryToLoadVM(path string) (*VmDBEntry, error) {
 	extractedNodejSModules := make([]*NodeJsModule, 0)
 	if manifestFile.NodeJsEnable() {
 		// Sollte der Scriptsordner nicht vorhanden sein, wird der Vorgang abgebrochen
-		if !static.FolderExists(nodeJsModulesPath) {
+		if !utils.FolderExists(nodeJsModulesPath) {
 			return nil, fmt.Errorf("tryToLoadVM: no scripts found")
 		}
 
@@ -119,7 +119,7 @@ func tryToLoadVM(path string) (*VmDBEntry, error) {
 		}
 	} else {
 		// Sollte der Scriptsordner vorhanden sein, wird der Vorgang abgebrochen
-		if static.FolderExists(nodeJsModulesPath) {
+		if utils.FolderExists(nodeJsModulesPath) {
 			return nil, fmt.Errorf("tryToLoadVM: scripts not allowed")
 		}
 	}
@@ -131,13 +131,13 @@ func tryToLoadVM(path string) (*VmDBEntry, error) {
 	}
 
 	// Die Hashliste wird Sortiert
-	sortedHashList, err := static.SortHexStrings(mergedHashList)
+	sortedHashList, err := utils.SortHexStrings(mergedHashList)
 	if err != nil {
 		return nil, fmt.Errorf("tryToLoadVM: " + err.Error())
 	}
 
 	// Es wird ein Merkelhash aus der Sortierten Liste erstellt
-	merkleRoot, err := static.BuildMerkleRoot(sortedHashList)
+	merkleRoot, err := utils.BuildMerkleRoot(sortedHashList)
 	if err != nil {
 		return nil, fmt.Errorf("tryToLoadVM: " + err.Error())
 	}

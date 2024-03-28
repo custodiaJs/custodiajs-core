@@ -8,7 +8,7 @@ import (
 	"sync"
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
-	"vnh1/static"
+	"vnh1/types"
 
 	"vnh1/core/jsvm"
 )
@@ -29,7 +29,7 @@ type Core struct {
 	vms                  []*CoreVM
 	vmSyncWaitGroup      sync.WaitGroup
 	apiSyncWaitGroup     sync.WaitGroup
-	apiSockets           []static.APISocketInterface
+	apiSockets           []types.APISocketInterface
 	serviceSignaling     chan struct{}
 	holdOpenChan         chan struct{}
 	state                CoreState
@@ -68,7 +68,7 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 	return vmobject, nil
 }
 
-func (o *Core) AddAPISocket(apiSocket static.APISocketInterface) error {
+func (o *Core) AddAPISocket(apiSocket types.APISocketInterface) error {
 	// Der Core wird in dem API-Socket Registriert
 	err := apiSocket.SetupCore(o)
 	if err != nil {
@@ -82,7 +82,7 @@ func (o *Core) AddAPISocket(apiSocket static.APISocketInterface) error {
 	return nil
 }
 
-func (o *Core) GetScriptContainerVMByID(vmid string) (static.CoreVMInterface, error) {
+func (o *Core) GetScriptContainerVMByID(vmid string) (types.CoreVMInterface, error) {
 	// Es wird geprüft ob die VM exestiert
 	vmObj, found := o.vmsByID[vmid]
 	if !found {
@@ -107,7 +107,7 @@ func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase
 		vmsByID:    make(map[string]*CoreVM),
 		vmsByName:  make(map[string]*CoreVM),
 		vms:        make([]*CoreVM, 0),
-		apiSockets: make([]static.APISocketInterface, 0),
+		apiSockets: make([]types.APISocketInterface, 0),
 		state:      NEW,
 		// Chans
 		holdOpenChan:     make(chan struct{}),

@@ -14,7 +14,7 @@ import (
 	"vnh1/core"
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
-	"vnh1/static"
+	"vnh1/utils"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -85,7 +85,7 @@ func main() {
 	// Die Hostinformationen werden ausgelesen
 	if runtime.GOOS == "linux" {
 		// Die Linux Informationen werden ausgelesen
-		hostInfo, err := static.DetectLinuxDist()
+		hostInfo, err := utils.DetectLinuxDist()
 		if err != nil {
 			panic(err)
 		}
@@ -94,7 +94,7 @@ func main() {
 		fmt.Println("Host OS:", hostInfo)
 
 		// Es wird ermittelt ob das Programm in einem Container ausgeführt wird
-		isRunningInLinuxContainer = static.IsRunningInContainer()
+		isRunningInLinuxContainer = utils.IsRunningInContainer()
 
 		// Die Info wird angezeigt
 		if isRunningInLinuxContainer {

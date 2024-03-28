@@ -1,4 +1,4 @@
-package static
+package types
 
 type JsVmInterface interface {
 	GetPublicShareddFunctions() []SharedPublicFunctionInterface
@@ -29,19 +29,19 @@ type APISocketInterface interface {
 type SharedLocalFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(parms ...interface{}) (interface{}, error)
+	EnterFunctionCall(parms ...*FunctionParameterCapsle) (interface{}, error)
 }
 
 type SharedPublicFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(parms ...interface{}) (interface{}, error)
+	EnterFunctionCall(parms ...*FunctionParameterCapsle) (interface{}, error)
 }
 
 type SharedFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(parms ...interface{}) (interface{}, error)
+	EnterFunctionCall(parms ...*FunctionParameterCapsle) (interface{}, error)
 }
 
 type WatcherInterface interface {

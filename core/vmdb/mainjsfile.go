@@ -3,7 +3,7 @@ package vmdb
 import (
 	"encoding/hex"
 	"fmt"
-	"vnh1/static"
+	"vnh1/utils"
 
 	"github.com/gofrs/flock"
 )
@@ -21,7 +21,7 @@ func (o *MainJsFile) GetFileSize() uint64 {
 
 func loadMainJsFile(path string) (*MainJsFile, error) {
 	// Es wird geprüft ob die Datei vorhanden ist
-	if !static.FileExists(path) {
+	if !utils.FileExists(path) {
 		return nil, fmt.Errorf(fmt.Sprintf("loadMainJsFile: file '%s' not found", path))
 	}
 
@@ -38,13 +38,13 @@ func loadMainJsFile(path string) (*MainJsFile, error) {
 	}
 
 	// Es wird ein Hash aus der Datei erzeugt
-	fileHash, err := static.HashFile(path)
+	fileHash, err := utils.HashFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("loadMainJsFile: " + err.Error())
 	}
 
 	// Die Größe der Datei wird ermittelt
-	fsize, err := static.GetFileSize(path)
+	fsize, err := utils.GetFileSize(path)
 	if err != nil {
 		return nil, fmt.Errorf("loadMainJsFile: " + err.Error())
 	}

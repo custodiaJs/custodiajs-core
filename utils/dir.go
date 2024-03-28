@@ -1,4 +1,4 @@
-package static
+package utils
 
 import (
 	"encoding/hex"

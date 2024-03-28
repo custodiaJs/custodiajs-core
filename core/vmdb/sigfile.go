@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"vnh1/static"
+	"vnh1/utils"
 
 	"github.com/gofrs/flock"
 )
@@ -19,7 +19,7 @@ type SignatureFile struct {
 
 func loadSignatureFile(path string) (*SignatureFile, error) {
 	// Es wird geprüft ob die Datei vorhanden ist
-	if !static.FileExists(path) {
+	if !utils.FileExists(path) {
 		return nil, fmt.Errorf(fmt.Sprintf("loadSignatureFile: file '%s' not found", path))
 	}
 

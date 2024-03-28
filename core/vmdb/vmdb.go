@@ -2,7 +2,7 @@ package vmdb
 
 import (
 	"fmt"
-	"vnh1/static"
+	"vnh1/utils"
 )
 
 type VmDatabase struct {
@@ -12,7 +12,7 @@ type VmDatabase struct {
 
 func (o *VmDatabase) LoadAllVirtualMachines() ([]*VmDBEntry, error) {
 	// Die VM's werden geladen
-	vms, err := static.ScanVmDir(o.vmRootDir)
+	vms, err := utils.ScanVmDir(o.vmRootDir)
 	if err != nil {
 		return nil, fmt.Errorf("LoadAllVirtualMachines: " + err.Error())
 	}

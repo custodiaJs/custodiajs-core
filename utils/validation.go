@@ -1,4 +1,4 @@
-package static
+package utils
 
 func ValidateDatatypeString(dType string) bool {
 	switch dType {

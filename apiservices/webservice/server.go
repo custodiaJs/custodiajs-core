@@ -5,11 +5,12 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net/http"
-	"vnh1/static"
+	"vnh1/types"
+	"vnh1/utils"
 )
 
 type Webservice struct {
-	core static.CoreInterface
+	core types.CoreInterface
 }
 
 func (o *Webservice) Serve(closeSignal chan struct{}) error {
@@ -34,7 +35,7 @@ func (o *Webservice) Serve(closeSignal chan struct{}) error {
 	return nil
 }
 
-func (o *Webservice) SetupCore(coreObj static.CoreInterface) error {
+func (o *Webservice) SetupCore(coreObj types.CoreInterface) error {
 	// Es wird geprüft ob der Core festgelegt wurde
 	if o.core != nil {
 		return fmt.Errorf("SetupCore: always linked with core")
@@ -65,7 +66,7 @@ func NewLocalWebservice(ipv4 bool, ipv6 bool, localCert *tls.Certificate) (*Webs
 	}
 
 	// Sollte die Funktion nicht deaktiviert wurden sein, so wird jetzt geprüft ob der Host das Verwendete Cert kennt und Validieren kann
-	if static.CHECK_SSL_LOCALHOST_ENABLE {
+	if utils.CHECK_SSL_LOCALHOST_ENABLE {
 		// Lade den Systemzertifikatsspeicher
 		roots, err := x509.SystemCertPool()
 		if err != nil {

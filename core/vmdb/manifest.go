@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"vnh1/static"
+	"vnh1/utils"
 
 	"github.com/gofrs/flock"
 )
@@ -44,7 +44,7 @@ func (o *ManifestFile) GetFileSize() uint64 {
 
 func loadManifestFile(path string) (*ManifestFile, error) {
 	// Es wird geprüft ob die Datei vorhanden ist
-	if !static.FileExists(path) {
+	if !utils.FileExists(path) {
 		return nil, fmt.Errorf(fmt.Sprintf("loadManifestFile: file '%s' not found", path))
 	}
 
@@ -67,13 +67,13 @@ func loadManifestFile(path string) (*ManifestFile, error) {
 	}
 
 	// Es wird ein Hash aus der Datei erzeugt
-	fileHash, err := static.HashOSFile(openFile)
+	fileHash, err := utils.HashOSFile(openFile)
 	if err != nil {
 		return nil, fmt.Errorf("loadManifestFile: " + err.Error())
 	}
 
 	// Die Datei wird eingelesen
-	readedFileBytes, err := static.ReadFileBytes(openFile)
+	readedFileBytes, err := utils.ReadFileBytes(openFile)
 	if err != nil {
 		return nil, fmt.Errorf("loadManifestFile: " + err.Error())
 	}
@@ -85,7 +85,7 @@ func loadManifestFile(path string) (*ManifestFile, error) {
 	}
 
 	// Die Größe der Datei wird ermittelt
-	fsize, err := static.GetFileSize(path)
+	fsize, err := utils.GetFileSize(path)
 	if err != nil {
 		return nil, fmt.Errorf("loadMainJsFile: " + err.Error())
 	}

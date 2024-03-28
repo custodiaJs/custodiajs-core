@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"vnh1/static"
+	"vnh1/types"
 )
 
 type SharedFunction struct {
@@ -66,13 +66,13 @@ func (o *Webservice) vmInfo(w http.ResponseWriter, r *http.Request) {
 	// Der Status wird eingelesen
 	var stateStrValue string
 	switch foundedVM.GetState() {
-	case static.Closed:
+	case types.Closed:
 		stateStrValue = "CLOSED"
-	case static.Running:
+	case types.Running:
 		stateStrValue = "RUNNING"
-	case static.Starting:
+	case types.Starting:
 		stateStrValue = "STARTING"
-	case static.StillWait:
+	case types.StillWait:
 		stateStrValue = "STILL_WAIT"
 	default:
 		stateStrValue = "UNKOWN"
