@@ -54,8 +54,7 @@ func (o *SharedLocalFunction) EnterFunctionCall(parms ...*types.FunctionParamete
 			convertedValues = append(convertedValues, gojaValue)
 		case "number":
 			gojaValue := o.gojaVM.ToValue(item.Value)
-			if reflect.TypeOf(gojaValue.Export()).Kind() != reflect.Int &&
-				reflect.TypeOf(gojaValue.Export()).Kind() != reflect.Float64 {
+			if reflect.TypeOf(gojaValue.Export()).Kind() != reflect.Int64 && reflect.TypeOf(gojaValue.Export()).Kind() != reflect.Float64 {
 				return nil, fmt.Errorf("EnterFunctionCall: invalid number data")
 			}
 			convertedValues = append(convertedValues, gojaValue)

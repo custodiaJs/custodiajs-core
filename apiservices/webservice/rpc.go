@@ -1,13 +1,19 @@
 package webservice
 
 import (
+	"encoding/base32"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
+	"strings"
 	"time"
 	"vnh1/types"
 	"vnh1/utils"
+
+	"github.com/btcsuite/btcutil/base58"
 )
 
 type RPCFunctionParameter struct {
@@ -18,6 +24,12 @@ type RPCFunctionParameter struct {
 type RPCFunctionCall struct {
 	FunctionName string                 `json:"name"`
 	Parms        []RPCFunctionParameter `json:"parms"`
+}
+
+type RPCResponse struct {
+	Result string      `json:"result"`
+	Data   interface{} `json:"data"`
+	Error  *string     `json:"error"`
 }
 
 func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +70,7 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	// Es wird versucht die Passende Funktion zu ermitteln
-	proc.LogPrint("RPC: &[%s]: searching function '%s'\n", vmid, data.FunctionName)
+	proc.LogPrint("RPC: &[%s]: searching function '%s'\n", foundedVM.GetVMName(), data.FunctionName)
 	var foundFunction types.SharedFunctionInterface
 	for _, item := range foundedVM.GetLocalShareddFunctions() {
 		if item.GetName() == data.FunctionName {
@@ -90,7 +102,7 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Die Einzelnen Parameter werden geprüft und abgearbeitet
-	proc.LogPrint("RPC: &[%s]: convert function '%s' parameters\n", vmid, foundFunction.GetName())
+	proc.LogPrint("RPC: &[%s]: convert function '%s' parameters\n", foundedVM.GetVMName(), foundFunction.GetName())
 	extractedValues := make([]*types.FunctionParameterCapsle, 0)
 	for x := range foundFunction.GetParmTypes() {
 		// Es wird geprüft ob es sich bei dem Angefordeten Parameter um einen zulässigen Parameter handelt
@@ -102,6 +114,12 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 		// Es wird versucht den Datentypen umzuwandeln
 		switch data.Parms[x].Type {
 		case "boolean":
+			// Es wird geprüft ob es sich um ein Boolean handelt
+			if reflect.TypeOf(data.Parms[x].Value).Kind() != reflect.Bool {
+				http.Error(w, "Datatype converting error: bool", http.StatusBadRequest)
+				return
+			}
+
 			// Der Datentyp wird umgewandelt
 			converted, ok := data.Parms[x].Value.(bool)
 			if !ok {
@@ -116,10 +134,23 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 			extractedValues = append(extractedValues, newEntry)
 		case "number":
 			// Der Datentyp wird umgewandelt
-			converted, ok := data.Parms[x].Value.(uint64)
+			converted, ok := data.Parms[x].Value.(int64)
 			if !ok {
-				http.Error(w, "Datatype converting error: number", http.StatusBadRequest)
-				return
+				// Es wird geprüft ob es sich um ein Float handelt
+				onvertedfloat, ok := data.Parms[x].Value.(float64)
+				if !ok {
+					fmt.Println(data.Parms[x].Value)
+					fmt.Println(reflect.TypeOf(data.Parms[x].Value))
+					http.Error(w, "Datatype converting error: number", http.StatusBadRequest)
+					return
+				}
+
+				// Der Eintrag wird erzeugt
+				newEntry := &types.FunctionParameterCapsle{Value: onvertedfloat, CapsleType: "number"}
+
+				// Die Daten werden hinzugefügt
+				extractedValues = append(extractedValues, newEntry)
+				break
 			}
 
 			// Der Eintrag wird erzeugt
@@ -163,19 +194,46 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 			// Der Datentyp wird umgewandelt
 			converted, ok := data.Parms[x].Value.(string)
 			if !ok {
-				http.Error(w, "Datatype converting error: string", http.StatusBadRequest)
+				http.Error(w, "Datatype converting error: to enocoded string", http.StatusBadRequest)
 				return
 			}
 
-			// Die Daten werden mittels Base64 Dekodiert
-			decoded, err := base64.StdEncoding.DecodeString(converted)
-			if err != nil {
-				http.Error(w, "Die VM wurde nicht gefunden", http.StatusBadRequest)
+			// Es wird geprüft ob der String aus 2 teilen besteht, der este Teil gibt an welches Codec verwendet wird,
+			// der Zweite teil enthält die eigentlichen Daten
+			splitedValue := strings.Split("://", converted)
+			if len(splitedValue) != 2 {
+				http.Error(w, "Datatype converting error: invalid byte string coded", http.StatusBadRequest)
 				return
+			}
+
+			// Es wird geprüft ob es sich um ein zulässiges Codec handelt
+			var decodedDataSlice []byte
+			switch strings.ToLower(splitedValue[0]) {
+			case "base64":
+				decodedDataSlice, err = base64.StdEncoding.DecodeString(converted)
+				if err != nil {
+					http.Error(w, "Die VM wurde nicht gefunden", http.StatusBadRequest)
+					return
+				}
+			case "base32":
+				decodedDataSlice, err = base32.StdEncoding.DecodeString(converted)
+				if err != nil {
+					http.Error(w, "Die VM wurde nicht gefunden", http.StatusBadRequest)
+					return
+				}
+			case "hex":
+				decodedDataSlice, err = hex.DecodeString(converted)
+				if err != nil {
+					http.Error(w, "Die VM wurde nicht gefunden", http.StatusBadRequest)
+					return
+				}
+			case "base58":
+				decodedDataSlice = base58.Decode(converted)
+			default:
 			}
 
 			// Der Eintrag wird erzeugt
-			newEntry := &types.FunctionParameterCapsle{Value: decoded, CapsleType: "bytearray"}
+			newEntry := &types.FunctionParameterCapsle{Value: decodedDataSlice, CapsleType: "bytearray"}
 
 			// Die Daten werden hinzugefügt
 			extractedValues = append(extractedValues, newEntry)
@@ -199,14 +257,31 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Die Funktion wird aufgerufen
-	proc.LogPrint("RPC: &[%s]: call functions '%s'\n", vmid, foundFunction.GetName())
+	proc.LogPrint("RPC: &[%s]: call function '%s'\n", foundedVM.GetVMName(), foundFunction.GetName())
 	result, err := foundFunction.EnterFunctionCall(extractedValues...)
 	if err != nil {
-		fmt.Println(err)
+		proc.LogPrint("RPC: &[%s]: call function '%s' error\n\t%s\n", foundedVM.GetVMName(), foundFunction.GetName(), err)
 		http.Error(w, "Calling error", http.StatusBadRequest)
 		return
 	}
-	proc.LogPrintSuccs("RPC: &[%s]: function '%s' call, done\n", vmid, foundFunction.GetName())
+	proc.LogPrintSuccs("RPC: &[%s]: function '%s' call, done\n", foundedVM.GetVMName(), foundFunction.GetName())
 
-	_, _ = foundedVM, result
+	// Die Antwort wird erzeugt
+	response := &RPCResponse{Result: "success", Data: result}
+	bytedResponse, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Calling error", http.StatusBadRequest)
+		return
+	}
+
+	// Die Daten werden zurückgesendet
+	proc.LogPrint("RPC: &[%s]: sending function '%s' call response\n", foundedVM.GetVMName(), data.FunctionName)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(bytedResponse)
+	if err != nil {
+		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		return
+	}
+	proc.LogPrint("RPC: &[%s]: done\n", foundedVM.GetVMName())
 }

@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/btcsuite/btcutil v1.0.2
 	github.com/dlclark/regexp2 v1.7.0 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/gofrs/flock v0.8.1
