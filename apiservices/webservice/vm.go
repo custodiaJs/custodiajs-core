@@ -7,24 +7,6 @@ import (
 	"vnh1/types"
 )
 
-type SharedFunction struct {
-	Name      string   `json:"name"`
-	ParmTypes []string `json:"parmtypes"`
-}
-
-type SharedFunctions struct {
-	Public []SharedFunction `json:"public"`
-	Local  []SharedFunction `json:"local"`
-}
-
-type vmInfoResponse struct {
-	Name            string          `json:"name"`
-	Hash            string          `json:"hash"`
-	Modules         []string        `json:"modules"`
-	State           string          `json:"state"`
-	SharedFunctions SharedFunctions `json:"sharedfunctions"`
-}
-
 func (o *Webservice) vmInfo(w http.ResponseWriter, r *http.Request) {
 	// Setze den Content-Type der Antwort auf application/json.
 	w.Header().Set("Content-Type", "application/json")

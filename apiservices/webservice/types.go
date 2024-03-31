@@ -2,6 +2,16 @@ package webservice
 
 import "vnh1/types"
 
+type RpcRequest struct {
+	parms []types.FunctionParameterBundleInterface
+}
+
+type Webservice struct {
+	core types.CoreInterface
+}
+
+// JSON
+
 type RPCFunctionParameter struct {
 	Type  string      `json:"type"`
 	Value interface{} `json:"value"`
@@ -23,16 +33,26 @@ type RPCResponse struct {
 	Error  *string         `json:"error"`
 }
 
-type RpcRequest struct {
-	parms []types.FunctionParameterBundleInterface
-}
-
-type Webservice struct {
-	core types.CoreInterface
-}
-
 type Response struct {
 	Version          uint32   `json:"version"`
 	RemoteConsole    bool     `json:"remoteconsole"`
 	ScriptContainers []string `json:"scriptcontainers"`
+}
+
+type SharedFunction struct {
+	Name      string   `json:"name"`
+	ParmTypes []string `json:"parmtypes"`
+}
+
+type SharedFunctions struct {
+	Public []SharedFunction `json:"public"`
+	Local  []SharedFunction `json:"local"`
+}
+
+type vmInfoResponse struct {
+	Name            string          `json:"name"`
+	Hash            string          `json:"hash"`
+	Modules         []string        `json:"modules"`
+	State           string          `json:"state"`
+	SharedFunctions SharedFunctions `json:"sharedfunctions"`
 }
