@@ -6,13 +6,6 @@ import (
 	"net/http"
 )
 
-// Definiere eine Struktur, die das Format deiner JSON-Antwort repräsentiert.
-type Response struct {
-	Version          uint32   `json:"version"`
-	RemoteConsole    bool     `json:"remoteconsole"`
-	ScriptContainers []string `json:"scriptcontainers"`
-}
-
 func (o *Webservice) indexHandler(w http.ResponseWriter, r *http.Request) {
 	// Es werden alle Script Container extrahiert
 	scriptContainer := o.core.GetAllActiveScriptContainerIDs()

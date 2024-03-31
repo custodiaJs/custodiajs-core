@@ -9,10 +9,6 @@ import (
 	"vnh1/utils"
 )
 
-type Webservice struct {
-	core types.CoreInterface
-}
-
 func (o *Webservice) Serve(closeSignal chan struct{}) error {
 	// Die Basis Urls werden hinzugefügt
 	http.HandleFunc("/", o.indexHandler)

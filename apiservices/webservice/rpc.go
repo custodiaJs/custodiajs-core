@@ -16,22 +16,6 @@ import (
 	"github.com/btcsuite/btcutil/base58"
 )
 
-type RPCFunctionParameter struct {
-	Type  string      `json:"type"`
-	Value interface{} `json:"value"`
-}
-
-type RPCFunctionCall struct {
-	FunctionName string                 `json:"name"`
-	Parms        []RPCFunctionParameter `json:"parms"`
-}
-
-type RPCResponse struct {
-	Result string      `json:"result"`
-	Data   interface{} `json:"data"`
-	Error  *string     `json:"error"`
-}
-
 func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 	// Es wird eine neue Process Log Session erzeugt
 	proc := utils.NewProcLogSession()
@@ -103,7 +87,7 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Die Einzelnen Parameter werden geprüft und abgearbeitet
 	proc.LogPrint("RPC: &[%s]: convert function '%s' parameters\n", foundedVM.GetVMName(), foundFunction.GetName())
-	extractedValues := make([]*types.FunctionParameterCapsle, 0)
+	extractedValues := make([]types.FunctionParameterBundleInterface, 0)
 	for x := range foundFunction.GetParmTypes() {
 		// Es wird geprüft ob es sich bei dem Angefordeten Parameter um einen zulässigen Parameter handelt
 		if foundFunction.GetParmTypes()[x] != data.Parms[x].Type {
@@ -128,7 +112,7 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Der Eintrag wird erzeugt
-			newEntry := &types.FunctionParameterCapsle{Value: converted, CapsleType: "bool"}
+			newEntry := &FunctionParameterCapsle{Value: converted, CType: "bool"}
 
 			// Die Daten werden hinzugefügt
 			extractedValues = append(extractedValues, newEntry)
@@ -146,7 +130,7 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 				}
 
 				// Der Eintrag wird erzeugt
-				newEntry := &types.FunctionParameterCapsle{Value: onvertedfloat, CapsleType: "number"}
+				newEntry := &FunctionParameterCapsle{Value: onvertedfloat, CType: "number"}
 
 				// Die Daten werden hinzugefügt
 				extractedValues = append(extractedValues, newEntry)
@@ -154,7 +138,7 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Der Eintrag wird erzeugt
-			newEntry := &types.FunctionParameterCapsle{Value: converted, CapsleType: "number"}
+			newEntry := &FunctionParameterCapsle{Value: converted, CType: "number"}
 
 			// Die Daten werden hinzugefügt
 			extractedValues = append(extractedValues, newEntry)
@@ -167,7 +151,7 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Der Eintrag wird erzeugt
-			newEntry := &types.FunctionParameterCapsle{Value: converted, CapsleType: "string"}
+			newEntry := &FunctionParameterCapsle{Value: converted, CType: "string"}
 
 			// Die Daten werden hinzugefügt
 			extractedValues = append(extractedValues, newEntry)
@@ -180,13 +164,13 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Der Eintrag wird erzeugt
-			newEntry := &types.FunctionParameterCapsle{Value: converted, CapsleType: "array"}
+			newEntry := &FunctionParameterCapsle{Value: converted, CType: "array"}
 
 			// Die Daten werden hinzugefügt
 			extractedValues = append(extractedValues, newEntry)
 		case "object":
 			// Der Eintrag wird erzeugt
-			newEntry := &types.FunctionParameterCapsle{Value: data.Parms[x].Value, CapsleType: "object"}
+			newEntry := &FunctionParameterCapsle{Value: data.Parms[x].Value, CType: "object"}
 
 			// Die Daten werden hinzugefügt
 			extractedValues = append(extractedValues, newEntry)
@@ -233,7 +217,7 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Der Eintrag wird erzeugt
-			newEntry := &types.FunctionParameterCapsle{Value: decodedDataSlice, CapsleType: "bytearray"}
+			newEntry := &FunctionParameterCapsle{Value: decodedDataSlice, CType: "bytearray"}
 
 			// Die Daten werden hinzugefügt
 			extractedValues = append(extractedValues, newEntry)
@@ -249,7 +233,7 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 			timeObj := time.Unix(converted, 0)
 
 			// Der Eintrag wird erzeugt
-			newEntry := &types.FunctionParameterCapsle{Value: timeObj, CapsleType: "timestamp"}
+			newEntry := &FunctionParameterCapsle{Value: timeObj, CType: "timestamp"}
 
 			// Die Daten werden hinzugefügt
 			extractedValues = append(extractedValues, newEntry)
@@ -258,7 +242,7 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Die Funktion wird aufgerufen
 	proc.LogPrint("RPC: &[%s]: call function '%s'\n", foundedVM.GetVMName(), foundFunction.GetName())
-	result, err := foundFunction.EnterFunctionCall(extractedValues...)
+	result, err := foundFunction.EnterFunctionCall(&RpcRequest{parms: extractedValues})
 	if err != nil {
 		proc.LogPrint("RPC: &[%s]: call function '%s' error\n\t%s\n", foundedVM.GetVMName(), foundFunction.GetName(), err)
 		http.Error(w, "Calling error", http.StatusBadRequest)
@@ -267,7 +251,8 @@ func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
 	proc.LogPrintSuccs("RPC: &[%s]: function '%s' call, done\n", foundedVM.GetVMName(), foundFunction.GetName())
 
 	// Die Antwort wird erzeugt
-	response := &RPCResponse{Result: "success", Data: result}
+	responseData := RPCResponseData{DType: result.GetType(), Value: result.GetValue()}
+	response := &RPCResponse{Result: "success", Data: responseData}
 	bytedResponse, err := json.Marshal(response)
 	if err != nil {
 		http.Error(w, "Calling error", http.StatusBadRequest)

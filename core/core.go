@@ -13,28 +13,6 @@ import (
 	"vnh1/core/jsvm"
 )
 
-type CoreState int
-
-const (
-	NEW CoreState = iota
-	SERVING
-	SHUTDOWN
-	CLOSED
-)
-
-type Core struct {
-	hostIdentKeyDatabase *identkeydatabase.IdenKeyDatabase
-	vmsByID              map[string]*CoreVM
-	vmsByName            map[string]*CoreVM
-	vms                  []*CoreVM
-	vmSyncWaitGroup      sync.WaitGroup
-	apiSyncWaitGroup     sync.WaitGroup
-	apiSockets           []types.APISocketInterface
-	serviceSignaling     chan struct{}
-	holdOpenChan         chan struct{}
-	state                CoreState
-}
-
 func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 	// Die Datei wird zusammengefasst
 	fullPath := filepath.Join(vmDbEntry.Path, "main.js")

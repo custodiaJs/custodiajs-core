@@ -29,21 +29,35 @@ type APISocketInterface interface {
 type SharedLocalFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(parms ...*FunctionParameterCapsle) (interface{}, error)
+	EnterFunctionCall(RpcRequestInterface) (FunctionCallReturnInterface, error)
 }
 
 type SharedPublicFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(parms ...*FunctionParameterCapsle) (interface{}, error)
+	EnterFunctionCall(RpcRequestInterface) (FunctionCallReturnInterface, error)
 }
 
 type SharedFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(parms ...*FunctionParameterCapsle) (interface{}, error)
+	EnterFunctionCall(RpcRequestInterface) (FunctionCallReturnInterface, error)
 }
 
 type WatcherInterface interface {
 	Read() string
+}
+
+type RpcRequestInterface interface {
+	GetParms() []FunctionParameterBundleInterface
+}
+
+type FunctionParameterBundleInterface interface {
+	GetType() string
+	GetValue() interface{}
+}
+
+type FunctionCallReturnInterface interface {
+	GetType() string
+	GetValue() interface{}
 }
