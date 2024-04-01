@@ -9,7 +9,9 @@ import (
 
 func (o *WebGrpcService) Serve(closeSignal chan struct{}) error {
 	// Das gRPC Objekt wird erstellt
-	publicgrpc.RegisterRPCServiceServer(o.serverObj, &GrpcServer{core: o.core})
+	grpcObject := &GrpcServer{core: o.core}
+	publicgrpc.RegisterRPCServiceServer(o.serverObj, grpcObject)
+	publicgrpc.RegisterChatServiceServer(o.serverObj, grpcObject)
 
 	// Starte den gRPC-Server auf Port 50051
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", o.localAddress.LocalIP, o.localAddress.LocalPort))

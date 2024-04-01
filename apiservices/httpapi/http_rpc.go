@@ -244,7 +244,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Die Funktion wird aufgerufen
 	proc.LogPrint("RPC: &[%s]: call function '%s'\n", foundedVM.GetVMName(), foundFunction.GetName())
-	result, err := foundFunction.EnterFunctionCall(&RpcRequest{parms: extractedValues})
+	result, err := foundFunction.EnterFunctionCall(nil, &RpcRequest{parms: extractedValues})
 	if err != nil {
 		proc.LogPrint("RPC: &[%s]: call function '%s' error\n\t%s\n", foundedVM.GetVMName(), foundFunction.GetName(), err)
 		http.Error(w, "Calling error", http.StatusBadRequest)

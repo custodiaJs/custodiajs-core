@@ -43,7 +43,7 @@ func (o *SharedLocalFunction) GetParmTypes() []string {
 	return o.parmTypes
 }
 
-func (o *SharedLocalFunction) EnterFunctionCall(parms types.RpcRequestInterface) (goja.Value, error) {
+func (o *SharedLocalFunction) EnterFunctionCall(req types.RpcRequestData, parms types.RpcRequestInterface) (goja.Value, error) {
 	// Es wird geprüft ob die Angeforderte Anzahl an Parametern vorhanden ist
 	if len(parms.GetParms()) != len(o.parmTypes) {
 		return nil, fmt.Errorf("EnterFunctionCall: invalid parameters")
@@ -119,7 +119,7 @@ func (o *SharedPublicFunction) GetParmTypes() []string {
 	return o.parmTypes
 }
 
-func (o *SharedPublicFunction) EnterFunctionCall(parms types.RpcRequestInterface) (goja.Value, error) {
+func (o *SharedPublicFunction) EnterFunctionCall(req types.RpcRequestData, parms types.RpcRequestInterface) (goja.Value, error) {
 	// Es wird geprüft ob die Angeforderte Anzahl an Parametern vorhanden ist
 	if len(parms.GetParms()) != len(o.parmTypes) {
 		return nil, fmt.Errorf("EnterFunctionCall: invalid parameters")

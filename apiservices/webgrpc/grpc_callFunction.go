@@ -177,7 +177,7 @@ func (s *GrpcServer) CallFunction(ctx context.Context, in *publicgrpc.RPCFunctio
 
 	// Die Funktion wird aufgerufen
 	proc.LogPrint("gRPC: &[%s]: call function '%s'\n", foundedVM.GetVMName(), foundFunction.GetName())
-	result, err := foundFunction.EnterFunctionCall(&RpcRequest{parms: extractedValues})
+	result, err := foundFunction.EnterFunctionCall(nil, &RpcRequest{parms: extractedValues})
 	if err != nil {
 		proc.LogPrint("RPC: &[%s]: call function '%s' error\n\t%s\n", foundedVM.GetVMName(), foundFunction.GetName(), err)
 		return nil, fmt.Errorf("calling error")

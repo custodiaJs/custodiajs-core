@@ -31,19 +31,19 @@ type APISocketInterface interface {
 type SharedLocalFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(RpcRequestInterface) (goja.Value, error)
+	EnterFunctionCall(RpcRequestData, RpcRequestInterface) (goja.Value, error)
 }
 
 type SharedPublicFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(RpcRequestInterface) (goja.Value, error)
+	EnterFunctionCall(RpcRequestData, RpcRequestInterface) (goja.Value, error)
 }
 
 type SharedFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(RpcRequestInterface) (goja.Value, error)
+	EnterFunctionCall(RpcRequestData, RpcRequestInterface) (goja.Value, error)
 }
 
 type WatcherInterface interface {
@@ -52,6 +52,9 @@ type WatcherInterface interface {
 
 type RpcRequestInterface interface {
 	GetParms() []FunctionParameterBundleInterface
+}
+
+type RpcRequestData interface {
 }
 
 type FunctionParameterBundleInterface interface {

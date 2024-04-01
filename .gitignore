@@ -14,3 +14,4 @@ api/vm/client/*.js
 dist/
 
 tests/tests
+apiservices/webgrpc/grpc_stream.go

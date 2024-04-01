@@ -24,7 +24,8 @@ type WebGrpcService struct {
 }
 
 type GrpcServer struct {
-	publicgrpc.UnsafeRPCServiceServer
+	publicgrpc.UnimplementedRPCServiceServer
+	publicgrpc.UnimplementedChatServiceServer
 	core types.CoreInterface
 }
 
