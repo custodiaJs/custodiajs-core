@@ -4,6 +4,7 @@ import (
 	"crypto/x509"
 	"net"
 	"net/http"
+	"vnh1/grpc/publicgrpc"
 	"vnh1/types"
 
 	"github.com/soheilhy/cmux"
@@ -30,4 +31,13 @@ type Webservice struct {
 type LocalAddress struct {
 	LocalIP   string
 	LocalPort uint32
+}
+
+type GrpcServer struct {
+	publicgrpc.UnsafeRPCServiceServer
+}
+
+type FunctionParameterCapsle struct {
+	Value interface{}
+	CType string
 }

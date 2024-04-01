@@ -1,8 +1,8 @@
-package grpclib
+package webservice
 
 import (
-	context "context"
-	"vnh1/grpclib/publicgrpc"
+	"context"
+	"vnh1/grpc/publicgrpc"
 )
 
 func (s *GrpcServer) CallFunction(ctx context.Context, in *publicgrpc.RPCFunctionCall) (*publicgrpc.RPCResponse, error) {

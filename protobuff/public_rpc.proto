@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package publicgrpc;
-option go_package = "/grpclib/publicgrpc;publicgrpc";
+option go_package = "/grpc/publicgrpc;publicgrpc";
 
 // Importiert, da Timestamp und Struct verwendet werden.
 import "google/protobuf/timestamp.proto";

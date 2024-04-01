@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"vnh1/grpclib"
-	"vnh1/grpclib/publicgrpc"
+	"vnh1/grpc/publicgrpc"
 	"vnh1/utils"
 
 	"github.com/soheilhy/cmux"
@@ -105,7 +104,7 @@ func NewSpeficAddressWebservice(localIp string, localPort uint32, hostnames []st
 
 	// Erstellen und Starten des gRPC-Servers
 	grpcServer := grpc.NewServer()
-	publicgrpc.RegisterRPCServiceServer(grpcServer, &grpclib.GrpcServer{})
+	publicgrpc.RegisterRPCServiceServer(grpcServer, &GrpcServer{})
 
 	// Das Serverobjekt wird erzeugt
 	httpServer := &http.Server{Handler: serverMux}
