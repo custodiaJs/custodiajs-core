@@ -2,25 +2,37 @@ package webservice
 
 import (
 	"fmt"
-	"net/http"
 	"vnh1/types"
 )
 
 func (o *Webservice) Serve(closeSignal chan struct{}) error {
 	// Die Basis Urls werden hinzugefügt
-	http.HandleFunc("/", o.indexHandler)
+	o.serverMux.HandleFunc("/", o.indexHandler)
 
 	// Gibt die einzelnenen VM Informationen aus
-	http.HandleFunc("/vm", o.vmInfo)
+	o.serverMux.HandleFunc("/vm", o.vmInfo)
 
 	// Der VM-RPC Handler wird erstellt
-	http.HandleFunc("/rpc", o.vmRPCHandler)
+	o.serverMux.HandleFunc("/rpc", o.httpRPCHandler)
 
-	// Der Websocket Console Stream wird erzeugt
-	http.HandleFunc("/consolestream", o.handleConsoleStreamWebsocket)
+	// Der Websocket Console Stream wird hinzugefügt
+	// der Console stream ist nur auf dem Localhost verfügbar
+	if o.isLocalhost {
+		o.serverMux.HandleFunc("/vm/console", o.handleConsoleStreamWebsocket)
+	}
+
+	// Der Websocket gRPC Stream wird erzeugt
+	o.serverMux.HandleFunc("/grpc", o.handleGRPC)
 
 	// Der HTTP Server wird gestartet
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	go func() {
+		if err := o.serverObj.Serve(o.httpSocket); err != nil {
+			panic("Serve: " + err.Error())
+		}
+	}()
+
+	// Der Mux Server wird gestartet
+	if err := o.tcpMux.Serve(); err != nil {
 		return fmt.Errorf("Serve: " + err.Error())
 	}
 

@@ -16,9 +16,10 @@ import (
 	"github.com/btcsuite/btcutil/base58"
 )
 
-func (o *Webservice) vmRPCHandler(w http.ResponseWriter, r *http.Request) {
+func (o *Webservice) httpRPCHandler(w http.ResponseWriter, r *http.Request) {
 	// Es wird eine neue Process Log Session erzeugt
 	proc := utils.NewProcLogSession()
+	proc.LogPrint("RPC: new incomming request from '%s'\n", r.RemoteAddr)
 
 	// Es wird geprüft ob es sich um die POST Methode handelt
 	proc.LogPrint("RPC: validate incomming rpc request from '%s'\n", r.RemoteAddr)

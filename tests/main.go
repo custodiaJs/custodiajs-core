@@ -79,6 +79,11 @@ func printLocalHostTlsMetaData(cert *tls.Certificate) {
 }
 
 func main() {
+	// Compiler warnings
+	if !utils.CHECK_SSL_LOCALHOST_ENABLE {
+		fmt.Printf("Warning: SSL verification for localhost has been completely disabled during compilation.\nThis may lead to unexpected issues, as programs or websites might not be able to communicate with the VNH1 service anymore.\nIf you have downloaded and installed VNH1 and are seeing this message, please be aware that you are not using an official build.\n\n")
+	}
+
 	// Gibt an ob das Programm in einem Linux Container ausgeführt wird
 	isRunningInLinuxContainer := false
 
@@ -142,13 +147,20 @@ func main() {
 
 	// Der Localhost Webservice wird erzeugt
 	fmt.Println("Webservice (localhost): enabled")
-	localhostWebservice, err := webservice.NewLocalWebservice(true, true, hostCert)
+	localhostWebserviceV6, err := webservice.NewLocalWebservice("ipv6", 8080, hostCert)
+	if err != nil {
+		panic(err)
+	}
+	localhostWebserviceV4, err := webservice.NewLocalWebservice("ipv4", 8080, hostCert)
 	if err != nil {
 		panic(err)
 	}
 
 	// Der Localhost Webservice wird hinzugefügt
-	if err := core.AddAPISocket(localhostWebservice); err != nil {
+	if err := core.AddAPISocket(localhostWebserviceV6); err != nil {
+		panic(err)
+	}
+	if err := core.AddAPISocket(localhostWebserviceV4); err != nil {
 		panic(err)
 	}
 
