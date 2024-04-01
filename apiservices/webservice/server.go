@@ -2,6 +2,7 @@ package webservice
 
 import (
 	"fmt"
+	"log"
 	"vnh1/types"
 )
 
@@ -21,8 +22,12 @@ func (o *Webservice) Serve(closeSignal chan struct{}) error {
 		o.serverMux.HandleFunc("/vm/console", o.handleConsoleStreamWebsocket)
 	}
 
-	// Der Websocket gRPC Stream wird erzeugt
-	o.serverMux.HandleFunc("/grpc", o.handleGRPC)
+	// Hier fehlt die Registrierung Ihrer gRPC-Services
+	go func() {
+		if err := o.grpcServer.Serve(o.grpcSocket); err != nil {
+			log.Fatalf("Failed to serve gRPC: %v", err)
+		}
+	}()
 
 	// Der HTTP Server wird gestartet
 	go func() {

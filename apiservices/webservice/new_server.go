@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"vnh1/grpclib"
+	"vnh1/grpclib/publicgrpc"
 	"vnh1/utils"
 
 	"github.com/soheilhy/cmux"
+	"google.golang.org/grpc"
 )
 
 func NewLocalWebservice(family string, localport uint32, localCert *tls.Certificate) (*Webservice, error) {
@@ -90,12 +93,19 @@ func NewSpeficAddressWebservice(localIp string, localPort uint32, hostnames []st
 	// Wende die TLS-Konfiguration auf den Listener an
 	tlsListener := tls.NewListener(l, tlsConfig)
 
+	// Der CMux wird erstellt
 	tcpMux := cmux.New(tlsListener)
+
+	// Die CMux Sockets werden erstellt
 	grpcSocket := tcpMux.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
 	httpSocket := tcpMux.Match(cmux.HTTP1())
 
 	// Der Servermux Objekt wird erzeugt
 	serverMux := http.NewServeMux()
+
+	// Erstellen und Starten des gRPC-Servers
+	grpcServer := grpc.NewServer()
+	publicgrpc.RegisterRPCServiceServer(grpcServer, &grpclib.GrpcServer{})
 
 	// Das Serverobjekt wird erzeugt
 	httpServer := &http.Server{Handler: serverMux}
@@ -110,6 +120,7 @@ func NewSpeficAddressWebservice(localIp string, localPort uint32, hostnames []st
 		httpSocket:   httpSocket,
 		grpcSocket:   grpcSocket,
 		tcpMux:       tcpMux,
+		grpcServer:   grpcServer,
 		localAddress: &LocalAddress{LocalIP: localIp, LocalPort: localPort},
 	}
 

@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package publicgrpc;
+option go_package = "/grpclib/publicgrpc;publicgrpc";
+
+// Importiert, da Timestamp und Struct verwendet werden.
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+message RPCFunctionParameter {
+  string type = 1;
+
+  oneof value {
+    string stringValue = 2;
+    double numberValue = 3; // Kann Ganzzahlen und Fließkommazahlen repräsentieren
+    bool booleanValue = 4;
+    bytes bytesValue = 5;
+    google.protobuf.Timestamp timestampValue = 6;
+    google.protobuf.Struct objectValue = 7;
+    ArrayValue arrayValue = 8;
+  }
+}
+
+message ArrayValue {
+  repeated RPCFunctionParameter values = 1;
+}
+
+message RPCFunctionCall {
+  string functionName = 1;
+  repeated RPCFunctionParameter parms = 2;
+}
+
+message RPCResponseData {
+  string type = 1;
+
+  oneof value {
+    string stringValue = 2;
+    double numberValue = 3;
+    bool booleanValue = 4;
+    bytes bytesValue = 5;
+    google.protobuf.Timestamp timestampValue = 6;
+    google.protobuf.Struct objectValue = 7;
+    ArrayValue arrayValue = 8;
+  }
+}
+
+message RPCResponse {
+  string result = 1;
+  RPCResponseData data = 2;
+  string error = 3; // Optional in gRPC. Leerlassen, wenn kein Fehler vorliegt.
+}
+
+service RPCService {
+  rpc CallFunction (RPCFunctionCall) returns (RPCResponse) {}
+}
