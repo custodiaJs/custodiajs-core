@@ -1,11 +1,11 @@
-package webservice
+package webgrpc
 
 import (
 	"fmt"
 	"vnh1/types"
 )
 
-func (o *Webservice) SetupCore(coreObj types.CoreInterface) error {
+func (o *WebGrpcService) SetupCore(coreObj types.CoreInterface) error {
 	// Es wird geprüft ob der Core festgelegt wurde
 	if o.core != nil {
 		return fmt.Errorf("SetupCore: always linked with core")

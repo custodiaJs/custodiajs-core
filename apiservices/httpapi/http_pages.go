@@ -1,4 +1,4 @@
-package webservice
+package httpapi
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"vnh1/types"
 )
 
-func (o *Webservice) indexHandler(w http.ResponseWriter, r *http.Request) {
+func (o *HttpApiService) indexHandler(w http.ResponseWriter, r *http.Request) {
 	// Es werden alle Script Container extrahiert
 	scriptContainer := o.core.GetAllActiveScriptContainerIDs()
 
@@ -24,7 +24,7 @@ func (o *Webservice) indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (o *Webservice) vmInfo(w http.ResponseWriter, r *http.Request) {
+func (o *HttpApiService) vmInfo(w http.ResponseWriter, r *http.Request) {
 	// Setze den Content-Type der Antwort auf application/json.
 	w.Header().Set("Content-Type", "application/json")
 

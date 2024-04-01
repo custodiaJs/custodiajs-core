@@ -1,4 +1,4 @@
-package webservice
+package httpapi
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"nhooyr.io/websocket/wsjson"
 )
 
-func (o *Webservice) handleConsoleStreamWebsocket(w http.ResponseWriter, r *http.Request) {
+func (o *HttpApiService) handleConsoleStreamWebsocket(w http.ResponseWriter, r *http.Request) {
 	// Es wird geprüft ob es sich um einen iFrame aufruf handelt
 	if isRequestFromIframe(r) || isRequestFromJS(r) {
 		// Blockiere die Anfrage und sende einen 403 Forbidden Statuscode

@@ -1,4 +1,4 @@
-package webservice
+package httpapi
 
 type RPCFunctionParameter struct {
 	Type  string      `json:"type"`

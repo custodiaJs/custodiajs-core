@@ -1,19 +1,14 @@
-package webservice
+package httpapi
 
 import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"net"
 	"net/http"
-	"vnh1/grpc/publicgrpc"
 	"vnh1/utils"
-
-	"github.com/soheilhy/cmux"
-	"google.golang.org/grpc"
 )
 
-func NewLocalWebservice(family string, localport uint32, localCert *tls.Certificate) (*Webservice, error) {
+func NewLocalService(family string, localport uint32, localCert *tls.Certificate) (*HttpApiService, error) {
 	// Parse das Zertifikat aus dem Schlüsselpaar
 	x509Cert, err := x509.ParseCertificate(localCert.Certificate[0])
 	if err != nil {
@@ -36,7 +31,6 @@ func NewLocalWebservice(family string, localport uint32, localCert *tls.Certific
 		if utils.CHECK_SSL_LOCALHOST_ENABLE {
 			return nil, fmt.Errorf("NewLocalWebservice: " + err.Error())
 		}
-		fmt.Println("WARNING: The certificate used cannot be checked locally: ignored")
 	}
 
 	// Speichert alle Certs ab
@@ -45,14 +39,14 @@ func NewLocalWebservice(family string, localport uint32, localCert *tls.Certific
 	// Der Eigentliche Server wird estellt
 	switch family {
 	case "ipv4":
-		r, err := NewSpeficAddressWebservice("127.0.0.1", localport, localHostNames, localCert)
+		r, err := New("127.0.0.1", localport, localHostNames, localCert)
 		if err != nil {
 			return nil, fmt.Errorf("NewLocalWebservice: " + err.Error())
 		}
 		r.isLocalhost = true
 		return r, nil
 	case "ipv6":
-		r, err := NewSpeficAddressWebservice("[::1]", localport, localHostNames, localCert)
+		r, err := New("[::1]", localport, localHostNames, localCert)
 		if err != nil {
 			return nil, fmt.Errorf("NewLocalWebservice: " + err.Error())
 		}
@@ -63,7 +57,7 @@ func NewLocalWebservice(family string, localport uint32, localCert *tls.Certific
 	}
 }
 
-func NewSpeficAddressWebservice(localIp string, localPort uint32, hostnames []string, localCert *tls.Certificate) (*Webservice, error) {
+func New(localIp string, localPort uint32, hostnames []string, localCert *tls.Certificate) (*HttpApiService, error) {
 	// Parse das Zertifikat aus dem Schlüsselpaar
 	x509Cert, err := x509.ParseCertificate(localCert.Certificate[0])
 	if err != nil {
@@ -80,51 +74,33 @@ func NewSpeficAddressWebservice(localIp string, localPort uint32, hostnames []st
 	// Die Adresse wird erezugt
 	addr := fmt.Sprintf("%s:%d", localIp, localPort)
 
-	// Create the main listener.
-	l, err := net.Listen("tcp", addr)
-	if err != nil {
-		return nil, fmt.Errorf("NewSpeficAddressWebservice: " + err.Error())
-	}
-
 	// Erstelle eine TLS-Konfiguration
 	tlsConfig := &tls.Config{Certificates: []tls.Certificate{*localCert}}
-
-	// Wende die TLS-Konfiguration auf den Listener an
-	tlsListener := tls.NewListener(l, tlsConfig)
-
-	// Der CMux wird erstellt
-	tcpMux := cmux.New(tlsListener)
-
-	// Die CMux Sockets werden erstellt
-	grpcSocket := tcpMux.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
-	httpSocket := tcpMux.Match(cmux.HTTP1())
 
 	// Der Servermux Objekt wird erzeugt
 	serverMux := http.NewServeMux()
 
-	// Erstellen und Starten des gRPC-Servers
+	/* Erstellen und Starten des gRPC-Servers
 	grpcServer := grpc.NewServer()
-	publicgrpc.RegisterRPCServiceServer(grpcServer, &GrpcServer{})
+	//publicgrpc.RegisterRPCServiceServer(grpcServer, &GrpcServer{})
+	*/
 
 	// Das Serverobjekt wird erzeugt
-	httpServer := &http.Server{Handler: serverMux}
+	httpServer := &http.Server{Addr: addr, TLSConfig: tlsConfig, Handler: serverMux}
 
-	// Das Webservice Objekt wird zurückgegeben
-	webs := &Webservice{
+	// Das httpapiObjekt wird zurückgegeben
+	webs := &HttpApiService{
 		core:         nil,
 		cert:         x509Cert,
 		serverMux:    serverMux,
 		serverObj:    httpServer,
 		isLocalhost:  false,
-		httpSocket:   httpSocket,
-		grpcSocket:   grpcSocket,
-		tcpMux:       tcpMux,
-		grpcServer:   grpcServer,
+		tlsConfig:    tlsConfig,
 		localAddress: &LocalAddress{LocalIP: localIp, LocalPort: localPort},
 	}
 
 	// Log
-	fmt.Printf("New Webservice API-Socket created on: %s\n", addr)
+	fmt.Printf("New httpapi created on: %s\n", addr)
 
 	// Die Daten werden zurückgegeben
 	return webs, nil

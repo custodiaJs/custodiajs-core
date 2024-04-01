@@ -20,7 +20,6 @@ require (
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/gofrs/flock v0.8.1
 	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
-	github.com/soheilhy/cmux v0.1.5
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/grpc v1.62.1

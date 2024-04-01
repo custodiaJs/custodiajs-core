@@ -1,4 +1,4 @@
-package webservice
+package httpapi
 
 func (o *FunctionParameterCapsle) GetType() string {
 	return o.CType

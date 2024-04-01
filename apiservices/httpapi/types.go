@@ -1,40 +1,29 @@
-package webservice
+package httpapi
 
 import (
+	"crypto/tls"
 	"crypto/x509"
-	"net"
 	"net/http"
-	"vnh1/grpc/publicgrpc"
 	"vnh1/types"
-
-	"github.com/soheilhy/cmux"
-	"google.golang.org/grpc"
 )
 
 type RpcRequest struct {
 	parms []types.FunctionParameterBundleInterface
 }
 
-type Webservice struct {
+type HttpApiService struct {
 	core         types.CoreInterface
 	cert         *x509.Certificate
 	localAddress *LocalAddress
 	serverObj    *http.Server
 	serverMux    *http.ServeMux
-	httpSocket   net.Listener
-	grpcSocket   net.Listener
-	grpcServer   *grpc.Server
-	tcpMux       cmux.CMux
+	tlsConfig    *tls.Config
 	isLocalhost  bool
 }
 
 type LocalAddress struct {
 	LocalIP   string
 	LocalPort uint32
-}
-
-type GrpcServer struct {
-	publicgrpc.UnsafeRPCServiceServer
 }
 
 type FunctionParameterCapsle struct {

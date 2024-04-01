@@ -1,4 +1,4 @@
-package webservice
+package httpapi
 
 import (
 	"encoding/base32"
@@ -16,7 +16,7 @@ import (
 	"github.com/btcsuite/btcutil/base58"
 )
 
-func (o *Webservice) httpRPCHandler(w http.ResponseWriter, r *http.Request) {
+func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) {
 	// Es wird eine neue Process Log Session erzeugt
 	proc := utils.NewProcLogSession()
 	proc.LogPrint("RPC: new incomming request from '%s'\n", r.RemoteAddr)

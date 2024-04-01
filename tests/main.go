@@ -10,7 +10,8 @@ import (
 	"runtime"
 	"sync"
 	"syscall"
-	"vnh1/apiservices/webservice"
+	"vnh1/apiservices/httpapi"
+	"vnh1/apiservices/webgrpc"
 	"vnh1/core"
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
@@ -145,22 +146,41 @@ func main() {
 		panic(err)
 	}
 
-	// Der Localhost Webservice wird erzeugt
-	fmt.Println("Webservice (localhost): enabled")
-	localhostWebserviceV6, err := webservice.NewLocalWebservice("ipv6", 8080, hostCert)
+	// Der Localhost httpapi wird erzeugt
+	fmt.Println("httpapi (localhost): enabled")
+	localhostWebserviceV6, err := httpapi.NewLocalService("ipv6", 8080, hostCert)
 	if err != nil {
 		panic(err)
 	}
-	localhostWebserviceV4, err := webservice.NewLocalWebservice("ipv4", 8080, hostCert)
+	localhostWebserviceV4, err := httpapi.NewLocalService("ipv4", 8080, hostCert)
 	if err != nil {
 		panic(err)
 	}
 
-	// Der Localhost Webservice wird hinzugefügt
+	// Der Localhost httpapi wird hinzugefügt
 	if err := core.AddAPISocket(localhostWebserviceV6); err != nil {
 		panic(err)
 	}
 	if err := core.AddAPISocket(localhostWebserviceV4); err != nil {
+		panic(err)
+	}
+
+	// Der grpcservice wird erzeugt
+	fmt.Println("grpcapi (localhost): enabled")
+	localhostGrpcServiceV6, err := webgrpc.NewLocalService("ipv6", 8081, hostCert)
+	if err != nil {
+		panic(err)
+	}
+	localhostGrpcServiceV4, err := webgrpc.NewLocalService("ipv4", 8081, hostCert)
+	if err != nil {
+		panic(err)
+	}
+
+	// Der Localhost grpcservice wird hinzugefügt
+	if err := core.AddAPISocket(localhostGrpcServiceV6); err != nil {
+		panic(err)
+	}
+	if err := core.AddAPISocket(localhostGrpcServiceV4); err != nil {
 		panic(err)
 	}
 

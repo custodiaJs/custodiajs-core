@@ -47,7 +47,7 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 }
 
 func (o *Core) AddAPISocket(apiSocket types.APISocketInterface) error {
-	// Der Core wird in dem API-Socket Registriert
+	// Der Core wird in dem  Registriert
 	err := apiSocket.SetupCore(o)
 	if err != nil {
 		return fmt.Errorf("AddAPISocket: ")
