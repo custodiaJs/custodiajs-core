@@ -43,7 +43,7 @@ func (o *SharedLocalFunction) GetParmTypes() []string {
 	return o.parmTypes
 }
 
-func (o *SharedLocalFunction) EnterFunctionCall(parms types.RpcRequestInterface) (types.FunctionCallReturnInterface, error) {
+func (o *SharedLocalFunction) EnterFunctionCall(parms types.RpcRequestInterface) (goja.Value, error) {
 	// Es wird geprüft ob die Angeforderte Anzahl an Parametern vorhanden ist
 	if len(parms.GetParms()) != len(o.parmTypes) {
 		return nil, fmt.Errorf("EnterFunctionCall: invalid parameters")
@@ -107,33 +107,8 @@ func (o *SharedLocalFunction) EnterFunctionCall(parms types.RpcRequestInterface)
 		return nil, fmt.Errorf("EnterFunctionCall: " + err.Error())
 	}
 
-	// Der Rückgabewert wird ermittelt und geprüft
-	var resultReturn types.FunctionCallReturnInterface
-	if result == nil {
-		resultReturn = &FunctionCallReturn{CType: "null", Value: nil}
-	} else if result.ExportType() == goja.Undefined().ExportType() && result.Export() == nil {
-		resultReturn = &FunctionCallReturn{CType: "undefined", Value: nil}
-	} else {
-		switch result.ExportType().Kind() {
-		case reflect.Bool:
-			resultReturn = &FunctionCallReturn{CType: "boolean", Value: result.ToBoolean()}
-		case reflect.Int64:
-			resultReturn = &FunctionCallReturn{CType: "number", Value: result.ToInteger()}
-		case reflect.Float64:
-			resultReturn = &FunctionCallReturn{CType: "number", Value: result.ToFloat()}
-		case reflect.String:
-			resultReturn = &FunctionCallReturn{CType: "string", Value: result.ToString()}
-		case reflect.Array:
-			resultReturn = &FunctionCallReturn{CType: "array", Value: result.Export()}
-		case reflect.Map:
-			resultReturn = &FunctionCallReturn{CType: "object", Value: result.ToBoolean()}
-		default:
-			return nil, fmt.Errorf("EnterFunctionCall: unsupported datatype")
-		}
-	}
-
 	// Das Ergebniss wird zurückgegeben
-	return resultReturn, nil
+	return result, nil
 }
 
 func (o *SharedPublicFunction) GetName() string {
@@ -144,7 +119,7 @@ func (o *SharedPublicFunction) GetParmTypes() []string {
 	return o.parmTypes
 }
 
-func (o *SharedPublicFunction) EnterFunctionCall(parms types.RpcRequestInterface) (types.FunctionCallReturnInterface, error) {
+func (o *SharedPublicFunction) EnterFunctionCall(parms types.RpcRequestInterface) (goja.Value, error) {
 	// Es wird geprüft ob die Angeforderte Anzahl an Parametern vorhanden ist
 	if len(parms.GetParms()) != len(o.parmTypes) {
 		return nil, fmt.Errorf("EnterFunctionCall: invalid parameters")
@@ -176,31 +151,6 @@ func (o *SharedPublicFunction) EnterFunctionCall(parms types.RpcRequestInterface
 		return nil, fmt.Errorf("EnterFunctionCall: " + err.Error())
 	}
 
-	// Der Rückgabewert wird ermittelt und geprüft
-	var resultReturn *FunctionCallReturn
-	if result == nil {
-		resultReturn = &FunctionCallReturn{CType: "null", Value: nil}
-	} else if result.ExportType() == goja.Undefined().ExportType() && result.Export() == nil {
-		resultReturn = &FunctionCallReturn{CType: "undefined", Value: nil}
-	} else {
-		switch result.ExportType().Kind() {
-		case reflect.Bool:
-			resultReturn = &FunctionCallReturn{CType: "boolean", Value: result.ToBoolean()}
-		case reflect.Int64:
-			resultReturn = &FunctionCallReturn{CType: "number", Value: result.ToInteger()}
-		case reflect.Float64:
-			resultReturn = &FunctionCallReturn{CType: "number", Value: result.ToFloat()}
-		case reflect.String:
-			resultReturn = &FunctionCallReturn{CType: "string", Value: result.ToString()}
-		case reflect.Array:
-			resultReturn = &FunctionCallReturn{CType: "array", Value: result.Export()}
-		case reflect.Map:
-			resultReturn = &FunctionCallReturn{CType: "object", Value: result.ToBoolean()}
-		default:
-			return nil, fmt.Errorf("EnterFunctionCall: unsupported datatype")
-		}
-	}
-
 	// Das Ergebniss wird zurückgegeben
-	return resultReturn, nil
+	return result, nil
 }

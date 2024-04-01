@@ -1,5 +1,7 @@
 package types
 
+import "github.com/dop251/goja"
+
 type JsVmInterface interface {
 	GetPublicShareddFunctions() []SharedPublicFunctionInterface
 	GetLocalShareddFunctions() []SharedLocalFunctionInterface
@@ -29,19 +31,19 @@ type APISocketInterface interface {
 type SharedLocalFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(RpcRequestInterface) (FunctionCallReturnInterface, error)
+	EnterFunctionCall(RpcRequestInterface) (goja.Value, error)
 }
 
 type SharedPublicFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(RpcRequestInterface) (FunctionCallReturnInterface, error)
+	EnterFunctionCall(RpcRequestInterface) (goja.Value, error)
 }
 
 type SharedFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(RpcRequestInterface) (FunctionCallReturnInterface, error)
+	EnterFunctionCall(RpcRequestInterface) (goja.Value, error)
 }
 
 type WatcherInterface interface {
@@ -53,11 +55,6 @@ type RpcRequestInterface interface {
 }
 
 type FunctionParameterBundleInterface interface {
-	GetType() string
-	GetValue() interface{}
-}
-
-type FunctionCallReturnInterface interface {
 	GetType() string
 	GetValue() interface{}
 }

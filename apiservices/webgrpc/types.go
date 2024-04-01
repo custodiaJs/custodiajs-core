@@ -25,4 +25,14 @@ type WebGrpcService struct {
 
 type GrpcServer struct {
 	publicgrpc.UnsafeRPCServiceServer
+	core types.CoreInterface
+}
+
+type FunctionParameterCapsle struct {
+	Value interface{}
+	CType string
+}
+
+type RpcRequest struct {
+	parms []types.FunctionParameterBundleInterface
 }

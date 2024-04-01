@@ -8,16 +8,16 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 
 message RPCFunctionParameter {
-  string type = 1;
-
   oneof value {
-    string stringValue = 2;
-    double numberValue = 3; // Kann Ganzzahlen und Fließkommazahlen repräsentieren
-    bool booleanValue = 4;
-    bytes bytesValue = 5;
-    google.protobuf.Timestamp timestampValue = 6;
-    google.protobuf.Struct objectValue = 7;
-    ArrayValue arrayValue = 8;
+    string stringValue = 1;
+    int64 int64Value = 2;
+    uint64 uint64Value = 3;
+    double floatValue = 4;
+    bool booleanValue = 5;
+    bytes bytesValue = 6;
+    google.protobuf.Timestamp timestampValue = 7;
+    google.protobuf.Struct objectValue = 8;
+    ArrayValue arrayValue = 9;
   }
 }
 
@@ -26,16 +26,16 @@ message ArrayValue {
 }
 
 message RPCFunctionCall {
-  string functionName = 1;
-  repeated RPCFunctionParameter parms = 2;
+  string containerId = 1;
+  string functionName = 2;
+  repeated RPCFunctionParameter parms = 3;
 }
 
 message RPCResponseData {
-  string type = 1;
-
   oneof value {
-    string stringValue = 2;
-    double numberValue = 3;
+    string stringValue = 1;
+    int64 int64Value = 2;
+    double floatValue = 3;
     bool booleanValue = 4;
     bytes bytesValue = 5;
     google.protobuf.Timestamp timestampValue = 6;

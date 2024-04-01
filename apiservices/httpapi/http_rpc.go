@@ -14,6 +14,7 @@ import (
 	"vnh1/utils"
 
 	"github.com/btcsuite/btcutil/base58"
+	"github.com/dop251/goja"
 )
 
 func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) {
@@ -251,8 +252,47 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	proc.LogPrintSuccs("RPC: &[%s]: function '%s' call, done\n", foundedVM.GetVMName(), foundFunction.GetName())
 
+	// Die Antwortdaten werden Extrahiert
+	var responseData RPCResponseData
+	if result == nil {
+		responseData = RPCResponseData{DType: "null", Value: nil}
+	} else if result.ExportType() == goja.Undefined().ExportType() && result.Export() == nil {
+		responseData = RPCResponseData{DType: "undefined", Value: nil}
+	} else {
+		switch result.ExportType().Kind() {
+		case reflect.Bool:
+			responseData = RPCResponseData{DType: "boolean", Value: result.ToBoolean()}
+		case reflect.Int64:
+			responseData = RPCResponseData{DType: "number", Value: result.ToInteger()}
+		case reflect.Float64:
+			responseData = RPCResponseData{DType: "number", Value: result.ToFloat()}
+		case reflect.String:
+			responseData = RPCResponseData{DType: "string", Value: result.String()}
+		case reflect.Slice:
+			slicedObject, isConverted := result.Export().([]interface{})
+			if !isConverted {
+				http.Error(w, "invalid object datatype, slice", http.StatusBadRequest)
+				return
+			}
+			responseData = RPCResponseData{DType: "array", Value: slicedObject}
+		case reflect.Map:
+			mapObjected, isConverted := result.Export().(map[string]interface{})
+			if !isConverted {
+				http.Error(w, "invalid object datatype, object", http.StatusBadRequest)
+				return
+			}
+			responseData = RPCResponseData{DType: "object", Value: mapObjected}
+		case reflect.Func:
+			http.Error(w, "function return not allowed in rpc post request", http.StatusBadRequest)
+			return
+		default:
+			fmt.Println(result.ExportType().Kind())
+			http.Error(w, "Calling error a", http.StatusBadRequest)
+			return
+		}
+	}
+
 	// Die Antwort wird erzeugt
-	responseData := RPCResponseData{DType: result.GetType(), Value: result.GetValue()}
 	response := &RPCResponse{Result: "success", Data: responseData}
 	bytedResponse, err := json.Marshal(response)
 	if err != nil {
