@@ -55,7 +55,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Es wird versucht den Body einzulesen
-	data, err := extractRpcBody(request.ContentType, r.Body)
+	data, err := extractHttpRpcBody(request.ContentType, r.Body)
 	if err != nil {
 		errorResponse(request.ContentType, w, "invalid body data")
 		proc.LogPrint("RPC: failed, invalid request\n")

@@ -117,7 +117,7 @@ func hasRefererOrXRequestedWith(r *RequestData) bool {
 	return getRefererOrXRequestedWith(r) != ""
 }
 
-func extractRpcBody(requestContentType types.HttpRequestContentType, body io.ReadCloser) (*RPCFunctionCall, error) {
+func extractHttpRpcBody(requestContentType types.HttpRequestContentType, body io.ReadCloser) (*RPCFunctionCall, error) {
 	var data *RPCFunctionCall
 	switch requestContentType {
 	case types.HTTP_CONTENT_CBOR:
