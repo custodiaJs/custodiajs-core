@@ -1,15 +1,38 @@
 package httpapi
 
-import "net/http"
+import (
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+	"vnh1/types"
 
-func validateRequestAndGetVMID(methode string, w http.ResponseWriter, r *http.Request) (string, bool) {
+	"github.com/fxamacker/cbor/v2"
+)
+
+func validateRequestAndGetRequestData(methode string, r *http.Request) (*RequestData, error) {
 	// Es wird geprüft ob es sich um die POST Methode handelt
 	if r.Method != methode {
-		// Set the 'Allow' header to indicate that only POST is allowed
-		w.Header().Set("Allow", "POST")
+		return nil, fmt.Errorf("invalid allow methode")
+	}
 
-		// Der Vorgang wird beendet
-		return "", false
+	// Es wird geprüft ob eine TLS Verbindung vorhanden ist
+	if r.TLS == nil {
+		return nil, fmt.Errorf("ssl needed")
+	}
+
+	// Der Content Typ wird geprüft
+	var contentType types.HttpRequestContentType
+	switch r.Header.Get("content-type") {
+	case "application/json":
+		contentType = types.HTTP_CONTENT_JSON
+	case "application/cbor":
+		contentType = types.HTTP_CONTENT_CBOR
+	default:
+		return nil, fmt.Errorf("unsuported content type")
 	}
 
 	// Es wird geprüft ob der VM Query angegeben wurde
@@ -17,50 +40,100 @@ func validateRequestAndGetVMID(methode string, w http.ResponseWriter, r *http.Re
 
 	// Prüfe, ob mehr als ein Query-Parameter vorhanden ist oder der Parameter 'name' nicht existiert oder mehr als einen Wert hat.
 	if len(queryParams) != 1 {
-		http.Error(w, "Anfrage muss genau einen Query-Parameter 'name' mit genau einem Wert enthalten", http.StatusBadRequest)
-		return "", false
+		return nil, fmt.Errorf("invalid query len")
 	}
 
 	// Prüfen, ob 'name' existiert und genau einen Wert hat.
 	value, ok := queryParams["id"]
 	if !ok || len(queryParams["id"]) != 1 {
-		http.Error(w, "Anfrage muss genau einen Query-Parameter 'name' mit genau einem Wert enthalten", http.StatusBadRequest)
-		return "", false
+		return nil, fmt.Errorf("invalid query parm")
 	}
 
 	// Die ID wird geprüft
 	if len(value) != 1 {
-		http.Error(w, "Bad Request: Der Wert des 'vm'-Parameters muss genau 64 Zeichen lang sein", http.StatusBadRequest)
-		return "", false
+		return nil, fmt.Errorf("invalid query parm")
 	}
 	if len(value[0]) != 64 {
-		http.Error(w, "Bad Request: Der Wert des 'vm'-Parameters muss genau 64 Zeichen lang sein", http.StatusBadRequest)
-		return "", false
+		return nil, fmt.Errorf("invalid query parm")
+	}
+
+	// Es wird geprüft ob es sich um einen Hexwert handelt
+	decodedId, err := hex.DecodeString(value[0])
+	if err != nil {
+		return nil, fmt.Errorf("invalid query parm")
+	}
+
+	// Der String wird zurückerstellt
+	recodedHexStr := hex.EncodeToString(decodedId)
+
+	// Das Rückgabe Objekt wird erstellt
+	returnObj := &RequestData{
+		TransportProtocol: types.HTTP_JSON,
+		Source:            r.RemoteAddr,
+		ContentType:       contentType,
+		Cookies:           r.Cookies(),
+		XRequestedWith:    r.Header.Get("X-Requested-With"),
+		Referer:           r.Header.Get("Referer"),
+		Origin:            r.Header.Get("Origin"),
+		VmId:              strings.ToLower(recodedHexStr),
+		TLS:               r.TLS,
 	}
 
 	// Die VM ID wird zurückgegeben
-	return value[0], true
+	return returnObj, nil
 }
 
-func validatePOSTRequestAndGetVMId(w http.ResponseWriter, r *http.Request) (string, bool) {
-	return validateRequestAndGetVMID("POST", w, r)
+func validatePOSTRequestAndGetRequestData(r *http.Request) (*RequestData, error) {
+	return validateRequestAndGetRequestData("POST", r)
 }
 
-func validateGETRequestAndGetVMId(w http.ResponseWriter, r *http.Request) (string, bool) {
-	return validateRequestAndGetVMID("GET", w, r)
+func validateGETRequestAndGetRequestData(r *http.Request) (*RequestData, error) {
+	return validateRequestAndGetRequestData("GET", r)
 }
 
-func validateWSRequestAndGetVMId(w http.ResponseWriter, r *http.Request) (string, bool) {
-	return validateRequestAndGetVMID("GET", w, r)
+func validateWSRequestAndGetRequestData(r *http.Request) (*RequestData, error) {
+	return validateRequestAndGetRequestData("GET", r)
 }
 
-func isRequestFromIframe(r *http.Request) bool {
-	referer := r.Header.Get("Referer")
-	return referer != "" && referer != r.URL.String()
+func getRefererOrXRequestedWith(r *RequestData) string {
+	if r.Referer != "" {
+		o, err := url.Parse(r.Referer)
+		if err != nil {
+			return ""
+		}
+		return o.Host
+	}
+	if r.XRequestedWith != "" {
+		o, err := url.Parse(r.XRequestedWith)
+		if err != nil {
+			return ""
+		}
+		return o.Host
+	}
+	return ""
 }
 
-func isRequestFromJS(r *http.Request) bool {
-	// Überprüfe den X-Requested-With Header, typischerweise gesetzt für AJAX-Anfragen
-	requestedWith := r.Header.Get("X-Requested-With")
-	return requestedWith == "XMLHttpRequest"
+func hasRefererOrXRequestedWith(r *RequestData) bool {
+	return getRefererOrXRequestedWith(r) != ""
+}
+
+func extractRpcBody(requestContentType types.HttpRequestContentType, body io.ReadCloser) (*RPCFunctionCall, error) {
+	var data *RPCFunctionCall
+	switch requestContentType {
+	case types.HTTP_CONTENT_CBOR:
+		body, err := io.ReadAll(body)
+		if err != nil {
+			return nil, fmt.Errorf("extractRpcBody: " + err.Error())
+		}
+		if err := cbor.Unmarshal(body, &data); err != nil {
+			return nil, fmt.Errorf("extractRpcBody: " + err.Error())
+		}
+	case types.HTTP_CONTENT_JSON:
+		if err := json.NewDecoder(body).Decode(&data); err != nil {
+			return nil, fmt.Errorf("extractRpcBody: " + err.Error())
+		}
+	default:
+		return nil, fmt.Errorf("extractRpcBody: invalid content data")
+	}
+	return data, nil
 }

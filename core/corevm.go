@@ -2,19 +2,11 @@ package core
 
 import (
 	"fmt"
+	"strings"
 	"sync"
-	"vnh1/core/jsvm"
-	"vnh1/core/vmdb"
 	"vnh1/types"
+	"vnh1/utils"
 )
-
-type CoreVM struct {
-	*jsvm.JsVM
-	vmDbEntry      *vmdb.VmDBEntry
-	jsMainFilePath string
-	jsCode         string
-	vmState        types.VmState
-}
 
 func (o *CoreVM) GetVMName() string {
 	return o.vmDbEntry.GetVMName()
@@ -47,12 +39,21 @@ func (o *CoreVM) serveGorutine(syncWaitGroup *sync.WaitGroup) error {
 	// Die VM wird als Startend Markiert
 	o.vmState = types.Starting
 
+	// Es wird versucht den MainCode einzulesen
+	mainCode := o.vmDbEntry.GetMainCodeFile()
+
+	// Es wird versucht den Inhalt der Datei zu laden
+	scriptContent, err := mainCode.GetContent()
+	if err != nil {
+		return fmt.Errorf("CoreVM->serveGorutine: " + err.Error())
+	}
+
 	// Diese Funktion wird als Goroutine ausgeführt
-	go func(item *CoreVM) {
+	go func(item *CoreVM, scriptContent []byte) {
 		o.vmState = types.Running
-		item.RunScript(item.jsCode)
+		item.RunScript(string(scriptContent))
 		syncWaitGroup.Done()
-	}(o)
+	}(o, scriptContent)
 
 	// Es ist kein Fehler aufgetreten
 	return nil
@@ -72,6 +73,27 @@ func (o *CoreVM) GetWhitelist() []types.TransportWhitelistVmEntryInterface {
 
 func (o *CoreVM) GetMemberCertKeyIds() []string {
 	return o.vmDbEntry.GetMemberCertKeyIds()
+}
+
+func (o *CoreVM) ValidateRPCRequestSource(soruce string) bool {
+	// Es wird geprüft ob es es einen Global Wildcard eintrag gib
+	if _, hasWildCard := o.vmDbEntry.GetAllowedHttpSources()["*"]; hasWildCard {
+		return true
+	}
+
+	// Es wird geprüft ob es für diesen Host einen Eintrag gibt
+	if _, checkresult := o.vmDbEntry.GetAllowedHttpSources()[strings.ToLower(soruce)]; checkresult {
+		return true
+	}
+
+	// Es wird eine mögliche Whitelist erstellt
+	whitelist := make([]string, 0)
+	for item := range o.vmDbEntry.GetAllowedHttpSources() {
+		whitelist = append(whitelist, item)
+	}
+
+	// Es wird geprüft ob die Quelldomain sich durch die Whitelist bestätigen lässt, das ergebniss wird zurückgegeben
+	return utils.CheckHostInWhitelist(strings.ToLower(soruce), whitelist)
 }
 
 func (o *CoreVM) GetConsoleOutputWatcher() types.WatcherInterface {

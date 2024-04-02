@@ -23,6 +23,7 @@ type CoreVMInterface interface {
 	GetConsoleOutputWatcher() WatcherInterface
 	GetAllSharedFunctions() []SharedFunctionInterface
 	GetWhitelist() []TransportWhitelistVmEntryInterface
+	ValidateRPCRequestSource(soruce string) bool
 	GetMemberCertKeyIds() []string
 	GetStartingTimestamp() uint64
 	GetState() VmState

@@ -3,20 +3,29 @@ package core
 import (
 	"sync"
 	"vnh1/core/identkeydatabase"
+	"vnh1/core/jsvm"
+	"vnh1/core/vmdb"
 	"vnh1/types"
 )
 
 type Core struct {
 	hostIdentKeyDatabase *identkeydatabase.IdenKeyDatabase
-	vmsByID              map[string]*CoreVM
-	vmsByName            map[string]*CoreVM
-	vms                  []*CoreVM
+	apiSockets           []types.APISocketInterface
 	vmSyncWaitGroup      sync.WaitGroup
 	apiSyncWaitGroup     sync.WaitGroup
-	apiSockets           []types.APISocketInterface
+	state                types.CoreState
+	vms                  []*CoreVM
+	vmsByID              map[string]*CoreVM
+	vmsByName            map[string]*CoreVM
 	serviceSignaling     chan struct{}
 	holdOpenChan         chan struct{}
-	state                types.CoreState
+	objectMutex          *sync.Mutex
+}
+
+type CoreVM struct {
+	*jsvm.JsVM
+	vmDbEntry *vmdb.VmDBEntry
+	vmState   types.VmState
 }
 
 type TransportWhitelistVmEntry struct {

@@ -4,7 +4,6 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -20,35 +19,54 @@ import (
 func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) {
 	// Es wird eine neue Process Log Session erzeugt
 	proc := utils.NewProcLogSession()
-	proc.LogPrint("RPC: new incomming request from '%s'\n", r.RemoteAddr)
 
 	// Es wird geprüft ob es sich um die POST Methode handelt
-	proc.LogPrint("RPC: validate incomming rpc request from '%s'\n", r.RemoteAddr)
-	vmid, isValidateRequest := validatePOSTRequestAndGetVMId(w, r)
-	if !isValidateRequest {
+	proc.LogPrint("RPC: validate incomming remote function call request from '%s'\n", r.RemoteAddr)
+	request, err := validatePOSTRequestAndGetRequestData(r)
+	if err != nil {
 		// Set the 'Allow' header to indicate that only POST is allowed
 		w.Header().Set("Allow", "POST")
 
 		// Send the HTTP status code 405 Method Not Allowed
-		http.Error(w, "405 Method Not Allowed: Only POST method is allowed", http.StatusMethodNotAllowed)
+		http.Error(w, err.Error(), http.StatusMethodNotAllowed)
 
 		// Der Vorgang wird beendet
 		return
 	}
 
 	// Es wird geprüft ob es sich um eine bekannte VM handelt
-	proc.LogPrint("RPC: searching script container '%s'\n", vmid)
-	foundedVM, err := o.core.GetScriptContainerVMByID(vmid)
+	proc.LogPrint("RPC: determine the script container '%s'\n", strings.ToUpper(request.VmId))
+	foundedVM, err := o.core.GetScriptContainerVMByID(request.VmId)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Die VM wurde nicht gefunden", http.StatusBadRequest)
+		proc.LogPrint("RPC: determine the script container '%s' failed, unkown script vm container\n", strings.ToUpper(request.VmId))
+		errorResponse(request.ContentType, w, err.Error())
+		proc.LogPrint("RPC: failed\n")
 		return
 	}
 
-	// Es wird versucht den Datensatz einzulesen
-	var data RPCFunctionCall
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+	// Es wird geprüft ob es sich um eine WebRequest aus einem Webbrowser handelt,
+	// wenn ja wird ermittelt ob es sich um eine Zulässige Quelle handelt,
+	// wenn es sich nicht um eine zulässige Quelle handelt, wird der Vorgang abgebrochen.
+	requestHttpSource := getRefererOrXRequestedWith(request)
+	if hasRefererOrXRequestedWith(request) && !foundedVM.ValidateRPCRequestSource(requestHttpSource) {
+		proc.LogPrint("RPC: process aborted, not allowed request websource '%s'\n", getRefererOrXRequestedWith(request))
+		errorResponse(request.ContentType, w, "not allowed request from webresource")
+		return
+	}
+
+	// Es wird versucht den Body einzulesen
+	data, err := extractRpcBody(request.ContentType, r.Body)
+	if err != nil {
+		errorResponse(request.ContentType, w, "invalid body data")
+		proc.LogPrint("RPC: failed, invalid request\n")
+		return
+	}
+
+	// Es wird geprüft ob es sich um einen Zulässigen Funktionsnamen handelt
+	// Es wird geprüft, ob der Funktionsname korrekt ist
+	if !utils.ValidateFunctionName(data.FunctionName) {
+		errorResponse(request.ContentType, w, "invalid function name")
+		proc.LogPrint("RPC: failed, invalid function name\n")
 		return
 	}
 
@@ -56,7 +74,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 	defer r.Body.Close()
 
 	// Es wird versucht die Passende Funktion zu ermitteln
-	proc.LogPrint("RPC: &[%s]: searching function '%s'\n", foundedVM.GetVMName(), data.FunctionName)
+	proc.LogPrint("RPC: &[%s]: determine the function '%s'\n", foundedVM.GetVMName(), data.FunctionName)
 	var foundFunction types.SharedFunctionInterface
 	for _, item := range foundedVM.GetLocalSharedFunctions() {
 		if item.GetName() == data.FunctionName {
@@ -65,7 +83,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	// Es wird geprüft ob eine Funktion gefunden wurde
+	// Es wird geprüft ob eine Funktion gefunden wurde, wenn nicht werden die Öffentlichen Funktionen durchsucht
 	if foundFunction == nil {
 		for _, item := range foundedVM.GetPublicSharedFunctions() {
 			if item.GetName() == data.FunctionName {
@@ -77,23 +95,25 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Sollte keine Passende Funktion gefunden werden, wird der Vorgang abgebrochen
 	if foundFunction == nil {
-		http.Error(w, "Unkown function", http.StatusBadRequest)
+		proc.LogPrint("RPC: &[%s]: determine the function '%s' failed, unkown function\n", foundedVM.GetVMName(), data.FunctionName)
+		errorResponse(request.ContentType, w, "function not found")
+		proc.LogPrint("RPC: failed\n")
 		return
 	}
 
 	// Es wird ermitelt ob die Datentypen korrekt sind
 	if len(foundFunction.GetParmTypes()) != len(data.Parms) {
-		http.Error(w, "Invalid total parameters", http.StatusBadRequest)
+		errorResponse(request.ContentType, w, "the number of parameters required does not match the number of parameters submitted")
 		return
 	}
 
 	// Die Einzelnen Parameter werden geprüft und abgearbeitet
-	proc.LogPrint("RPC: &[%s]: convert function '%s' parameters\n", foundedVM.GetVMName(), foundFunction.GetName())
+	proc.LogPrint("RPC: &[%s@%s]: convert %d function parameters\n", foundFunction.GetName(), foundedVM.GetVMName(), len(foundFunction.GetParmTypes()))
 	extractedValues := make([]types.FunctionParameterBundleInterface, 0)
 	for x := range foundFunction.GetParmTypes() {
 		// Es wird geprüft ob es sich bei dem Angefordeten Parameter um einen zulässigen Parameter handelt
 		if foundFunction.GetParmTypes()[x] != data.Parms[x].Type {
-			http.Error(w, "Invalid parmtype XY", http.StatusBadRequest)
+			errorResponse(request.ContentType, w, fmt.Sprintf("the data type of parameter %d does not match the required data type", x))
 			return
 		}
 
@@ -102,14 +122,14 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 		case "boolean":
 			// Es wird geprüft ob es sich um ein Boolean handelt
 			if reflect.TypeOf(data.Parms[x].Value).Kind() != reflect.Bool {
-				http.Error(w, "Datatype converting error: bool", http.StatusBadRequest)
+				errorResponse(request.ContentType, w, fmt.Sprintf("error reading parameter %d, wrong data type", x))
 				return
 			}
 
 			// Der Datentyp wird umgewandelt
 			converted, ok := data.Parms[x].Value.(bool)
 			if !ok {
-				http.Error(w, "Datatype converting error: bool", http.StatusBadRequest)
+				errorResponse(request.ContentType, w, fmt.Sprintf("error reading parameter %d, wrong data type", x))
 				return
 			}
 
@@ -125,9 +145,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 				// Es wird geprüft ob es sich um ein Float handelt
 				onvertedfloat, ok := data.Parms[x].Value.(float64)
 				if !ok {
-					fmt.Println(data.Parms[x].Value)
-					fmt.Println(reflect.TypeOf(data.Parms[x].Value))
-					http.Error(w, "Datatype converting error: number", http.StatusBadRequest)
+					errorResponse(request.ContentType, w, fmt.Sprintf("error reading parameter %d, wrong data type", x))
 					return
 				}
 
@@ -148,7 +166,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 			// Der Datentyp wird umgewandelt
 			converted, ok := data.Parms[x].Value.(string)
 			if !ok {
-				http.Error(w, "Datatype converting error: string", http.StatusBadRequest)
+				errorResponse(request.ContentType, w, fmt.Sprintf("error reading parameter %d, wrong data type", x))
 				return
 			}
 
@@ -161,7 +179,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 			// Der Datentyp wird umgewandelt
 			converted, ok := data.Parms[x].Value.([]interface{})
 			if !ok {
-				http.Error(w, "Datatype converting error: array", http.StatusBadRequest)
+				errorResponse(request.ContentType, w, fmt.Sprintf("error reading parameter %d, wrong data type", x))
 				return
 			}
 
@@ -180,7 +198,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 			// Der Datentyp wird umgewandelt
 			converted, ok := data.Parms[x].Value.(string)
 			if !ok {
-				http.Error(w, "Datatype converting error: to enocoded string", http.StatusBadRequest)
+				errorResponse(request.ContentType, w, fmt.Sprintf("error reading parameter %d, wrong data type", x))
 				return
 			}
 
@@ -188,7 +206,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 			// der Zweite teil enthält die eigentlichen Daten
 			splitedValue := strings.Split("://", converted)
 			if len(splitedValue) != 2 {
-				http.Error(w, "Datatype converting error: invalid byte string coded", http.StatusBadRequest)
+				errorResponse(request.ContentType, w, fmt.Sprintf("error reading parameter %d, wrong data type", x))
 				return
 			}
 
@@ -198,24 +216,26 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 			case "base64":
 				decodedDataSlice, err = base64.StdEncoding.DecodeString(converted)
 				if err != nil {
-					http.Error(w, "Die VM wurde nicht gefunden", http.StatusBadRequest)
+					errorResponse(request.ContentType, w, fmt.Sprintf("error reading parameter %d, wrong data type", x))
 					return
 				}
 			case "base32":
 				decodedDataSlice, err = base32.StdEncoding.DecodeString(converted)
 				if err != nil {
-					http.Error(w, "Die VM wurde nicht gefunden", http.StatusBadRequest)
+					errorResponse(request.ContentType, w, fmt.Sprintf("error reading parameter %d, wrong data type", x))
 					return
 				}
 			case "hex":
 				decodedDataSlice, err = hex.DecodeString(converted)
 				if err != nil {
-					http.Error(w, "Die VM wurde nicht gefunden", http.StatusBadRequest)
+					errorResponse(request.ContentType, w, fmt.Sprintf("error reading parameter %d, wrong data type", x))
 					return
 				}
 			case "base58":
 				decodedDataSlice = base58.Decode(converted)
 			default:
+				errorResponse(request.ContentType, w, fmt.Sprintf("error reading parameter %d, wrong data type", x))
+				return
 			}
 
 			// Der Eintrag wird erzeugt
@@ -243,71 +263,67 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Die Funktion wird aufgerufen
-	proc.LogPrint("RPC: &[%s]: call function '%s'\n", foundedVM.GetVMName(), foundFunction.GetName())
-	result, err := foundFunction.EnterFunctionCall(nil, &RpcRequest{parms: extractedValues})
+	proc.LogPrint("RPC: &[%s@%s]: call function\n", foundFunction.GetName(), foundedVM.GetVMName())
+	result, err := foundFunction.EnterFunctionCall(request, &RpcRequest{parms: extractedValues})
 	if err != nil {
 		proc.LogPrint("RPC: &[%s]: call function '%s' error\n\t%s\n", foundedVM.GetVMName(), foundFunction.GetName(), err)
-		http.Error(w, "Calling error", http.StatusBadRequest)
+		errorResponse(request.ContentType, w, "an error occurred when calling the function, error: "+err.Error())
 		return
 	}
-	proc.LogPrintSuccs("RPC: &[%s]: function '%s' call, done\n", foundedVM.GetVMName(), foundFunction.GetName())
 
 	// Die Antwortdaten werden Extrahiert
-	var responseData RPCResponseData
+	var responseData *RPCResponseData
 	if result == nil {
-		responseData = RPCResponseData{DType: "null", Value: nil}
+		responseData = &RPCResponseData{DType: "null", Value: nil}
+		proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return null\n", foundFunction.GetName(), foundedVM.GetVMName())
 	} else if result.ExportType() == goja.Undefined().ExportType() && result.Export() == nil {
-		responseData = RPCResponseData{DType: "undefined", Value: nil}
+		responseData = &RPCResponseData{DType: "undefined", Value: nil}
+		proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return undefined\n", foundFunction.GetName(), foundedVM.GetVMName())
 	} else {
 		switch result.ExportType().Kind() {
 		case reflect.Bool:
-			responseData = RPCResponseData{DType: "boolean", Value: result.ToBoolean()}
+			responseData = &RPCResponseData{DType: "boolean", Value: result.ToBoolean()}
+			proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return boolean\n", foundFunction.GetName(), foundedVM.GetVMName())
 		case reflect.Int64:
-			responseData = RPCResponseData{DType: "number", Value: result.ToInteger()}
+			responseData = &RPCResponseData{DType: "number", Value: result.ToInteger()}
+			proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return int64\n", foundFunction.GetName(), foundedVM.GetVMName())
 		case reflect.Float64:
-			responseData = RPCResponseData{DType: "number", Value: result.ToFloat()}
+			responseData = &RPCResponseData{DType: "number", Value: result.ToFloat()}
+			proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return float64\n", foundFunction.GetName(), foundedVM.GetVMName())
 		case reflect.String:
-			responseData = RPCResponseData{DType: "string", Value: result.String()}
+			responseData = &RPCResponseData{DType: "string", Value: result.String()}
+			proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return string\n", foundFunction.GetName(), foundedVM.GetVMName())
 		case reflect.Slice:
 			slicedObject, isConverted := result.Export().([]interface{})
 			if !isConverted {
 				http.Error(w, "invalid object datatype, slice", http.StatusBadRequest)
 				return
 			}
-			responseData = RPCResponseData{DType: "array", Value: slicedObject}
+			responseData = &RPCResponseData{DType: "array", Value: slicedObject}
+			proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return slice\n", foundFunction.GetName(), foundedVM.GetVMName())
 		case reflect.Map:
 			mapObjected, isConverted := result.Export().(map[string]interface{})
 			if !isConverted {
 				http.Error(w, "invalid object datatype, object", http.StatusBadRequest)
 				return
 			}
-			responseData = RPCResponseData{DType: "object", Value: mapObjected}
+			responseData = &RPCResponseData{DType: "object", Value: mapObjected}
+			proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return map\n", foundFunction.GetName(), foundedVM.GetVMName())
 		case reflect.Func:
-			http.Error(w, "function return not allowed in rpc post request", http.StatusBadRequest)
+			proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return function\n", foundFunction.GetName(), foundedVM.GetVMName())
+			errorResponse(request.ContentType, w, "function return not allowed in web remote function call request")
 			return
 		default:
-			fmt.Println(result.ExportType().Kind())
-			http.Error(w, "Calling error a", http.StatusBadRequest)
+			errorResponse(request.ContentType, w, fmt.Sprintf("fhe function returned a data type (%s) which is not supported, the function was executed without errors", result.ExportType().Kind().String()))
 			return
 		}
 	}
 
-	// Die Antwort wird erzeugt
-	response := &RPCResponse{Result: "success", Data: responseData}
-	bytedResponse, err := json.Marshal(response)
-	if err != nil {
-		http.Error(w, "Calling error", http.StatusBadRequest)
-		return
-	}
-
 	// Die Daten werden zurückgesendet
-	proc.LogPrint("RPC: &[%s]: sending function '%s' call response\n", foundedVM.GetVMName(), data.FunctionName)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(bytedResponse)
+	proc.LogPrint("RPC: &[%s@%s]: sending function call response\n", foundFunction.GetName(), foundedVM.GetVMName())
+	responsSize, err := finalResponse(request.ContentType, w, responseData)
 	if err != nil {
-		http.Error(w, "Failed to write response", http.StatusInternalServerError)
-		return
+		proc.LogPrint("RPC: &[%s]: call function response sending '%s' error\n\t%s\n", foundedVM.GetVMName(), foundFunction.GetName(), err)
 	}
-	proc.LogPrint("RPC: &[%s]: done\n", foundedVM.GetVMName())
+	proc.LogPrint(fmt.Sprintf("RPC: done, response size = %d bytes\n", responsSize))
 }

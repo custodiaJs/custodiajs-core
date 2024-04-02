@@ -3,6 +3,7 @@ package vmdb
 import (
 	"encoding/hex"
 	"fmt"
+	"os"
 	"vnh1/utils"
 
 	"github.com/gofrs/flock"
@@ -17,6 +18,14 @@ type MainJsFile struct {
 
 func (o *MainJsFile) GetFileSize() uint64 {
 	return o.fileSize
+}
+
+func (o *MainJsFile) GetContent() ([]byte, error) {
+	dat, err := os.ReadFile(o.filePath)
+	if err != nil {
+		return nil, fmt.Errorf("MainJsFile->GetContent: " + err.Error())
+	}
+	return dat, nil
 }
 
 func loadMainJsFile(path string) (*MainJsFile, error) {

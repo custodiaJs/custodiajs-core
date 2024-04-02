@@ -1,8 +1,10 @@
 package types
 
-type VmState int
-type CLIUserRight int
-type CoreState int
+type VmState uint8
+type CoreState uint8
+type CLIUserRight uint8
+type RpcCallTransportProtocol uint8
+type HttpRequestContentType uint8
 
 const (
 	Closed    VmState = 1
@@ -15,8 +17,14 @@ const (
 	CONTAINER_NONE_ROOT_ADMIN CLIUserRight = 3
 	CONAINER_ROOT_ADMIN       CLIUserRight = 4
 
-	NEW CoreState = iota
-	SERVING
-	SHUTDOWN
-	CLOSED
+	NEW      CoreState = 1
+	SERVING  CoreState = 2
+	SHUTDOWN CoreState = 3
+	CLOSED   CoreState = 4
+
+	HTTP_CONTENT_CBOR HttpRequestContentType = 1
+	HTTP_CONTENT_JSON HttpRequestContentType = 2
+
+	HTTP_JSON RpcCallTransportProtocol = 1
+	GRPC      RpcCallTransportProtocol = 2
 )

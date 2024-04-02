@@ -53,6 +53,16 @@ func (o *VmDBEntry) GetMemberCertKeyIds() []string {
 	return ret
 }
 
+func (o *VmDBEntry) GetMainCodeFile() *MainJsFile {
+	return o.mainJSFile
+}
+
+func (o *VmDBEntry) GetAllowedHttpSources() map[string]bool {
+	a := make(map[string]bool)
+	a["*.com"] = true
+	return a
+}
+
 func tryToLoadVM(path string) (*VmDBEntry, error) {
 	// Die Kernpfade für die VM werden erstellt
 	manifestVMJsonFilePath := filepath.Join(path, "manifest.json")

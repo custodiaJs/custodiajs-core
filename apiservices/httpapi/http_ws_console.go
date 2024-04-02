@@ -10,27 +10,29 @@ import (
 )
 
 func (o *HttpApiService) handleConsoleStreamWebsocket(w http.ResponseWriter, r *http.Request) {
-	// Es wird geprüft ob es sich um einen iFrame aufruf handelt
-	if isRequestFromIframe(r) || isRequestFromJS(r) {
-		// Blockiere die Anfrage und sende einen 403 Forbidden Statuscode
-		http.Error(w, "Zugriff verweigert", http.StatusForbidden)
-		return
-	}
-
 	// Es wird geprüft ob es sich um die POST Methode handelt
-	vmid, isValidateRequest := validateWSRequestAndGetVMId(w, r)
-	if !isValidateRequest {
+	request, err := validateWSRequestAndGetRequestData(r)
+	if err != nil {
 		// Send the HTTP status code 405 Method Not Allowed
-		http.Error(w, "405 Method Not Allowed: Only WS method is allowed", http.StatusMethodNotAllowed)
+		http.Error(w, err.Error(), http.StatusMethodNotAllowed)
 
 		// Der Vorgang wird beendet
 		return
 	}
 
 	// Es wird geprüft ob es sich um eine bekannte VM handelt
-	foundedVM, err := o.core.GetScriptContainerVMByID(vmid)
+	foundedVM, err := o.core.GetScriptContainerVMByID(request.VmId)
 	if err != nil {
 		http.Error(w, "Die VM wurde nicht gefunden", http.StatusBadRequest)
+		return
+	}
+
+	// Es wird geprüft ob es sich um eine WebRequest aus einem Webbrowser handelt,
+	// wenn ja wird ermittelt ob es sich um eine Zulässige Quelle handelt
+	requestHttpSource := getRefererOrXRequestedWith(request)
+	if hasRefererOrXRequestedWith(request) && !foundedVM.ValidateRPCRequestSource(requestHttpSource) {
+		// Der Vorgang wird abgebrochen, es handelt sich nicht nicht um eine zulässige Quelle
+		http.Error(w, "Unzulässige Quelle", http.StatusBadRequest)
 		return
 	}
 

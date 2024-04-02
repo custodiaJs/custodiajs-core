@@ -29,22 +29,31 @@ func (o *HttpApiService) vmInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// Es wird geprüft ob es sich um eine Zulässige GET Anfrage handelt
-	vmId, invalidRequest := validateGETRequestAndGetVMId(w, r)
-	if !invalidRequest {
+	request, err := validateGETRequestAndGetRequestData(r)
+	if err != nil {
 		// Set the 'Allow' header to indicate that only POST is allowed
 		w.Header().Set("Allow", "POST")
 
 		// Send the HTTP status code 405 Method Not Allowed
-		http.Error(w, "405 Method Not Allowed: Only POST method is allowed", http.StatusMethodNotAllowed)
+		http.Error(w, err.Error(), http.StatusMethodNotAllowed)
 
 		// Der Vorgang wird beendet
 		return
 	}
 
 	// Es wird geprüft ob es sich um eine bekannte VM handelt
-	foundedVM, err := o.core.GetScriptContainerVMByID(vmId)
+	foundedVM, err := o.core.GetScriptContainerVMByID(request.VmId)
 	if err != nil {
 		http.Error(w, "Die VM wurde nicht gefunden", http.StatusBadRequest)
+		return
+	}
+
+	// Es wird geprüft ob es sich um eine WebRequest aus einem Webbrowser handelt,
+	// wenn ja wird ermittelt ob es sich um eine Zulässige Quelle handelt
+	requestHttpSource := getRefererOrXRequestedWith(request)
+	if hasRefererOrXRequestedWith(request) && !foundedVM.ValidateRPCRequestSource(requestHttpSource) {
+		// Der Vorgang wird abgebrochen, es handelt sich nicht nicht um eine zulässige Quelle
+		http.Error(w, "Unzulässige Quelle", http.StatusBadRequest)
 		return
 	}
 

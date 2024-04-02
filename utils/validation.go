@@ -1,5 +1,7 @@
 package utils
 
+import "regexp"
+
 func ValidateDatatypeString(dType string) bool {
 	switch dType {
 	case "boolean":
@@ -15,4 +17,12 @@ func ValidateDatatypeString(dType string) bool {
 	default:
 		return false
 	}
+}
+
+func ValidateFunctionName(funcName string) bool {
+	// Regulärer Ausdruck, um zu überprüfen, ob der String den Variablennamenkriterien entspricht
+	validVariable := regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+
+	// Überprüfe, ob der String den Variablennamenkriterien entspricht
+	return validVariable.MatchString(funcName)
 }

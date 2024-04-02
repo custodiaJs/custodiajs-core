@@ -10,6 +10,7 @@ require (
 
 require (
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/net v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
 )
@@ -17,6 +18,7 @@ require (
 require (
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/dlclark/regexp2 v1.7.0 // indirect
+	github.com/fxamacker/cbor/v2 v2.6.0
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/gofrs/flock v0.8.1
 	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect

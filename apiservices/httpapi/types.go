@@ -30,3 +30,15 @@ type FunctionParameterCapsle struct {
 	Value interface{}
 	CType string
 }
+
+type RequestData struct {
+	TransportProtocol types.RpcCallTransportProtocol
+	ContentType       types.HttpRequestContentType
+	XRequestedWith    string
+	Referer           string
+	Source            string
+	VmId              string
+	Origin            string
+	TLS               *tls.ConnectionState
+	Cookies           []*http.Cookie
+}

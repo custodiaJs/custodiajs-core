@@ -3,8 +3,6 @@ package core
 import (
 	"crypto/tls"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"vnh1/core/identkeydatabase"
@@ -16,18 +14,9 @@ import (
 
 // Fügt einen neune Script Container hinzu
 func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
-	// Die Datei wird zusammengefasst
-	fullPath := filepath.Join(vmDbEntry.Path, "main.js")
-
 	// Die Virtuelle Maschine wird geprüft
 	if !vmDbEntry.ValidateVM() {
 		return nil, fmt.Errorf("AddScriptContainer: Broken Virtual Machine")
-	}
-
-	// Es wird versucht die Manifestdatei zuladen
-	fileData, err := os.ReadFile(fullPath)
-	if err != nil {
-		return nil, fmt.Errorf("AddScriptContainer: " + err.Error())
 	}
 
 	// Es wird eine neue VM erzeugt
@@ -36,8 +25,18 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 		return nil, fmt.Errorf("AddScriptContainer: " + err.Error())
 	}
 
+	// Der Mutex wird angewendet
+	// und nach beenden der Funktion freigegeben
+	o.objectMutex.Lock()
+	defer o.objectMutex.Unlock()
+
+	// Es wird geprüft ob bereits eine VM mit der Selben ID vorhanden ist
+	if _, foundVM := o.vmsByID[vmDbEntry.GetVMContainerMerkleHash()]; foundVM {
+		return nil, fmt.Errorf("Core->AddScriptContainer: You cannot add a VM container '%s' multiple times", vmDbEntry.GetVMContainerMerkleHash())
+	}
+
 	// Das Detailspaket wird erzeugt
-	vmobject := &CoreVM{JsVM: tvmobj, jsCode: string(fileData), vmDbEntry: vmDbEntry, jsMainFilePath: fullPath, vmState: types.StillWait}
+	vmobject := &CoreVM{JsVM: tvmobj, vmDbEntry: vmDbEntry, vmState: types.StillWait}
 
 	// Das VMObjekt wird zwischengespeichert
 	o.vmsByID[vmDbEntry.GetVMContainerMerkleHash()] = vmobject
@@ -61,6 +60,11 @@ func (o *Core) AddAPISocket(apiSocket types.APISocketInterface) error {
 		return fmt.Errorf("AddAPISocket: ")
 	}
 
+	// Der Mutex wird angewendet
+	// und nach beenden der Funktion freigegeben
+	o.objectMutex.Lock()
+	defer o.objectMutex.Unlock()
+
 	// Der API Socket wird zwischengespeichert
 	o.apiSockets = append(o.apiSockets, apiSocket)
 
@@ -78,6 +82,11 @@ func (o *Core) GetScriptContainerVMByID(vmid string) (types.CoreVMInterface, err
 	// Die ID wird lowercast
 	lowerCaseID := strings.ToLower(vmid)
 
+	// Der Mutex wird angewendet
+	// und nach beenden der Funktion freigegeben
+	o.objectMutex.Lock()
+	defer o.objectMutex.Unlock()
+
 	// Es wird geprüft ob die VM exestiert
 	vmObj, found := o.vmsByID[vmid]
 	if !found {
@@ -90,6 +99,11 @@ func (o *Core) GetScriptContainerVMByID(vmid string) (types.CoreVMInterface, err
 
 // Gibt die ID's der Aktiven VM-Container zurück
 func (o *Core) GetAllActiveScriptContainerIDs() []string {
+	// Der Mutex wird angewendet
+	// und nach beenden der Funktion freigegeben
+	o.objectMutex.Lock()
+	defer o.objectMutex.Unlock()
+
 	// Es wird eine Liste mit allen Verfügbaren VM's erstellt
 	extr := make([]string, 0)
 	for _, item := range o.vmsByID {
@@ -102,6 +116,11 @@ func (o *Core) GetAllActiveScriptContainerIDs() []string {
 
 // Gibt alle VM-Container zurück
 func (o *Core) GetAllVMs() []types.CoreVMInterface {
+	// Der Mutex wird angewendet
+	// und nach beenden der Funktion freigegeben
+	o.objectMutex.Lock()
+	defer o.objectMutex.Unlock()
+
 	// Es wird eine Liste mit allen Verfügbaren VM-Containern erstellt
 	extr := make([]types.CoreVMInterface, 0)
 	for _, item := range o.vmsByID {
@@ -128,6 +147,8 @@ func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase
 		apiSyncWaitGroup: sync.WaitGroup{},
 		// Datenbanken
 		hostIdentKeyDatabase: hostIdenKeyDatabase,
+		// Mutexes
+		objectMutex: &sync.Mutex{},
 	}
 
 	// Das Objekt wird zurückgegeben
