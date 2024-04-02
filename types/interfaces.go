@@ -22,6 +22,8 @@ type CoreVMInterface interface {
 	GetPublicSharedFunctions() []SharedPublicFunctionInterface
 	GetConsoleOutputWatcher() WatcherInterface
 	GetAllSharedFunctions() []SharedFunctionInterface
+	GetWhitelist() []TransportWhitelistVmEntryInterface
+	GetMemberCertKeyIds() []string
 	GetStartingTimestamp() uint64
 	GetState() VmState
 }
@@ -63,4 +65,9 @@ type RpcRequestData interface {
 type FunctionParameterBundleInterface interface {
 	GetType() string
 	GetValue() interface{}
+}
+
+type TransportWhitelistVmEntryInterface interface {
+	URL() string
+	Alias() string
 }

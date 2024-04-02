@@ -2,6 +2,7 @@ package clirpc
 
 import (
 	"context"
+	"strings"
 	"vnh1/grpc/cligrpc"
 
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -11,19 +12,28 @@ func (s *CliGrpcServer) ListVMs(ctx context.Context, _ *emptypb.Empty) (*cligrpc
 	// Die Werte werden abgeabreitet
 	entry := []*cligrpc.VmListEntry{}
 	for _, item := range s.core.GetAllVMs() {
+		// Die geteilten Funktionen werden abgerufen
 		sharf := make([]string, 0)
 		for _, sharfnc := range item.GetAllSharedFunctions() {
 			sharf = append(sharf, sharfnc.GetName())
 		}
+
+		// Die Erlaubten Domains werden abgerufen
+		allowedDomains := []string{}
+		for _, item := range item.GetWhitelist() {
+			allowedDomains = append(allowedDomains, item.URL())
+		}
+
+		// Der Eintrag wird hinzugefügt
 		entry = append(entry, &cligrpc.VmListEntry{
 			Name:            item.GetVMName(),
-			Id:              item.GetFingerprint(),
+			Id:              strings.ToUpper(item.GetFingerprint()),
 			State:           uint32(item.GetState()),
 			StartTime:       item.GetStartingTimestamp(),
-			SharedFunctions: sharf,
 			NodeJsModules:   item.GetVMModuleNames(),
-			DomainWhiteList: []string{},
-			SslMemberHashes: []string{},
+			DomainWhiteList: allowedDomains,
+			UsedHostKeyIds:  item.GetMemberCertKeyIds(),
+			SharedFunctions: sharf,
 		})
 	}
 

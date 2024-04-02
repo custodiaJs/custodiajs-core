@@ -21,7 +21,7 @@ message VmListEntry {
   repeated string sharedFunctions = 5;
   repeated string nodeJsModules = 6;
   repeated string domainWhiteList = 7;
-  repeated string sslMemberHashes = 8;
+  repeated string usedHostKeyIds = 8;
 }
 
 message VmListResponse {

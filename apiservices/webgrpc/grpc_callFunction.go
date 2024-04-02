@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strings"
 	"vnh1/grpc/publicgrpc"
 	"vnh1/types"
 	"vnh1/utils"
@@ -37,7 +38,7 @@ func (s *GrpcServer) CallFunction(ctx context.Context, in *publicgrpc.RPCFunctio
 	_ = tlsInfo
 
 	// Es wird geprüft ob es sich um eine bekannte VM handelt
-	proc.LogPrint("gRPC: searching script container '%s'\n", in.ContainerId)
+	proc.LogPrint("gRPC: searching script container '%s'\n", strings.ToLower(in.ContainerId))
 	foundedVM, err := s.core.GetScriptContainerVMByID(in.ContainerId)
 	if err != nil {
 		fmt.Println(err)

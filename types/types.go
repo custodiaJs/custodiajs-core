@@ -2,6 +2,7 @@ package types
 
 type VmState int
 type CLIUserRight int
+type CoreState int
 
 const (
 	Closed    VmState = 1
@@ -13,4 +14,9 @@ const (
 	ROOT_ADMIN                CLIUserRight = 2
 	CONTAINER_NONE_ROOT_ADMIN CLIUserRight = 3
 	CONAINER_ROOT_ADMIN       CLIUserRight = 4
+
+	NEW CoreState = iota
+	SERVING
+	SHUTDOWN
+	CLOSED
 )

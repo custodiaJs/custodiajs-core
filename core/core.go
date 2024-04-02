@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
@@ -13,6 +14,7 @@ import (
 	"vnh1/core/jsvm"
 )
 
+// Fügt einen neune Script Container hinzu
 func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 	// Die Datei wird zusammengefasst
 	fullPath := filepath.Join(vmDbEntry.Path, "main.js")
@@ -46,7 +48,13 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 	return vmobject, nil
 }
 
+// Fügt einen API Socket hinzu
 func (o *Core) AddAPISocket(apiSocket types.APISocketInterface) error {
+	// Es wird geprüft das kein Null Wert übergeben wurde
+	if apiSocket == nil {
+		return fmt.Errorf("Core->AddAPISocket: null api socket not allowed")
+	}
+
 	// Der Core wird in dem  Registriert
 	err := apiSocket.SetupCore(o)
 	if err != nil {
@@ -60,33 +68,51 @@ func (o *Core) AddAPISocket(apiSocket types.APISocketInterface) error {
 	return nil
 }
 
+// Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
 func (o *Core) GetScriptContainerVMByID(vmid string) (types.CoreVMInterface, error) {
+	// Es wird geprüft ob es sich um einen 64 Zeichen langen String handelt
+	if len(vmid) != 64 {
+		return nil, fmt.Errorf("Core->GetScriptContainerVMByID: invalid vm container id")
+	}
+
+	// Die ID wird lowercast
+	lowerCaseID := strings.ToLower(vmid)
+
 	// Es wird geprüft ob die VM exestiert
 	vmObj, found := o.vmsByID[vmid]
 	if !found {
-		return nil, fmt.Errorf("GetScriptContainerVMByID: unkown vm")
+		return nil, fmt.Errorf("GetScriptContainerVMByID: unkown vm '%s'", lowerCaseID)
 	}
 
 	// Das Objekt wird zurückgegeben
 	return vmObj, nil
 }
 
+// Gibt die ID's der Aktiven VM-Container zurück
 func (o *Core) GetAllActiveScriptContainerIDs() []string {
+	// Es wird eine Liste mit allen Verfügbaren VM's erstellt
 	extr := make([]string, 0)
 	for _, item := range o.vmsByID {
 		extr = append(extr, item.GetFingerprint())
 	}
+
+	// Die Liste wird zurückgegeben
 	return extr
 }
 
+// Gibt alle VM-Container zurück
 func (o *Core) GetAllVMs() []types.CoreVMInterface {
+	// Es wird eine Liste mit allen Verfügbaren VM-Containern erstellt
 	extr := make([]types.CoreVMInterface, 0)
 	for _, item := range o.vmsByID {
 		extr = append(extr, item)
 	}
+
+	// Die Liste wird zurückgegeben
 	return extr
 }
 
+// Erstellt einen neuen vnh1 Core
 func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase.IdenKeyDatabase) (*Core, error) {
 	// Das Coreobjekt wird erstellt
 	coreObj := &Core{
@@ -94,7 +120,7 @@ func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase
 		vmsByName:  make(map[string]*CoreVM),
 		vms:        make([]*CoreVM, 0),
 		apiSockets: make([]types.APISocketInterface, 0),
-		state:      NEW,
+		state:      types.NEW,
 		// Chans
 		holdOpenChan:     make(chan struct{}),
 		serviceSignaling: make(chan struct{}),

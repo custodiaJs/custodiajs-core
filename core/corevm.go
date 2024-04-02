@@ -62,6 +62,18 @@ func (o *CoreVM) GetState() types.VmState {
 	return o.vmState
 }
 
+func (o *CoreVM) GetWhitelist() []types.TransportWhitelistVmEntryInterface {
+	returnList := make([]types.TransportWhitelistVmEntryInterface, 0)
+	for _, item := range o.vmDbEntry.GetWhitelist() {
+		returnList = append(returnList, &TransportWhitelistVmEntry{url: item.URL, alias: item.Alias})
+	}
+	return returnList
+}
+
+func (o *CoreVM) GetMemberCertKeyIds() []string {
+	return o.vmDbEntry.GetMemberCertKeyIds()
+}
+
 func (o *CoreVM) GetConsoleOutputWatcher() types.WatcherInterface {
 	return o.JsVM.GetConsoleOutputWatcher()
 }

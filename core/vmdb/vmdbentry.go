@@ -41,6 +41,18 @@ func (o *VmDBEntry) GetNodeJsModules() []*NodeJsModule {
 	return o.nodeJsModules
 }
 
+func (p *VmDBEntry) GetWhitelist() []Whitelist {
+	return p.manifestFile.GetManifestObject().Whitelist
+}
+
+func (o *VmDBEntry) GetMemberCertKeyIds() []string {
+	ret := []string{}
+	for _, item := range o.manifestFile.manifest.HostCAMember {
+		ret = append(ret, item.Fingerprint)
+	}
+	return ret
+}
+
 func tryToLoadVM(path string) (*VmDBEntry, error) {
 	// Die Kernpfade für die VM werden erstellt
 	manifestVMJsonFilePath := filepath.Join(path, "manifest.json")

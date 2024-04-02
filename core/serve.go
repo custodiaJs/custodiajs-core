@@ -7,7 +7,7 @@ import (
 
 func (o *Core) Serve() error {
 	// Es wird signalisiert das der Core ausgeführt wird
-	o.state = SERVING
+	o.state = types.SERVING
 
 	// Es werden alle Socketservices gestartet
 	for _, item := range o.apiSockets {

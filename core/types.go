@@ -6,15 +6,6 @@ import (
 	"vnh1/types"
 )
 
-type CoreState int
-
-const (
-	NEW CoreState = iota
-	SERVING
-	SHUTDOWN
-	CLOSED
-)
-
 type Core struct {
 	hostIdentKeyDatabase *identkeydatabase.IdenKeyDatabase
 	vmsByID              map[string]*CoreVM
@@ -25,5 +16,10 @@ type Core struct {
 	apiSockets           []types.APISocketInterface
 	serviceSignaling     chan struct{}
 	holdOpenChan         chan struct{}
-	state                CoreState
+	state                types.CoreState
+}
+
+type TransportWhitelistVmEntry struct {
+	url   string
+	alias string
 }
