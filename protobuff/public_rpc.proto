@@ -54,12 +54,10 @@ service RPCService {
   rpc CallFunction (RPCFunctionCall) returns (RPCResponse) {}
 }
 
-// Definiert einen einfachen Chat-Service mit bidirektionalem Streaming
 service ChatService {
   rpc Chat(stream ChatMessage) returns (stream ChatMessage);
 }
 
-// Nachrichtenstruktur für Chat-Nachrichten
 message ChatMessage {
   string user = 1;
   string message = 2;

@@ -10,10 +10,8 @@ func deleteFileIfExists(filepath string) error {
 	if err == nil {
 		err := os.Remove(filepath)
 		if err != nil {
-			return err
+			return nil
 		}
-	} else {
-		return err
 	}
 	return nil
 }

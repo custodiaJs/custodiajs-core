@@ -58,7 +58,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 	// Es wird versucht die Passende Funktion zu ermitteln
 	proc.LogPrint("RPC: &[%s]: searching function '%s'\n", foundedVM.GetVMName(), data.FunctionName)
 	var foundFunction types.SharedFunctionInterface
-	for _, item := range foundedVM.GetLocalShareddFunctions() {
+	for _, item := range foundedVM.GetLocalSharedFunctions() {
 		if item.GetName() == data.FunctionName {
 			foundFunction = item
 			break
@@ -67,7 +67,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Es wird geprüft ob eine Funktion gefunden wurde
 	if foundFunction == nil {
-		for _, item := range foundedVM.GetPublicShareddFunctions() {
+		for _, item := range foundedVM.GetPublicSharedFunctions() {
 			if item.GetName() == data.FunctionName {
 				foundFunction = item
 				break

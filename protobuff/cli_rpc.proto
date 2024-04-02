@@ -3,16 +3,32 @@ syntax = "proto3";
 package cligrpc;
 option go_package = "/grpc/cligrpc;cligrpc";
 
-message CLIWelcomeClient {
-  string containerId = 1;
-  string functionName = 2;
+import "google/protobuf/empty.proto";
+
+message ClientWelcomeRequest {
+  uint64 version = 1;
 }
 
-message RPCResponse {
-  string result = 1;
-  string error = 2; 
+message ClientWelcomeResponse {
+  uint64 version = 1;
 }
 
-service MyService {
-  rpc WelcomeClient(CLIWelcomeClient) returns (RPCResponse);
+message VmListEntry {
+  string name = 1;
+  string id = 2;
+  uint32 state = 3;
+  uint64 startTime = 4;
+  repeated string sharedFunctions = 5;
+  repeated string nodeJsModules = 6;
+  repeated string domainWhiteList = 7;
+  repeated string sslMemberHashes = 8;
+}
+
+message VmListResponse {
+  repeated VmListEntry vms = 1;
+}
+
+service CLIService {
+  rpc WelcomeClient(ClientWelcomeRequest) returns (ClientWelcomeResponse);
+  rpc ListVMs(google.protobuf.Empty) returns (VmListResponse);
 }

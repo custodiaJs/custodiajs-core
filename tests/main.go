@@ -150,7 +150,7 @@ func main() {
 
 	// Die CLI Terminals werden erzeugt
 	fmt.Println("cligrpc: enabled")
-	noneRootCLI, err := cligrpc.New("/tmp/vnh1_none_root", types.NONE_ROOT_ADMIN)
+	noneRootCLI, err := cligrpc.NewTestTCP("/home/fluffelbuff/Schreibtisch/localhost.crt", "/home/fluffelbuff/Schreibtisch/localhost.pem", types.NONE_ROOT_ADMIN)
 	if err != nil {
 		panic(err)
 	}

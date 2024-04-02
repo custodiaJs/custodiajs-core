@@ -3,12 +3,13 @@ package types
 import "github.com/dop251/goja"
 
 type JsVmInterface interface {
-	GetPublicShareddFunctions() []SharedPublicFunctionInterface
-	GetLocalShareddFunctions() []SharedLocalFunctionInterface
+	GetPublicSharedFunctions() []SharedPublicFunctionInterface
+	GetLocalSharedFunctions() []SharedLocalFunctionInterface
 	GetState() VmState
 }
 
 type CoreInterface interface {
+	GetAllVMs() []CoreVMInterface
 	GetAllActiveScriptContainerIDs() []string
 	GetScriptContainerVMByID(string) (CoreVMInterface, error)
 }
@@ -17,9 +18,11 @@ type CoreVMInterface interface {
 	GetVMName() string
 	GetFingerprint() string
 	GetVMModuleNames() []string
-	GetLocalShareddFunctions() []SharedLocalFunctionInterface
-	GetPublicShareddFunctions() []SharedPublicFunctionInterface
+	GetLocalSharedFunctions() []SharedLocalFunctionInterface
+	GetPublicSharedFunctions() []SharedPublicFunctionInterface
 	GetConsoleOutputWatcher() WatcherInterface
+	GetAllSharedFunctions() []SharedFunctionInterface
+	GetStartingTimestamp() uint64
 	GetState() VmState
 }
 

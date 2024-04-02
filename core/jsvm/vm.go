@@ -2,6 +2,7 @@ package jsvm
 
 import (
 	"fmt"
+	"time"
 	"vnh1/core/consolecache"
 	"vnh1/types"
 
@@ -20,6 +21,7 @@ type JsVM struct {
 	exports               *goja.Object
 	loadRootLib           bool
 	scriptLoaded          bool
+	startTimeUnix         uint64
 }
 
 func (o *JsVM) gojaCOMFunctionModule(call goja.FunctionCall) goja.Value {
@@ -125,11 +127,14 @@ func (o *JsVM) RunScript(script string) error {
 		panic(err)
 	}
 
+	// Die Aktuelle Uhrzeit wird ermittelt
+	o.startTimeUnix = uint64(time.Now().Unix())
+
 	// Es ist kein Fehler aufgetreten
 	return nil
 }
 
-func (o *JsVM) GetLocalShareddFunctions() []types.SharedLocalFunctionInterface {
+func (o *JsVM) GetLocalSharedFunctions() []types.SharedLocalFunctionInterface {
 	extracted := make([]types.SharedLocalFunctionInterface, 0)
 	for _, item := range o.sharedLocalFunctions {
 		extracted = append(extracted, item)
@@ -137,7 +142,7 @@ func (o *JsVM) GetLocalShareddFunctions() []types.SharedLocalFunctionInterface {
 	return extracted
 }
 
-func (o *JsVM) GetPublicShareddFunctions() []types.SharedPublicFunctionInterface {
+func (o *JsVM) GetPublicSharedFunctions() []types.SharedPublicFunctionInterface {
 	extracted := make([]types.SharedPublicFunctionInterface, 0)
 	for _, item := range o.sharedPublicFunctions {
 		extracted = append(extracted, item)
@@ -147,6 +152,21 @@ func (o *JsVM) GetPublicShareddFunctions() []types.SharedPublicFunctionInterface
 
 func (o *JsVM) GetConsoleOutputWatcher() types.WatcherInterface {
 	return o.consoleCache.GetOutputStream()
+}
+
+func (o *JsVM) GetStartingTimestamp() uint64 {
+	return o.startTimeUnix
+}
+
+func (o *JsVM) GetAllSharedFunctions() []types.SharedFunctionInterface {
+	vat := make([]types.SharedFunctionInterface, 0)
+	for _, item := range o.GetLocalSharedFunctions() {
+		vat = append(vat, item)
+	}
+	for _, item := range o.GetPublicSharedFunctions() {
+		vat = append(vat, item)
+	}
+	return vat
 }
 
 func NewVM(core types.CoreInterface, config *JsVMConfig) (*JsVM, error) {

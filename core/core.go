@@ -35,7 +35,7 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 	}
 
 	// Das Detailspaket wird erzeugt
-	vmobject := &CoreVM{JsVM: tvmobj, jsCode: string(fileData), vmDbEntry: vmDbEntry, jsMainFilePath: fullPath}
+	vmobject := &CoreVM{JsVM: tvmobj, jsCode: string(fileData), vmDbEntry: vmDbEntry, jsMainFilePath: fullPath, vmState: types.StillWait}
 
 	// Das VMObjekt wird zwischengespeichert
 	o.vmsByID[vmDbEntry.GetVMContainerMerkleHash()] = vmobject
@@ -75,6 +75,14 @@ func (o *Core) GetAllActiveScriptContainerIDs() []string {
 	extr := make([]string, 0)
 	for _, item := range o.vmsByID {
 		extr = append(extr, item.GetFingerprint())
+	}
+	return extr
+}
+
+func (o *Core) GetAllVMs() []types.CoreVMInterface {
+	extr := make([]types.CoreVMInterface, 0)
+	for _, item := range o.vmsByID {
+		extr = append(extr, item)
 	}
 	return extr
 }

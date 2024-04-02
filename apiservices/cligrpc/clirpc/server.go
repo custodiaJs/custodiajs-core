@@ -6,10 +6,6 @@ import (
 )
 
 type CliGrpcServer struct {
-	grpccli.UnimplementedMyServiceServer
+	grpccli.UnimplementedCLIServiceServer
 	core types.CoreInterface
-}
-
-func NewCliGrpcServer(core types.CoreInterface) *CliGrpcServer {
-	return &CliGrpcServer{core: core}
 }

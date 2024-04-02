@@ -50,14 +50,14 @@ func (o *HttpApiService) vmInfo(w http.ResponseWriter, r *http.Request) {
 
 	// Die Lokalen Funktionen welche geteilt wurden, werden extrahiert
 	localSharedFunctions := make([]SharedFunction, 0)
-	for _, item := range foundedVM.GetLocalShareddFunctions() {
+	for _, item := range foundedVM.GetLocalSharedFunctions() {
 		newobj := SharedFunction{Name: item.GetName(), ParmTypes: item.GetParmTypes()}
 		localSharedFunctions = append(localSharedFunctions, newobj)
 	}
 
 	// Die Öffentlichen Funktionen welche geteilt wurden, werden extrahiert
 	publicSharedFunctions := make([]SharedFunction, 0)
-	for _, item := range foundedVM.GetPublicShareddFunctions() {
+	for _, item := range foundedVM.GetPublicSharedFunctions() {
 		newobj := SharedFunction{Name: item.GetName(), ParmTypes: item.GetParmTypes()}
 		localSharedFunctions = append(localSharedFunctions, newobj)
 	}

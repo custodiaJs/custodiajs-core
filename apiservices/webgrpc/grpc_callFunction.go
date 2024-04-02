@@ -47,7 +47,7 @@ func (s *GrpcServer) CallFunction(ctx context.Context, in *publicgrpc.RPCFunctio
 	// Es wird versucht die Passende Funktion zu ermitteln
 	proc.LogPrint("gRPC: &[%s]: searching function '%s'\n", foundedVM.GetVMName(), in.FunctionName)
 	var foundFunction types.SharedFunctionInterface
-	for _, item := range foundedVM.GetLocalShareddFunctions() {
+	for _, item := range foundedVM.GetLocalSharedFunctions() {
 		if item.GetName() == in.FunctionName {
 			foundFunction = item
 			break
@@ -56,7 +56,7 @@ func (s *GrpcServer) CallFunction(ctx context.Context, in *publicgrpc.RPCFunctio
 
 	// Es wird geprüft ob eine Funktion gefunden wurde
 	if foundFunction == nil {
-		for _, item := range foundedVM.GetPublicShareddFunctions() {
+		for _, item := range foundedVM.GetPublicSharedFunctions() {
 			if item.GetName() == in.FunctionName {
 				foundFunction = item
 				break

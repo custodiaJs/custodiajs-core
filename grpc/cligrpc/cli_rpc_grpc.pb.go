@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,89 +20,126 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	MyService_WelcomeClient_FullMethodName = "/cligrpc.MyService/WelcomeClient"
+	CLIService_WelcomeClient_FullMethodName = "/cligrpc.CLIService/WelcomeClient"
+	CLIService_ListVMs_FullMethodName       = "/cligrpc.CLIService/ListVMs"
 )
 
-// MyServiceClient is the client API for MyService service.
+// CLIServiceClient is the client API for CLIService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type MyServiceClient interface {
-	WelcomeClient(ctx context.Context, in *CLIWelcomeClient, opts ...grpc.CallOption) (*RPCResponse, error)
+type CLIServiceClient interface {
+	WelcomeClient(ctx context.Context, in *ClientWelcomeRequest, opts ...grpc.CallOption) (*ClientWelcomeResponse, error)
+	ListVMs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*VmListResponse, error)
 }
 
-type myServiceClient struct {
+type cLIServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewMyServiceClient(cc grpc.ClientConnInterface) MyServiceClient {
-	return &myServiceClient{cc}
+func NewCLIServiceClient(cc grpc.ClientConnInterface) CLIServiceClient {
+	return &cLIServiceClient{cc}
 }
 
-func (c *myServiceClient) WelcomeClient(ctx context.Context, in *CLIWelcomeClient, opts ...grpc.CallOption) (*RPCResponse, error) {
-	out := new(RPCResponse)
-	err := c.cc.Invoke(ctx, MyService_WelcomeClient_FullMethodName, in, out, opts...)
+func (c *cLIServiceClient) WelcomeClient(ctx context.Context, in *ClientWelcomeRequest, opts ...grpc.CallOption) (*ClientWelcomeResponse, error) {
+	out := new(ClientWelcomeResponse)
+	err := c.cc.Invoke(ctx, CLIService_WelcomeClient_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// MyServiceServer is the server API for MyService service.
-// All implementations must embed UnimplementedMyServiceServer
+func (c *cLIServiceClient) ListVMs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*VmListResponse, error) {
+	out := new(VmListResponse)
+	err := c.cc.Invoke(ctx, CLIService_ListVMs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CLIServiceServer is the server API for CLIService service.
+// All implementations must embed UnimplementedCLIServiceServer
 // for forward compatibility
-type MyServiceServer interface {
-	WelcomeClient(context.Context, *CLIWelcomeClient) (*RPCResponse, error)
-	mustEmbedUnimplementedMyServiceServer()
+type CLIServiceServer interface {
+	WelcomeClient(context.Context, *ClientWelcomeRequest) (*ClientWelcomeResponse, error)
+	ListVMs(context.Context, *emptypb.Empty) (*VmListResponse, error)
+	mustEmbedUnimplementedCLIServiceServer()
 }
 
-// UnimplementedMyServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedMyServiceServer struct {
+// UnimplementedCLIServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedCLIServiceServer struct {
 }
 
-func (UnimplementedMyServiceServer) WelcomeClient(context.Context, *CLIWelcomeClient) (*RPCResponse, error) {
+func (UnimplementedCLIServiceServer) WelcomeClient(context.Context, *ClientWelcomeRequest) (*ClientWelcomeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WelcomeClient not implemented")
 }
-func (UnimplementedMyServiceServer) mustEmbedUnimplementedMyServiceServer() {}
+func (UnimplementedCLIServiceServer) ListVMs(context.Context, *emptypb.Empty) (*VmListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListVMs not implemented")
+}
+func (UnimplementedCLIServiceServer) mustEmbedUnimplementedCLIServiceServer() {}
 
-// UnsafeMyServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to MyServiceServer will
+// UnsafeCLIServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to CLIServiceServer will
 // result in compilation errors.
-type UnsafeMyServiceServer interface {
-	mustEmbedUnimplementedMyServiceServer()
+type UnsafeCLIServiceServer interface {
+	mustEmbedUnimplementedCLIServiceServer()
 }
 
-func RegisterMyServiceServer(s grpc.ServiceRegistrar, srv MyServiceServer) {
-	s.RegisterService(&MyService_ServiceDesc, srv)
+func RegisterCLIServiceServer(s grpc.ServiceRegistrar, srv CLIServiceServer) {
+	s.RegisterService(&CLIService_ServiceDesc, srv)
 }
 
-func _MyService_WelcomeClient_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CLIWelcomeClient)
+func _CLIService_WelcomeClient_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClientWelcomeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MyServiceServer).WelcomeClient(ctx, in)
+		return srv.(CLIServiceServer).WelcomeClient(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: MyService_WelcomeClient_FullMethodName,
+		FullMethod: CLIService_WelcomeClient_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MyServiceServer).WelcomeClient(ctx, req.(*CLIWelcomeClient))
+		return srv.(CLIServiceServer).WelcomeClient(ctx, req.(*ClientWelcomeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// MyService_ServiceDesc is the grpc.ServiceDesc for MyService service.
+func _CLIService_ListVMs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CLIServiceServer).ListVMs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CLIService_ListVMs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CLIServiceServer).ListVMs(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// CLIService_ServiceDesc is the grpc.ServiceDesc for CLIService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var MyService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "cligrpc.MyService",
-	HandlerType: (*MyServiceServer)(nil),
+var CLIService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "cligrpc.CLIService",
+	HandlerType: (*CLIServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "WelcomeClient",
-			Handler:    _MyService_WelcomeClient_Handler,
+			Handler:    _CLIService_WelcomeClient_Handler,
+		},
+		{
+			MethodName: "ListVMs",
+			Handler:    _CLIService_ListVMs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
