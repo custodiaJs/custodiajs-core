@@ -13,11 +13,13 @@ func (o *WebGrpcService) Serve(closeSignal chan struct{}) error {
 	publicgrpc.RegisterRPCServiceServer(o.serverObj, grpcObject)
 	publicgrpc.RegisterChatServiceServer(o.serverObj, grpcObject)
 
-	// Starte den gRPC-Server auf Port 50051
+	// Der TCP Socket für den gRPC Server werden erstellt
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", o.localAddress.LocalIP, o.localAddress.LocalPort))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+
+	// Der Server wird ausgeführt
 	if err := o.serverObj.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

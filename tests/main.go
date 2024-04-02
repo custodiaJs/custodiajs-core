@@ -10,11 +10,13 @@ import (
 	"runtime"
 	"sync"
 	"syscall"
+	"vnh1/apiservices/cligrpc"
 	"vnh1/apiservices/httpapi"
 	"vnh1/apiservices/webgrpc"
 	"vnh1/core"
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
+	"vnh1/types"
 	"vnh1/utils"
 
 	"golang.org/x/crypto/sha3"
@@ -143,6 +145,18 @@ func main() {
 	// Der Core wird erzeugt
 	core, err := core.NewCore(hostCert, ikdb)
 	if err != nil {
+		panic(err)
+	}
+
+	// Die CLI Terminals werden erzeugt
+	fmt.Println("cligrpc: enabled")
+	noneRootCLI, err := cligrpc.New("/tmp/vnh1_none_root", types.NONE_ROOT_ADMIN)
+	if err != nil {
+		panic(err)
+	}
+
+	// Die CLI wird hinzuefügt
+	if err := core.AddAPISocket(noneRootCLI); err != nil {
 		panic(err)
 	}
 

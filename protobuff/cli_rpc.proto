@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package cligrpc;
+option go_package = "/grpc/cligrpc;cligrpc";
+
+message CLIWelcomeClient {
+  string containerId = 1;
+  string functionName = 2;
+}
+
+message RPCResponse {
+  string result = 1;
+  string error = 2; 
+}
+
+service MyService {
+  rpc WelcomeClient(CLIWelcomeClient) returns (RPCResponse);
+}
