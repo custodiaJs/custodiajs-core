@@ -2,8 +2,10 @@ package clirpc
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"vnh1/grpc/cligrpc"
+	"vnh1/utils"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -39,6 +41,9 @@ func (s *CliGrpcServer) ListVMs(ctx context.Context, _ *emptypb.Empty) (*cligrpc
 
 	// Der Rückgabewert wird erzeugt
 	returnValue := &cligrpc.VmListResponse{Vms: entry}
+
+	// Log
+	utils.LogPrint(fmt.Sprintf("CLI: Retrieve VmList with %d items\n", len(entry)))
 
 	// Die Daten werden zurückgesendet
 	return returnValue, nil

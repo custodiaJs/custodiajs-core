@@ -16,12 +16,12 @@ import (
 	"github.com/dop251/goja"
 )
 
-func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) {
+func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request) {
 	// Es wird eine neue Process Log Session erzeugt
 	proc := utils.NewProcLogSession()
 
 	// Es wird geprüft ob es sich um die POST Methode handelt
-	proc.LogPrint("RPC: validate incomming remote function call request from '%s'\n", r.RemoteAddr)
+	utils.ProcFormatConsoleText(proc, "HTTP-RPC", types.VALIDATE_INCOMMING_REMOTE_FUNCTION_CALL_REQUEST_FROM, r.RemoteAddr)
 	request, err := validatePOSTRequestAndGetRequestData(r)
 	if err != nil {
 		// Set the 'Allow' header to indicate that only POST is allowed
@@ -35,12 +35,12 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Es wird geprüft ob es sich um eine bekannte VM handelt
-	proc.LogPrint("RPC: determine the script container '%s'\n", strings.ToUpper(request.VmId))
+	utils.ProcFormatConsoleText(proc, "HTTP-RPC", types.DETERMINE_THE_SCRIPT_CONTAINER, strings.ToUpper(request.VmId))
 	foundedVM, err := o.core.GetScriptContainerVMByID(request.VmId)
 	if err != nil {
-		proc.LogPrint("RPC: determine the script container '%s' failed, unkown script vm container\n", strings.ToUpper(request.VmId))
+		proc.LogPrint("HTTP-RPC: determine the script container '%s' failed, unkown script vm container\n", strings.ToUpper(request.VmId))
 		errorResponse(request.ContentType, w, err.Error())
-		proc.LogPrint("RPC: failed\n")
+		proc.LogPrint("HTTP-RPC: failed\n")
 		return
 	}
 
@@ -49,7 +49,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 	// wenn es sich nicht um eine zulässige Quelle handelt, wird der Vorgang abgebrochen.
 	requestHttpSource := getRefererOrXRequestedWith(request)
 	if hasRefererOrXRequestedWith(request) && !foundedVM.ValidateRPCRequestSource(requestHttpSource) {
-		proc.LogPrint("RPC: process aborted, not allowed request websource '%s'\n", getRefererOrXRequestedWith(request))
+		proc.LogPrint("HTTP-RPC: process aborted, not allowed request websource '%s'\n", getRefererOrXRequestedWith(request))
 		errorResponse(request.ContentType, w, "not allowed request from webresource")
 		return
 	}
@@ -58,7 +58,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 	data, err := extractHttpRpcBody(request.ContentType, r.Body)
 	if err != nil {
 		errorResponse(request.ContentType, w, "invalid body data")
-		proc.LogPrint("RPC: failed, invalid request\n")
+		proc.LogPrint("HTTP-RPC: failed, invalid request\n")
 		return
 	}
 
@@ -66,7 +66,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 	// Es wird geprüft, ob der Funktionsname korrekt ist
 	if !utils.ValidateFunctionName(data.FunctionName) {
 		errorResponse(request.ContentType, w, "invalid function name")
-		proc.LogPrint("RPC: failed, invalid function name\n")
+		proc.LogPrint("HTTP-RPC: failed, invalid function name\n")
 		return
 	}
 
@@ -74,7 +74,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 	defer r.Body.Close()
 
 	// Es wird versucht die Passende Funktion zu ermitteln
-	proc.LogPrint("RPC: &[%s]: determine the function '%s'\n", foundedVM.GetVMName(), data.FunctionName)
+	utils.ProcFormatConsoleText(proc, "HTTP-PRC", types.DETERMINE_THE_FUNCTION, foundedVM.GetVMName(), data.FunctionName)
 	var foundFunction types.SharedFunctionInterface
 	for _, item := range foundedVM.GetLocalSharedFunctions() {
 		if item.GetName() == data.FunctionName {
@@ -95,25 +95,28 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Sollte keine Passende Funktion gefunden werden, wird der Vorgang abgebrochen
 	if foundFunction == nil {
-		proc.LogPrint("RPC: &[%s]: determine the function '%s' failed, unkown function\n", foundedVM.GetVMName(), data.FunctionName)
+		proc.LogPrint("HTTP-RPC: &[%s]: determine the function '%s' failed, unkown function\n", foundedVM.GetVMName(), data.FunctionName)
 		errorResponse(request.ContentType, w, "function not found")
-		proc.LogPrint("RPC: failed\n")
+		proc.LogPrint("HTTP-RPC: failed\n")
 		return
 	}
 
 	// Es wird ermitelt ob die Datentypen korrekt sind
 	if len(foundFunction.GetParmTypes()) != len(data.Parms) {
+		proc.LogPrint("HTTP-RPC: &[%s]: the number of parameters required does not match the number of parameters submitted\n", foundedVM.GetVMName())
 		errorResponse(request.ContentType, w, "the number of parameters required does not match the number of parameters submitted")
+		proc.LogPrint("HTTP-RPC: failed\n")
 		return
 	}
 
 	// Die Einzelnen Parameter werden geprüft und abgearbeitet
-	proc.LogPrint("RPC: &[%s@%s]: convert %d function parameters\n", foundFunction.GetName(), foundedVM.GetVMName(), len(foundFunction.GetParmTypes()))
 	extractedValues := make([]types.FunctionParameterBundleInterface, 0)
 	for x := range foundFunction.GetParmTypes() {
 		// Es wird geprüft ob es sich bei dem Angefordeten Parameter um einen zulässigen Parameter handelt
 		if foundFunction.GetParmTypes()[x] != data.Parms[x].Type {
+			proc.LogPrint("HTTP-RPC: &[%s@%s]: the data type of parameter %d does not match the required data type\n", foundFunction.GetName(), foundedVM.GetVMName(), x)
 			errorResponse(request.ContentType, w, fmt.Sprintf("the data type of parameter %d does not match the required data type", x))
+			proc.LogPrint("HTTP-RPC: failed\n")
 			return
 		}
 
@@ -263,10 +266,9 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Die Funktion wird aufgerufen
-	proc.LogPrint("RPC: &[%s@%s]: call function\n", foundFunction.GetName(), foundedVM.GetVMName())
 	result, err := foundFunction.EnterFunctionCall(request, &RpcRequest{parms: extractedValues})
 	if err != nil {
-		proc.LogPrint("RPC: &[%s]: call function '%s' error\n\t%s\n", foundedVM.GetVMName(), foundFunction.GetName(), err)
+		proc.LogPrint("HTTP-RPC: &[%s]: call function '%s' error\n\t%s\n", foundedVM.GetVMName(), foundFunction.GetName(), err)
 		errorResponse(request.ContentType, w, "an error occurred when calling the function, error: "+err.Error())
 		return
 	}
@@ -275,24 +277,24 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 	var responseData *RPCResponseData
 	if result == nil {
 		responseData = &RPCResponseData{DType: "null", Value: nil}
-		proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return null\n", foundFunction.GetName(), foundedVM.GetVMName())
+		proc.LogPrintSuccs("HTTP-RPC: &[%s@%s]: function call, return null\n", foundFunction.GetName(), foundedVM.GetVMName())
 	} else if result.ExportType() == goja.Undefined().ExportType() && result.Export() == nil {
 		responseData = &RPCResponseData{DType: "undefined", Value: nil}
-		proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return undefined\n", foundFunction.GetName(), foundedVM.GetVMName())
+		proc.LogPrintSuccs("HTTP-RPC: &[%s@%s]: function call, return undefined\n", foundFunction.GetName(), foundedVM.GetVMName())
 	} else {
 		switch result.ExportType().Kind() {
 		case reflect.Bool:
 			responseData = &RPCResponseData{DType: "boolean", Value: result.ToBoolean()}
-			proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return boolean\n", foundFunction.GetName(), foundedVM.GetVMName())
+			proc.LogPrint("HTTP-RPC: &[%s@%s]: function call, return boolean\n", foundFunction.GetName(), foundedVM.GetVMName())
 		case reflect.Int64:
 			responseData = &RPCResponseData{DType: "number", Value: result.ToInteger()}
-			proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return int64\n", foundFunction.GetName(), foundedVM.GetVMName())
+			proc.LogPrint("HTTP-RPC: &[%s@%s]: function call, return int64\n", foundFunction.GetName(), foundedVM.GetVMName())
 		case reflect.Float64:
 			responseData = &RPCResponseData{DType: "number", Value: result.ToFloat()}
-			proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return float64\n", foundFunction.GetName(), foundedVM.GetVMName())
+			proc.LogPrint("HTTP-RPC: &[%s@%s]: function call, return float64\n", foundFunction.GetName(), foundedVM.GetVMName())
 		case reflect.String:
 			responseData = &RPCResponseData{DType: "string", Value: result.String()}
-			proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return string\n", foundFunction.GetName(), foundedVM.GetVMName())
+			proc.LogPrint("HTTP-RPC: &[%s@%s]: function call, return string\n", foundFunction.GetName(), foundedVM.GetVMName())
 		case reflect.Slice:
 			slicedObject, isConverted := result.Export().([]interface{})
 			if !isConverted {
@@ -300,7 +302,7 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 				return
 			}
 			responseData = &RPCResponseData{DType: "array", Value: slicedObject}
-			proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return slice\n", foundFunction.GetName(), foundedVM.GetVMName())
+			proc.LogPrint("HTTP-RPC: &[%s@%s]: function call, return slice\n", foundFunction.GetName(), foundedVM.GetVMName())
 		case reflect.Map:
 			mapObjected, isConverted := result.Export().(map[string]interface{})
 			if !isConverted {
@@ -308,9 +310,9 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 				return
 			}
 			responseData = &RPCResponseData{DType: "object", Value: mapObjected}
-			proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return map\n", foundFunction.GetName(), foundedVM.GetVMName())
+			proc.LogPrint("HTTP-RPC: &[%s@%s]: function call, return map\n", foundFunction.GetName(), foundedVM.GetVMName())
 		case reflect.Func:
-			proc.LogPrintSuccs("RPC: &[%s@%s]: function call, return function\n", foundFunction.GetName(), foundedVM.GetVMName())
+			proc.LogPrint("HTTP-RPC: &[%s@%s]: function call, return function\n", foundFunction.GetName(), foundedVM.GetVMName())
 			errorResponse(request.ContentType, w, "function return not allowed in web remote function call request")
 			return
 		default:
@@ -320,10 +322,9 @@ func (o *HttpApiService) httpRPCHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Die Daten werden zurückgesendet
-	proc.LogPrint("RPC: &[%s@%s]: sending function call response\n", foundFunction.GetName(), foundedVM.GetVMName())
 	responsSize, err := finalResponse(request.ContentType, w, responseData)
 	if err != nil {
-		proc.LogPrint("RPC: &[%s]: call function response sending '%s' error\n\t%s\n", foundedVM.GetVMName(), foundFunction.GetName(), err)
+		proc.LogPrint("HTTP-RPC: &[%s]: call function response sending '%s' error\n\t%s\n", foundedVM.GetVMName(), foundFunction.GetName(), err)
 	}
-	proc.LogPrint(fmt.Sprintf("RPC: done, response size = %d bytes\n", responsSize))
+	utils.ProcFormatConsoleText(proc, "HTTP-PRC", types.RPC_CALL_DONE_RESPONSE, fmt.Sprintf("%d", responsSize))
 }

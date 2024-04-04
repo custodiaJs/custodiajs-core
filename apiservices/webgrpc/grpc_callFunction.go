@@ -27,7 +27,7 @@ func (s *GrpcServer) CallFunction(ctx context.Context, in *publicgrpc.RPCFunctio
 
 	// Es wird eine neue Process Log Session erzeugt
 	proc := utils.NewProcLogSession()
-	proc.LogPrint("gRPC: new incomming request from '%s'\n", p.Addr.String())
+	proc.LogPrint("gRPC: %s", utils.FormatConsoleText(types.VALIDATE_INCOMMING_REMOTE_FUNCTION_CALL_REQUEST_FROM, p.Addr.String()))
 
 	// Die TLS Informationen werden abgerufen
 	tlsInfo, ok := p.AuthInfo.(credentials.TLSInfo)
@@ -38,7 +38,7 @@ func (s *GrpcServer) CallFunction(ctx context.Context, in *publicgrpc.RPCFunctio
 	_ = tlsInfo
 
 	// Es wird geprüft ob es sich um eine bekannte VM handelt
-	proc.LogPrint("gRPC: searching script container '%s'\n", strings.ToLower(in.ContainerId))
+	proc.LogPrint("gRPC: determine the script container '%s'\n", strings.ToLower(in.ContainerId))
 	foundedVM, err := s.core.GetScriptContainerVMByID(in.ContainerId)
 	if err != nil {
 		fmt.Println(err)
@@ -46,7 +46,7 @@ func (s *GrpcServer) CallFunction(ctx context.Context, in *publicgrpc.RPCFunctio
 	}
 
 	// Es wird versucht die Passende Funktion zu ermitteln
-	proc.LogPrint("gRPC: &[%s]: searching function '%s'\n", foundedVM.GetVMName(), in.FunctionName)
+	proc.LogPrint("gRPC: &[%s]: determine the function '%s'\n", foundedVM.GetVMName(), in.FunctionName)
 	var foundFunction types.SharedFunctionInterface
 	for _, item := range foundedVM.GetLocalSharedFunctions() {
 		if item.GetName() == in.FunctionName {

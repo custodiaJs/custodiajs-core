@@ -2,20 +2,30 @@ package httpapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"vnh1/types"
+	"vnh1/utils"
 )
 
 func (o *HttpApiService) indexHandler(w http.ResponseWriter, r *http.Request) {
 	// Es werden alle Script Container extrahiert
-	scriptContainer := o.core.GetAllActiveScriptContainerIDs()
+	scriptContainers := o.core.GetAllActiveScriptContainerIDs()
+	ucscontainers := []string{}
+	for _, item := range scriptContainers {
+		ucscontainers = append(ucscontainers, strings.ToUpper(item))
+	}
 
 	// Erstelle ein Response-Objekt mit deiner Nachricht.
-	response := Response{Version: 1000000000, ScriptContainers: scriptContainer}
+	response := Response{Version: uint32(types.C_VESION), ScriptContainers: ucscontainers}
 
 	// Setze den Content-Type der Antwort auf application/json.
 	w.Header().Set("Content-Type", "application/json")
+
+	// Log
+	utils.LogPrint("HTTP-API: retrive host informations\n")
 
 	// Schreibe die JSON-Daten in den ResponseWriter.
 	if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -89,7 +99,7 @@ func (o *HttpApiService) vmInfo(w http.ResponseWriter, r *http.Request) {
 	// Erstelle ein Response-Objekt mit deiner Nachricht.
 	response := vmInfoResponse{
 		Name:    foundedVM.GetVMName(),
-		Hash:    foundedVM.GetFingerprint(),
+		Id:      foundedVM.GetFingerprint(),
 		Modules: foundedVM.GetVMModuleNames(),
 		SharedFunctions: SharedFunctions{
 			Public: publicSharedFunctions,
@@ -103,4 +113,7 @@ func (o *HttpApiService) vmInfo(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Fehler beim Senden der JSON-Antwort: %v", err)
 		http.Error(w, "Ein interner Fehler ist aufgetreten", http.StatusInternalServerError)
 	}
+
+	// Log
+	utils.LogPrint(fmt.Sprintf("HTTP-API: retrive vm '%s' informations\n", strings.ToUpper(request.VmId)))
 }

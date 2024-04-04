@@ -8,7 +8,7 @@ func (o *HttpApiService) Serve(closeSignal chan struct{}) error {
 	o.serverMux.HandleFunc("/vm", o.vmInfo)
 
 	// Der VM-RPC Handler wird erstellt
-	o.serverMux.HandleFunc("/rpc", o.httpRPCHandler)
+	o.serverMux.HandleFunc("/rpc", o.httpCallFunction)
 
 	// Der Websocket Console Stream wird hinzugefügt
 	// der Console stream ist nur auf dem Localhost verfügbar
