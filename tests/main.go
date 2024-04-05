@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"vnh1/apiservices/cligrpc"
 	"vnh1/apiservices/httpapi"
-	"vnh1/apiservices/webgrpc"
 	"vnh1/core"
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
@@ -176,25 +175,6 @@ func main() {
 		panic(err)
 	}
 	if err := core.AddAPISocket(localhostWebserviceV4); err != nil {
-		panic(err)
-	}
-
-	// Der grpcservice wird erzeugt
-	fmt.Println("grpcapi (localhost): enabled")
-	localhostGrpcServiceV6, err := webgrpc.NewLocalService("ipv6", 8081, hostCert)
-	if err != nil {
-		panic(err)
-	}
-	localhostGrpcServiceV4, err := webgrpc.NewLocalService("ipv4", 8081, hostCert)
-	if err != nil {
-		panic(err)
-	}
-
-	// Der Localhost grpcservice wird hinzugefügt
-	if err := core.AddAPISocket(localhostGrpcServiceV6); err != nil {
-		panic(err)
-	}
-	if err := core.AddAPISocket(localhostGrpcServiceV4); err != nil {
 		panic(err)
 	}
 
