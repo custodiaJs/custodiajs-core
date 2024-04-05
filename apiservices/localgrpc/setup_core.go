@@ -1,4 +1,4 @@
-package cligrpc
+package localgrpc
 
 import (
 	"vnh1/types"

@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package cligrpc;
-option go_package = "/grpc/cligrpc;cligrpc";
+package localgrpcproto;
+option go_package = "/localgrpcproto;localgrpcproto";
 
 import "google/protobuf/empty.proto";
 
@@ -13,6 +13,7 @@ message ClientWelcomeResponse {
   uint64 version = 1;
 }
 
+// VM Listeneintrag
 message VmListEntry {
   string name = 1;
   string id = 2;
@@ -24,11 +25,30 @@ message VmListEntry {
   repeated string usedHostKeyIds = 8;
 }
 
+// Eine Liste alle Verfügbaren VM's
 message VmListResponse {
   repeated VmListEntry vms = 1;
 }
 
+message VmDetailsResponse {
+
+}
+
+// Gibt die Parameter der VM an
+message VmDetailsParms {
+  oneof value {
+    string name = 1;
+    string id = 2;
+  }
+}
+
 service CLIService {
+  // Wird verwendet damit ein Client seine Sitzungsdaten angeben kann
   rpc WelcomeClient(ClientWelcomeRequest) returns (ClientWelcomeResponse);
+
+  // Ruft eine Liste, aller Verfügabren VM's ab
   rpc ListVMs(google.protobuf.Empty) returns (VmListResponse);
+
+  // Ruft alle Details einer VM ab
+  rpc GetVMDetails(VmDetailsParms) returns (VmDetailsResponse);
 }

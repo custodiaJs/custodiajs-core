@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v4.25.3
-// source: protobuff/cli_rpc.proto
+// source: protobuff/local_rpc.proto
 
-package cligrpc
+package localgrpcproto
 
 import (
 	context "context"
@@ -20,16 +20,21 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	CLIService_WelcomeClient_FullMethodName = "/cligrpc.CLIService/WelcomeClient"
-	CLIService_ListVMs_FullMethodName       = "/cligrpc.CLIService/ListVMs"
+	CLIService_WelcomeClient_FullMethodName = "/localgrpcproto.CLIService/WelcomeClient"
+	CLIService_ListVMs_FullMethodName       = "/localgrpcproto.CLIService/ListVMs"
+	CLIService_GetVMDetails_FullMethodName  = "/localgrpcproto.CLIService/GetVMDetails"
 )
 
 // CLIServiceClient is the client API for CLIService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CLIServiceClient interface {
+	// Wird verwendet damit ein Client seine Sitzungsdaten angeben kann
 	WelcomeClient(ctx context.Context, in *ClientWelcomeRequest, opts ...grpc.CallOption) (*ClientWelcomeResponse, error)
+	// Ruft eine Liste, aller Verfügabren VM's ab
 	ListVMs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*VmListResponse, error)
+	// Ruft alle Details einer VM ab
+	GetVMDetails(ctx context.Context, in *VmDetailsParms, opts ...grpc.CallOption) (*VmDetailsResponse, error)
 }
 
 type cLIServiceClient struct {
@@ -58,12 +63,25 @@ func (c *cLIServiceClient) ListVMs(ctx context.Context, in *emptypb.Empty, opts 
 	return out, nil
 }
 
+func (c *cLIServiceClient) GetVMDetails(ctx context.Context, in *VmDetailsParms, opts ...grpc.CallOption) (*VmDetailsResponse, error) {
+	out := new(VmDetailsResponse)
+	err := c.cc.Invoke(ctx, CLIService_GetVMDetails_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CLIServiceServer is the server API for CLIService service.
 // All implementations must embed UnimplementedCLIServiceServer
 // for forward compatibility
 type CLIServiceServer interface {
+	// Wird verwendet damit ein Client seine Sitzungsdaten angeben kann
 	WelcomeClient(context.Context, *ClientWelcomeRequest) (*ClientWelcomeResponse, error)
+	// Ruft eine Liste, aller Verfügabren VM's ab
 	ListVMs(context.Context, *emptypb.Empty) (*VmListResponse, error)
+	// Ruft alle Details einer VM ab
+	GetVMDetails(context.Context, *VmDetailsParms) (*VmDetailsResponse, error)
 	mustEmbedUnimplementedCLIServiceServer()
 }
 
@@ -76,6 +94,9 @@ func (UnimplementedCLIServiceServer) WelcomeClient(context.Context, *ClientWelco
 }
 func (UnimplementedCLIServiceServer) ListVMs(context.Context, *emptypb.Empty) (*VmListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListVMs not implemented")
+}
+func (UnimplementedCLIServiceServer) GetVMDetails(context.Context, *VmDetailsParms) (*VmDetailsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetVMDetails not implemented")
 }
 func (UnimplementedCLIServiceServer) mustEmbedUnimplementedCLIServiceServer() {}
 
@@ -126,11 +147,29 @@ func _CLIService_ListVMs_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CLIService_GetVMDetails_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VmDetailsParms)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CLIServiceServer).GetVMDetails(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CLIService_GetVMDetails_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CLIServiceServer).GetVMDetails(ctx, req.(*VmDetailsParms))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CLIService_ServiceDesc is the grpc.ServiceDesc for CLIService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var CLIService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "cligrpc.CLIService",
+	ServiceName: "localgrpcproto.CLIService",
 	HandlerType: (*CLIServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -141,7 +180,11 @@ var CLIService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "ListVMs",
 			Handler:    _CLIService_ListVMs_Handler,
 		},
+		{
+			MethodName: "GetVMDetails",
+			Handler:    _CLIService_GetVMDetails_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "protobuff/cli_rpc.proto",
+	Metadata: "protobuff/local_rpc.proto",
 }

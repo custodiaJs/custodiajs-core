@@ -10,8 +10,8 @@ import (
 	"runtime"
 	"sync"
 	"syscall"
-	"vnh1/apiservices/cligrpc"
 	"vnh1/apiservices/httpjson"
+	"vnh1/apiservices/localgrpc"
 	"vnh1/core"
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
@@ -111,6 +111,13 @@ func main() {
 		}
 	}
 
+	// Anzahl der verfügbaren CPU-Kerne ermitteln
+	numCPU := runtime.NumCPU()
+	fmt.Println("Total CPU-Cores avail:", numCPU-2)
+
+	// Maximale Anzahl von CPU-Kernen für die Go-Runtime festlegen
+	runtime.GOMAXPROCS(numCPU - 2)
+
 	// Das HostCert und der Privatekey werden geladen
 	fmt.Print("Loading host certificate: ")
 	hostCert, err := loadHostTlsCert()
@@ -148,8 +155,8 @@ func main() {
 	}
 
 	// Die CLI Terminals werden erzeugt
-	fmt.Println("cligrpc: enabled")
-	noneRootCLI, err := cligrpc.NewTestTCP("/home/fluffelbuff/Schreibtisch/localhost.crt", "/home/fluffelbuff/Schreibtisch/localhost.pem", types.NONE_ROOT_ADMIN)
+	fmt.Println("localgrpc: enabled")
+	noneRootCLI, err := localgrpc.NewTestTCP("/home/fluffelbuff/Schreibtisch/localhost.crt", "/home/fluffelbuff/Schreibtisch/localhost.pem", types.NONE_ROOT_ADMIN)
 	if err != nil {
 		panic(err)
 	}

@@ -1,15 +1,15 @@
-package cligrpc
+package localgrpc
 
 import (
 	"log"
-	"vnh1/apiservices/cligrpc/clirpc"
-	grpccli "vnh1/grpc/cligrpc"
+	"vnh1/apiservices/localgrpc/localgrpcservice"
+	"vnh1/localgrpcproto"
 )
 
 func (o *HostCliService) Serve(closeSignal chan struct{}) error {
 	// Das CLI gRPC Serverobjekt wird erstellt
-	cliGrpc := clirpc.NewCliGrpcServer(o.core)
-	grpccli.RegisterCLIServiceServer(o.grpcServer, cliGrpc)
+	localgrpc := localgrpcservice.NewCliGrpcServer(o.core)
+	localgrpcproto.RegisterCLIServiceServer(o.grpcServer, localgrpc)
 
 	// Der grpc Server wird gestartet
 	if err := o.grpcServer.Serve(o.netListner); err != nil {

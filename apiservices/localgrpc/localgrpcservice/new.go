@@ -1,4 +1,4 @@
-package clirpc
+package localgrpcservice
 
 import (
 	"vnh1/types"

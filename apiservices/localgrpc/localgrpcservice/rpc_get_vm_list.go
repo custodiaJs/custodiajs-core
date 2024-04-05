@@ -1,18 +1,18 @@
-package clirpc
+package localgrpcservice
 
 import (
 	"context"
 	"fmt"
 	"strings"
-	"vnh1/grpc/cligrpc"
+	"vnh1/localgrpcproto"
 	"vnh1/utils"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-func (s *CliGrpcServer) ListVMs(ctx context.Context, _ *emptypb.Empty) (*cligrpc.VmListResponse, error) {
+func (s *CliGrpcServer) ListVMs(ctx context.Context, _ *emptypb.Empty) (*localgrpcproto.VmListResponse, error) {
 	// Die Werte werden abgeabreitet
-	entry := []*cligrpc.VmListEntry{}
+	entry := []*localgrpcproto.VmListEntry{}
 	for _, item := range s.core.GetAllVMs() {
 		// Die geteilten Funktionen werden abgerufen
 		sharf := make([]string, 0)
@@ -27,7 +27,7 @@ func (s *CliGrpcServer) ListVMs(ctx context.Context, _ *emptypb.Empty) (*cligrpc
 		}
 
 		// Der Eintrag wird hinzugefügt
-		entry = append(entry, &cligrpc.VmListEntry{
+		entry = append(entry, &localgrpcproto.VmListEntry{
 			Name:            item.GetVMName(),
 			Id:              strings.ToUpper(item.GetFingerprint()),
 			State:           uint32(item.GetState()),
@@ -40,7 +40,7 @@ func (s *CliGrpcServer) ListVMs(ctx context.Context, _ *emptypb.Empty) (*cligrpc
 	}
 
 	// Der Rückgabewert wird erzeugt
-	returnValue := &cligrpc.VmListResponse{Vms: entry}
+	returnValue := &localgrpcproto.VmListResponse{Vms: entry}
 
 	// Log
 	utils.LogPrint(fmt.Sprintf("CLI: Retrieve VmList with %d items\n", len(entry)))
