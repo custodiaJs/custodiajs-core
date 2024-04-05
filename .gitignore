@@ -2,6 +2,7 @@ vnh1
 compiler/compiler
 core/core
 
+
 # Ignore node_modules directory
 node_modules/
 
@@ -14,3 +15,4 @@ api/vm/client/*.js
 dist/
 
 tests/tests
+apiservices/webgrpc
