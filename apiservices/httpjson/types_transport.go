@@ -1,4 +1,4 @@
-package httpapi
+package httpjson
 
 type RPCFunctionParameter struct {
 	Type  string      `json:"type" cbor:"type"`

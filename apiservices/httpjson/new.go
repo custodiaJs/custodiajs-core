@@ -1,4 +1,4 @@
-package httpapi
+package httpjson
 
 import (
 	"crypto/tls"
@@ -100,7 +100,7 @@ func New(localIp string, localPort uint32, hostnames []string, localCert *tls.Ce
 	}
 
 	// Log
-	fmt.Printf("New httpapi created on: %s\n", addr)
+	fmt.Printf("New httpjson created on: %s\n", addr)
 
 	// Die Daten werden zurückgegeben
 	return webs, nil

@@ -1,4 +1,4 @@
-package httpapi
+package httpjson
 
 func (o *HttpApiService) Serve(closeSignal chan struct{}) error {
 	// Die Basis Urls werden hinzugefügt

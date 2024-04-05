@@ -11,7 +11,7 @@ import (
 	"sync"
 	"syscall"
 	"vnh1/apiservices/cligrpc"
-	"vnh1/apiservices/httpapi"
+	"vnh1/apiservices/httpjson"
 	"vnh1/core"
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
@@ -159,18 +159,18 @@ func main() {
 		panic(err)
 	}
 
-	// Der Localhost httpapi wird erzeugt
-	fmt.Println("httpapi (localhost): enabled")
-	localhostWebserviceV6, err := httpapi.NewLocalService("ipv6", 8080, hostCert)
+	// Der Localhost httpjson wird erzeugt
+	fmt.Println("httpjson (localhost): enabled")
+	localhostWebserviceV6, err := httpjson.NewLocalService("ipv6", 8080, hostCert)
 	if err != nil {
 		panic(err)
 	}
-	localhostWebserviceV4, err := httpapi.NewLocalService("ipv4", 8080, hostCert)
+	localhostWebserviceV4, err := httpjson.NewLocalService("ipv4", 8080, hostCert)
 	if err != nil {
 		panic(err)
 	}
 
-	// Der Localhost httpapi wird hinzugefügt
+	// Der Localhost httpjson wird hinzugefügt
 	if err := core.AddAPISocket(localhostWebserviceV6); err != nil {
 		panic(err)
 	}
