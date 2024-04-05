@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strings"
 	"sync"
 	"syscall"
 	"vnh1/apiservices/cligrpc"
@@ -215,7 +216,7 @@ func main() {
 		}
 
 		// Log
-		fmt.Printf("%s-> VM '%s' <-> %s loaded %d bytes\n%s%s--> Total NodeJS submodules: %d\n", spaces, newVM.GetVMName(), newVM.GetFingerprint(), item.GetBaseSize(), spaces, spaces, item.GetTotalNodeJsModules())
+		fmt.Printf("%s-> VM '%s' <-> %s loaded %d bytes\n%s%s--> Total NodeJS submodules: %d\n", spaces, newVM.GetVMName(), strings.ToUpper(newVM.GetFingerprint()), item.GetBaseSize(), spaces, spaces, item.GetTotalNodeJsModules())
 	}
 
 	// Der Core wird gestartet

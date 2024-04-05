@@ -326,5 +326,5 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		proc.LogPrint("HTTP-RPC: &[%s]: call function response sending '%s' error\n\t%s\n", foundedVM.GetVMName(), foundFunction.GetName(), err)
 	}
-	utils.ProcFormatConsoleText(proc, "HTTP-PRC", types.RPC_CALL_DONE_RESPONSE, fmt.Sprintf("%d", responsSize))
+	utils.ProcFormatConsoleText(proc, "HTTP-PRC", types.HTTP_RPC_CALL_DONE_RESPONSE, fmt.Sprintf("%d", responsSize))
 }
