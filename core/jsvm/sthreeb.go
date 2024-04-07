@@ -6,18 +6,6 @@ import (
 	"github.com/dop251/goja"
 )
 
-type S3MetaData struct {
-}
-
-type S3Bucket interface {
-	UploadObject(string, interface{}, interface{}) error
-	DownloadObject(string, interface{}) (interface{}, error)
-	DeleteObject(string, interface{}) error
-}
-
-type LocalVMS3Bucket struct {
-}
-
 func (o *LocalVMS3Bucket) UploadObject(name string, data interface{}, mData interface{}) error {
 	fmt.Println("S3_BUCKET:Upload", name, data, mData)
 	return nil

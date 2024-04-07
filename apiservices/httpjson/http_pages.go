@@ -96,11 +96,17 @@ func (o *HttpApiService) vmInfo(w http.ResponseWriter, r *http.Request) {
 		stateStrValue = "UNKOWN"
 	}
 
+	// Die JS Module Namen werden extrahiert
+	extractedNodeJsModuleNames := make([]string, 0)
+	for _, item := range foundedVM.GetVMJSModules() {
+		extractedNodeJsModuleNames = append(extractedNodeJsModuleNames, item.Name)
+	}
+
 	// Erstelle ein Response-Objekt mit deiner Nachricht.
 	response := vmInfoResponse{
 		Name:    foundedVM.GetVMName(),
-		Id:      foundedVM.GetFingerprint(),
-		Modules: foundedVM.GetVMModuleNames(),
+		Id:      string(foundedVM.GetFingerprint()),
+		Modules: extractedNodeJsModuleNames,
 		SharedFunctions: SharedFunctions{
 			Public: publicSharedFunctions,
 			Local:  localSharedFunctions,

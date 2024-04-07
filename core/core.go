@@ -2,12 +2,15 @@ package core
 
 import (
 	"crypto/tls"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"sync"
+	"vnh1/core/databaseservices"
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
 	"vnh1/types"
+	"vnh1/utils"
 
 	"vnh1/core/jsvm"
 )
@@ -19,29 +22,63 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 		return nil, fmt.Errorf("AddScriptContainer: Broken Virtual Machine")
 	}
 
-	// Es wird eine neue VM erzeugt
-	tvmobj, err := jsvm.NewVM(o, nil)
-	if err != nil {
-		return nil, fmt.Errorf("AddScriptContainer: " + err.Error())
+	// Es wird geprüft welche HostCAS benötigt werden
+	for _, item := range vmDbEntry.GetMemberCertsPkeys() {
+		// Es wird ermittelt ob es sich um ein SSL Eintrag handelt, wenn nicht wird dieser Ignoriert
+		if item.Type != "ssl" {
+			continue
+		}
+
+		// Es wird ermittelt ob der Host ein SSL-Cert/Privatekey paar besitzt welches von dem Aktuellen RootCA Signiert wurde
+		// wenn nicht wird geprüft ob der Fingerabdruck des CERTS mit dem des Lokalen Certs übereinstimmt
+		if !o.hostIdentKeyDatabase.ValidateRootCAMembershipByFingerprint(item.Fingerprint) {
+			if !strings.EqualFold(hex.EncodeToString(utils.ComputeTlsCertFingerprint(o.hostTlsCert)), item.Fingerprint) {
+				return nil, fmt.Errorf("Core->AddScriptContainer: unkown host ca membership '%s'", strings.ToUpper(item.Fingerprint))
+			}
+		}
 	}
 
 	// Der Mutex wird angewendet
 	// und nach beenden der Funktion freigegeben
 	o.objectMutex.Lock()
-	defer o.objectMutex.Unlock()
 
-	// Es wird geprüft ob bereits eine VM mit der Selben ID vorhanden ist
-	if _, foundVM := o.vmsByID[vmDbEntry.GetVMContainerMerkleHash()]; foundVM {
+	// Es wird geprüft ob bereits eiein VM Link hinzugefügtne VM mit der Selben ID vorhanden ist
+	if _, foundVM := o.vmsByID[strings.ToLower(vmDbEntry.GetVMContainerMerkleHash())]; foundVM {
+		o.objectMutex.Unlock()
 		return nil, fmt.Errorf("Core->AddScriptContainer: You cannot add a VM container '%s' multiple times", vmDbEntry.GetVMContainerMerkleHash())
 	}
 
+	// Es wird eine neue VM erzeugt
+	tvmobj, err := jsvm.NewVM(nil)
+	if err != nil {
+		o.objectMutex.Unlock()
+		return nil, fmt.Errorf("AddScriptContainer: " + err.Error())
+	}
+
 	// Das Detailspaket wird erzeugt
-	vmobject := &CoreVM{JsVM: tvmobj, vmDbEntry: vmDbEntry, vmState: types.StillWait}
+	vmobject := newCoreVM(tvmobj, vmDbEntry)
 
 	// Das VMObjekt wird zwischengespeichert
-	o.vmsByID[vmDbEntry.GetVMContainerMerkleHash()] = vmobject
-	o.vmsByName[vmDbEntry.GetVMName()] = vmobject
-	o.vms = append(o.vms, vmobject)
+	o.vmsByID[strings.ToLower(vmDbEntry.GetVMContainerMerkleHash())] = vmobject // Merklehash
+	o.vmsByName[strings.ToLower(vmDbEntry.GetVMName())] = vmobject              // VM-Name
+	o.vms = append(o.vms, vmobject)                                             // Die VM wird abgespeichert
+
+	// Der Mutex wird freigegeben
+	o.objectMutex.Unlock()
+
+	// Die VM wird mit allen Datenbankdiensten Verknüpft
+	for _, item := range vmDbEntry.GetAllDatabaseServices() {
+		// Es wird ein neuer Link für die VM erzeugt
+		link, err := o.databaseService.GetDBServiceLink(item.GetDatabaseFingerprint())
+		if err != nil {
+			return nil, fmt.Errorf("Core->AddScriptContainer: " + err.Error())
+		}
+
+		// Der Link für den Datenbank Dienst wird abgespeichert
+		if err := vmobject.addDatabaseServiceLink(link); err != nil {
+			return nil, fmt.Errorf("Core->AddScriptContainer: " + err.Error())
+		}
+	}
 
 	// Das VM Objekt wird zwischengespeichert
 	return vmobject, nil
@@ -72,15 +109,20 @@ func (o *Core) AddAPISocket(apiSocket types.APISocketInterface) error {
 	return nil
 }
 
+// Fügt einen alternativen Dienst hinzus
+func (o *Core) AddAlternativeService(altService types.AlternativeServiceInterface) error {
+	panic("FUNCTION_NOT_IMPLEMENTATED")
+}
+
 // Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
 func (o *Core) GetScriptContainerVMByID(vmid string) (types.CoreVMInterface, error) {
-	// Es wird geprüft ob es sich um einen 64 Zeichen langen String handelt
-	if len(vmid) != 64 {
+	// Es wird geprüft ob es sich um einen zulässigen vm Namen handelt
+	if !utils.ValidateVMIdString(vmid) {
 		return nil, fmt.Errorf("Core->GetScriptContainerVMByID: invalid vm container id")
 	}
 
 	// Die ID wird lowercast
-	lowerCaseID := strings.ToLower(vmid)
+	lowerCaseId := strings.ToLower(vmid)
 
 	// Der Mutex wird angewendet
 	// und nach beenden der Funktion freigegeben
@@ -88,9 +130,34 @@ func (o *Core) GetScriptContainerVMByID(vmid string) (types.CoreVMInterface, err
 	defer o.objectMutex.Unlock()
 
 	// Es wird geprüft ob die VM exestiert
-	vmObj, found := o.vmsByID[vmid]
+	vmObj, found := o.vmsByID[lowerCaseId]
 	if !found {
-		return nil, fmt.Errorf("GetScriptContainerVMByID: unkown vm '%s'", lowerCaseID)
+		return nil, fmt.Errorf("Core->GetScriptContainerVMByID: unkown vm '%s'", lowerCaseId)
+	}
+
+	// Das Objekt wird zurückgegeben
+	return vmObj, nil
+}
+
+// Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
+func (o *Core) GetScriptContainerByVMName(vmName string) (types.CoreVMInterface, error) {
+	// Es wird geprüft ob es sich um einen zulässigen Namen handelt
+	if !utils.ValidateVMName(vmName) {
+		return nil, fmt.Errorf("Core->GetScriptContainerByVMName: invalid vm container name")
+	}
+
+	// Der Name wird lowercast
+	lowerCaseVmName := strings.ToLower(vmName)
+
+	// Der Mutex wird angewendet
+	// und nach beenden der Funktion freigegeben
+	o.objectMutex.Lock()
+	defer o.objectMutex.Unlock()
+
+	// Es wird geprüft ob die VM exestiert
+	vmObj, found := o.vmsByName[lowerCaseVmName]
+	if !found {
+		return nil, fmt.Errorf("Core->GetScriptContainerByVMName: unkown vm '%s'", lowerCaseVmName)
 	}
 
 	// Das Objekt wird zurückgegeben
@@ -107,7 +174,7 @@ func (o *Core) GetAllActiveScriptContainerIDs() []string {
 	// Es wird eine Liste mit allen Verfügbaren VM's erstellt
 	extr := make([]string, 0)
 	for _, item := range o.vmsByID {
-		extr = append(extr, item.GetFingerprint())
+		extr = append(extr, string(item.GetFingerprint()))
 	}
 
 	// Die Liste wird zurückgegeben
@@ -132,14 +199,16 @@ func (o *Core) GetAllVMs() []types.CoreVMInterface {
 }
 
 // Erstellt einen neuen vnh1 Core
-func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase.IdenKeyDatabase) (*Core, error) {
+func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase.IdenKeyDatabase, dbService *databaseservices.DbService) (*Core, error) {
 	// Das Coreobjekt wird erstellt
 	coreObj := &Core{
-		vmsByID:    make(map[string]*CoreVM),
-		vmsByName:  make(map[string]*CoreVM),
-		vms:        make([]*CoreVM, 0),
-		apiSockets: make([]types.APISocketInterface, 0),
-		state:      types.NEW,
+		vmsByID:         make(map[string]*CoreVM),
+		vmsByName:       make(map[string]*CoreVM),
+		vms:             make([]*CoreVM, 0),
+		apiSockets:      make([]types.APISocketInterface, 0),
+		hostTlsCert:     hostTlsCert,
+		databaseService: dbService,
+		state:           types.NEW,
 		// Chans
 		holdOpenChan:     make(chan struct{}),
 		serviceSignaling: make(chan struct{}),

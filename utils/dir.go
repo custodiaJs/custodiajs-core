@@ -10,7 +10,8 @@ import (
 )
 
 type FileInfo struct {
-	Path             string    // Der vollständige Pfad der Datei
+	Path             string // Der vollständige Pfad der Datei
+	Extension        string
 	Name             string    // Der Name der Datei
 	Size             int64     // Die Größe der Datei in Bytes
 	ModificationTime time.Time // Das letzte Änderungsdatum der Datei
@@ -44,6 +45,7 @@ func WalkDir(dirPath string, withHash bool) ([]FileInfo, error) {
 			files = append(files, FileInfo{
 				Path:             path,
 				Name:             info.Name(),
+				Extension:        filepath.Ext(path),
 				Size:             info.Size(),
 				ModificationTime: info.ModTime(),
 				FileHash:         hash,

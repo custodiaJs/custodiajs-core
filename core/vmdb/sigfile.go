@@ -10,13 +10,6 @@ import (
 	"github.com/gofrs/flock"
 )
 
-type SignatureFile struct {
-	osFile         *os.File
-	fileLock       *flock.Flock
-	ownerCert      string
-	ownerSignature string
-}
-
 func loadSignatureFile(path string) (*SignatureFile, error) {
 	// Es wird geprüft ob die Datei vorhanden ist
 	if !utils.FileExists(path) {

@@ -8,17 +8,18 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strings"
 	"sync"
 	"syscall"
+	"vnh1/alternativeservices"
 	"vnh1/apiservices/httpjson"
 	"vnh1/apiservices/localgrpc"
 	"vnh1/core"
+	"vnh1/core/databaseservices"
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
 	"vnh1/types"
 	"vnh1/utils"
-
-	"golang.org/x/crypto/sha3"
 )
 
 const spaces = "   "
@@ -46,14 +47,6 @@ func loadHostTlsCert() (*tls.Certificate, error) {
 	return &tlsCert, nil
 }
 
-func loadHostIdentKeyDatabase() (*identkeydatabase.IdenKeyDatabase, error) {
-	return &identkeydatabase.IdenKeyDatabase{}, nil
-}
-
-func loadVMDatabase() (*vmdb.VmDatabase, error) {
-	return vmdb.OpenFilebasedVmDatabase()
-}
-
 func printLocalHostTlsMetaData(cert *tls.Certificate) {
 	if len(cert.Certificate) == 0 {
 		return
@@ -64,20 +57,14 @@ func printLocalHostTlsMetaData(cert *tls.Certificate) {
 		return
 	}
 
-	// Berechne den Fingerprint des Zertifikats (hier weiterhin SHA-256)
-	hash := sha3.New256()
-	_, err = hash.Write(x509Cert.Raw)
-	if err != nil {
-		return
-	}
-	fingerprintBytes := hash.Sum(nil)
-	fingerprint := hex.EncodeToString(fingerprintBytes)
+	fingerPrint := utils.ComputeTlsCertFingerprint(cert)
+	fingerprintHex := strings.ToUpper(hex.EncodeToString(fingerPrint))
 
 	// Extrahiere den Signaturalgorithmus als String
 	sigAlgo := x509Cert.SignatureAlgorithm.String()
 
 	// Ausgabe
-	fmt.Printf("%sFingerprint (SHA3-256): %s\n   Algorithm: %s\n", spaces, fingerprint, sigAlgo)
+	fmt.Printf("%sFingerprint (SHA3-256): %s\n   Algorithm: %s\n", spaces, fingerprintHex, sigAlgo)
 }
 
 func main() {
@@ -131,31 +118,35 @@ func main() {
 	printLocalHostTlsMetaData(hostCert)
 
 	// Die Host Ident Key database wird geladen
-	fmt.Print("Loading host ident key database: ")
-	ikdb, err := loadHostIdentKeyDatabase()
+	fmt.Println("Loading host ident key database...")
+	ikdb, err := identkeydatabase.LoadIdentKeyDatabase()
 	if err != nil {
 		fmt.Print("error@ ")
 		panic(err)
 	}
-	fmt.Println("done")
 
 	// Die VM Datenbank wird geladen
-	fmt.Print("Loading vm database: ")
-	vmdatabase, err := loadVMDatabase()
+	fmt.Println("Loading vm database...")
+	vmdatabase, err := vmdb.OpenFilebasedVmDatabase()
 	if err != nil {
 		fmt.Print("error@ ")
 		panic(err)
 	}
-	fmt.Println("done")
+
+	// Der Datenbank Hostservice wird erstellt
+	dbservice := databaseservices.NewDbService()
+
+	// Die Alternativen Dienste werden geladen
+	alternativeService := alternativeservices.LoadAllAlternativeServices()
+	_ = alternativeService
 
 	// Der Core wird erzeugt
-	core, err := core.NewCore(hostCert, ikdb)
+	core, err := core.NewCore(hostCert, ikdb, dbservice)
 	if err != nil {
 		panic(err)
 	}
 
 	// Die CLI Terminals werden erzeugt
-	fmt.Println("localgrpc: enabled")
 	noneRootCLI, err := localgrpc.NewTestTCP("/home/fluffelbuff/Schreibtisch/localhost.crt", "/home/fluffelbuff/Schreibtisch/localhost.pem", types.NONE_ROOT_ADMIN)
 	if err != nil {
 		panic(err)
@@ -167,7 +158,6 @@ func main() {
 	}
 
 	// Der Localhost httpjson wird erzeugt
-	fmt.Println("httpjson (localhost): enabled")
 	localhostWebserviceV6, err := httpjson.NewLocalService("ipv6", 8080, hostCert)
 	if err != nil {
 		panic(err)
@@ -185,24 +175,24 @@ func main() {
 		panic(err)
 	}
 
-	// Die Einzelnen VM's werden geladen
-	fmt.Println("Loading JavaScript virtual machines...")
-	vms, err := vmdatabase.LoadAllVirtualMachines()
-	if err != nil {
-		panic(err)
+	// Die Einzelnene Datenbank Dienste werden hinzugefügt
+	for _, item := range vmdatabase.GetAllDatabaseConfigurations() {
+		if err := dbservice.AddDatabaseService(item); err != nil {
+			panic(err)
+		}
 	}
 
-	// Die Einzelnen VM's werden gestartet
-	for _, item := range vms {
+	// Die Einzelnen VM's werden geladen und hinzugefügt
+	fmt.Println("Loading JavaScript virtual machines...")
+	for _, item := range vmdatabase.GetAllVirtualMachines() {
 		// Die VM wird erzeugt
 		newVM, err := core.AddScriptContainer(item)
 		if err != nil {
-			fmt.Print("error@ ")
 			panic(err)
 		}
 
 		// Log
-		fmt.Printf("%s-> VM '%s' <-> %s loaded %d bytes\n%s%s--> Total NodeJS submodules: %d\n", spaces, newVM.GetVMName(), newVM.GetFingerprint(), item.GetBaseSize(), spaces, spaces, item.GetTotalNodeJsModules())
+		fmt.Printf("%s-> VM '%s' <-> %s loaded %d bytes\n", spaces, newVM.GetVMName(), strings.ToUpper(string(newVM.GetFingerprint())), item.GetBaseSize())
 	}
 
 	// Der Core wird gestartet

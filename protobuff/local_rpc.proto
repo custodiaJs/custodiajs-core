@@ -13,28 +13,70 @@ message ClientWelcomeResponse {
   uint64 version = 1;
 }
 
-// VM Listeneintrag
 message VmListEntry {
   string name = 1;
   string id = 2;
   uint32 state = 3;
   uint64 startTime = 4;
-  repeated string sharedFunctions = 5;
-  repeated string nodeJsModules = 6;
-  repeated string domainWhiteList = 7;
-  repeated string usedHostKeyIds = 8;
 }
 
-// Eine Liste alle Verfügbaren VM's
 message VmListResponse {
   repeated VmListEntry vms = 1;
 }
 
-message VmDetailsResponse {
-
+message VmDetailWhitelistEntry {
+  repeated string WildCardDomains = 1;
+	repeated string ExactDomains = 2;
+	repeated string Methods = 3;
+	repeated string IPv4List = 4;
+	repeated string Ipv6List = 5;
 }
 
-// Gibt die Parameter der VM an
+message VmDetailHostCAMemberEntry {
+  uint32 type = 1;
+  string fingerprint = 2;
+}
+
+message VmDetailDatabaseEntry {
+  string type = 1;
+  string host = 2;
+  uint32 port = 3;
+  string username = 4;
+  string database = 6;
+  string alias = 7;
+}
+
+message VmDetailNodeJsModuleEntry {
+  string alias = 1;
+  string name = 2;
+}
+
+message VmDetailNodeJsModuleEntryList {
+  bool isEnable = 1;
+  repeated VmDetailNodeJsModuleEntry modules = 2;
+}
+
+message VmDetailSharedFunctionEntry {
+  string name = 1;
+  repeated uint32 parmTypes = 2;
+  string mode = 3;
+}
+
+message VmDetailsResponse {
+  string name = 1;
+  uint64 version = 2;
+  string owner = 3;
+  string repourl = 4;
+  string mode = 5;
+  string state = 6;
+  uint64 startTimestamp = 7;
+  VmDetailNodeJsModuleEntryList nodejs = 8;
+  repeated VmDetailWhitelistEntry whitelist = 9;
+  repeated VmDetailHostCAMemberEntry hostcamember = 10;
+  repeated VmDetailDatabaseEntry databases = 11;
+  repeated VmDetailSharedFunctionEntry sharedFunctions = 12;
+}
+
 message VmDetailsParms {
   oneof value {
     string name = 1;
@@ -42,7 +84,7 @@ message VmDetailsParms {
   }
 }
 
-service CLIService {
+service LocalhostAPIService {
   // Wird verwendet damit ein Client seine Sitzungsdaten angeben kann
   rpc WelcomeClient(ClientWelcomeRequest) returns (ClientWelcomeResponse);
 

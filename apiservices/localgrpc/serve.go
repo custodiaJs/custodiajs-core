@@ -9,7 +9,7 @@ import (
 func (o *HostCliService) Serve(closeSignal chan struct{}) error {
 	// Das CLI gRPC Serverobjekt wird erstellt
 	localgrpc := localgrpcservice.NewCliGrpcServer(o.core)
-	localgrpcproto.RegisterCLIServiceServer(o.grpcServer, localgrpc)
+	localgrpcproto.RegisterLocalhostAPIServiceServer(o.grpcServer, localgrpc)
 
 	// Der grpc Server wird gestartet
 	if err := o.grpcServer.Serve(o.netListner); err != nil {

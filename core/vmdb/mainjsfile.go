@@ -9,13 +9,6 @@ import (
 	"github.com/gofrs/flock"
 )
 
-type MainJsFile struct {
-	fileLock *flock.Flock
-	fileSize uint64
-	fileHash string
-	filePath string
-}
-
 func (o *MainJsFile) GetFileSize() uint64 {
 	return o.fileSize
 }

@@ -12,21 +12,26 @@ type CoreInterface interface {
 	GetAllVMs() []CoreVMInterface
 	GetAllActiveScriptContainerIDs() []string
 	GetScriptContainerVMByID(string) (CoreVMInterface, error)
+	GetScriptContainerByVMName(string) (CoreVMInterface, error)
 }
 
 type CoreVMInterface interface {
 	GetVMName() string
-	GetFingerprint() string
-	GetVMModuleNames() []string
+	GetFingerprint() CoreVMFingerprint
+	GetVMJSModules() []*VmNodeJsModuleDetails
 	GetLocalSharedFunctions() []SharedLocalFunctionInterface
 	GetPublicSharedFunctions() []SharedPublicFunctionInterface
 	GetConsoleOutputWatcher() WatcherInterface
 	GetAllSharedFunctions() []SharedFunctionInterface
-	GetWhitelist() []TransportWhitelistVmEntryInterface
+	GetWhitelist() []*TransportWhitelistVmEntryData
 	ValidateRPCRequestSource(soruce string) bool
-	GetMemberCertKeyIds() []string
+	GetDatabaseServices() []*VMDatabaseData
+	GetMemberCertsPkeys() []*CAMemberData
 	GetStartingTimestamp() uint64
 	GetState() VmState
+	GetOwner() string
+	GetRepoURL() string
+	GetMode() string
 }
 
 type APISocketInterface interface {
@@ -68,7 +73,5 @@ type FunctionParameterBundleInterface interface {
 	GetValue() interface{}
 }
 
-type TransportWhitelistVmEntryInterface interface {
-	URL() string
-	Alias() string
+type AlternativeServiceInterface interface {
 }

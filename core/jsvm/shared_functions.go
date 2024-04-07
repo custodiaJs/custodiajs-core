@@ -8,25 +8,6 @@ import (
 	"github.com/dop251/goja"
 )
 
-type SharedLocalFunction struct {
-	gojaVM       *goja.Runtime
-	callFunction goja.Callable
-	name         string
-	parmTypes    []string
-}
-
-type SharedPublicFunction struct {
-	gojaVM       *goja.Runtime
-	callFunction goja.Callable
-	name         string
-	parmTypes    []string
-}
-
-type FunctionCallReturn struct {
-	CType string
-	Value interface{}
-}
-
 func (o *FunctionCallReturn) GetType() string {
 	return o.CType
 }

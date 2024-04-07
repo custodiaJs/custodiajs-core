@@ -34,6 +34,7 @@ const (
 	C_REPO REPO = "https://github.com/DGPCorpSoftwares/vnh1"
 
 	// Legt die Dateipfade für z.b Unix Sockets fest
-	NONE_ROOT_UNIX_SOCKET SOCKET_PATH = "/tmp/vnh1_none_root_sock"
-	ROOT_UNIX_SOCKET      SOCKET_PATH = "/tmp/vnh1_root_sock"
+	NONE_ROOT_UNIX_SOCKET     SOCKET_PATH              = "/tmp/vnh1_none_root_sock"
+	ROOT_UNIX_SOCKET          SOCKET_PATH              = "/tmp/vnh1_root_sock"
+	UNIX_ALTERNATIVE_SERVICES ALTERNATIVE_SERVICE_PATH = "/var/lib/vnh1/alternativeservices"
 )

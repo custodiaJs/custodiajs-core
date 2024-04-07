@@ -6,6 +6,6 @@ import (
 )
 
 type CliGrpcServer struct {
-	localgrpcproto.UnimplementedCLIServiceServer
+	localgrpcproto.UnimplementedLocalhostAPIServiceServer
 	core types.CoreInterface
 }

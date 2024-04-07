@@ -9,21 +9,6 @@ import (
 	"github.com/dop251/goja"
 )
 
-type JsVM struct {
-	sharedLocalFunctions  map[string]*SharedLocalFunction
-	sharedPublicFunctions map[string]*SharedPublicFunction
-	coreService           types.CoreInterface
-	cache                 map[string]interface{}
-	consoleCache          *consolecache.ConsoleOutputCache
-	allowedBuckets        []string
-	config                *JsVMConfig
-	gojaVM                *goja.Runtime
-	exports               *goja.Object
-	loadRootLib           bool
-	scriptLoaded          bool
-	startTimeUnix         uint64
-}
-
 func (o *JsVM) gojaCOMFunctionModule(call goja.FunctionCall) goja.Value {
 	// Es wird ermittelt um welchen vorgang es sich handelt
 	if len(call.Arguments) < 1 {
@@ -169,7 +154,16 @@ func (o *JsVM) GetAllSharedFunctions() []types.SharedFunctionInterface {
 	return vat
 }
 
-func NewVM(core types.CoreInterface, config *JsVMConfig) (*JsVM, error) {
+func (o *JsVM) Set(name string, value interface{}) error {
+	// Der Mutex wird verwendet
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+
+	// Die Goja Set Funktion wird aufgerufen
+	return o.gojaVM.Set(name, value)
+}
+
+func NewVM(config *JsVMConfig) (*JsVM, error) {
 	// Die GoJA VM wird erstellt
 	gojaVM := goja.New()
 
@@ -187,7 +181,6 @@ func NewVM(core types.CoreInterface, config *JsVMConfig) (*JsVM, error) {
 			allowedBuckets:        make([]string, 0),
 			cache:                 make(map[string]interface{}),
 			loadRootLib:           false,
-			coreService:           core,
 		}
 	} else {
 		vmObject = &JsVM{
@@ -201,7 +194,6 @@ func NewVM(core types.CoreInterface, config *JsVMConfig) (*JsVM, error) {
 			allowedBuckets:        make([]string, 0),
 			cache:                 make(map[string]interface{}),
 			loadRootLib:           false,
-			coreService:           core,
 		}
 	}
 

@@ -7,14 +7,20 @@ import (
 	"vnh1/utils"
 )
 
-type VmDBEntry struct {
-	Path                  string
-	mainJSFile            *MainJsFile
-	manifestFile          *ManifestFile
-	signatureFile         *SignatureFile
-	nodeJsModules         []*NodeJsModule
-	vmContainerMerkleHash string
-	containerBaseSize     uint64
+func (o *VmDBEntry) GetManifest() *Manifest {
+	return o.manifestFile.GetManifestObject()
+}
+
+func (o *VmDBEntry) GetOwner() string {
+	return strings.ToLower(o.manifestFile.manifest.Owner)
+}
+
+func (o *VmDBEntry) GetRepoURL() string {
+	return strings.ToLower(o.manifestFile.manifest.RepoURL)
+}
+
+func (o *VmDBEntry) GetMode() string {
+	return strings.ToLower(o.manifestFile.manifest.Mode)
 }
 
 func (o *VmDBEntry) ValidateVM() bool {
@@ -22,11 +28,11 @@ func (o *VmDBEntry) ValidateVM() bool {
 }
 
 func (o *VmDBEntry) GetVMName() string {
-	return o.manifestFile.manifest.Name
+	return strings.ToLower(o.manifestFile.manifest.Name)
 }
 
 func (o *VmDBEntry) GetVMContainerMerkleHash() string {
-	return o.vmContainerMerkleHash
+	return strings.ToLower(o.vmContainerMerkleHash)
 }
 
 func (o *VmDBEntry) GetBaseSize() uint64 {
@@ -45,10 +51,14 @@ func (p *VmDBEntry) GetWhitelist() []Whitelist {
 	return p.manifestFile.GetManifestObject().Whitelist
 }
 
-func (o *VmDBEntry) GetMemberCertKeyIds() []string {
-	ret := []string{}
+func (o *VmDBEntry) GetMemberCertsPkeys() []*CAMemberData {
+	ret := make([]*CAMemberData, 0)
 	for _, item := range o.manifestFile.manifest.HostCAMember {
-		ret = append(ret, item.Fingerprint)
+		ret = append(ret, &CAMemberData{
+			Fingerprint: item.Fingerprint,
+			Type:        item.Type,
+			ID:          item.ID,
+		})
 	}
 	return ret
 }
@@ -63,6 +73,22 @@ func (o *VmDBEntry) GetAllowedHttpSources() map[string]bool {
 	return a
 }
 
+func (o *VmDBEntry) GetAllDatabaseServices() []*VMDatabaseData {
+	vmdlist := make([]*VMDatabaseData, 0)
+	for _, item := range o.manifestFile.GetAllDatabaseServices() {
+		vmdlist = append(vmdlist, &VMDatabaseData{
+			Type:     item.Type,
+			Host:     item.Host,
+			Port:     item.Port,
+			Username: item.Username,
+			Password: item.Password,
+			Database: item.Database,
+			Alias:    item.Alias,
+		})
+	}
+	return vmdlist
+}
+
 func tryToLoadVM(path string) (*VmDBEntry, error) {
 	// Die Kernpfade für die VM werden erstellt
 	manifestVMJsonFilePath := filepath.Join(path, "manifest.json")
@@ -74,6 +100,11 @@ func tryToLoadVM(path string) (*VmDBEntry, error) {
 	manifestFile, err := loadManifestFile(manifestVMJsonFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("tryToLoadVM: " + err.Error())
+	}
+
+	// Es wird geprüft ob es sich um eine gültige ManifestFile handelt
+	if err := manifestFile.ValidateWithState(); err != nil {
+		return nil, fmt.Errorf("VmDBEntry->tryToLoadVM: " + err.Error())
 	}
 
 	// Die Signatur wird geladen
@@ -108,9 +139,9 @@ func tryToLoadVM(path string) (*VmDBEntry, error) {
 		}
 
 		// Speichert alle NodeJs Module ab, welche die Manifestdatei angibt
-		validateNodeJsModules := make(map[string]bool)
+		validateNodeJsModules := make(map[string]string)
 		for _, scriptItem := range manifestFile.manifest.NodeJS.Modules {
-			validateNodeJsModules[scriptItem.Name] = false
+			validateNodeJsModules[scriptItem.Name] = scriptItem.Alias
 		}
 
 		// Jedes NodeJS Modul wird geprüft
@@ -123,13 +154,8 @@ func tryToLoadVM(path string) (*VmDBEntry, error) {
 				continue
 			}
 
-			// Der Wert des eintrags muss false sein, ansonsten liegt ein Massiver fehler vor
-			if val {
-				return nil, fmt.Errorf("tryToLoadVM: broken vm container, unkown fatal error")
-			}
-
-			// Der Wert des Modules wird auf geprüft gesetzt
-			validateNodeJsModules[item.name] = true
+			// Der Alias wert word gesetzt
+			item.alias = val
 
 			// Das Modul wird abgespeichert
 			extractedNodejSModules = append(extractedNodejSModules, item)
@@ -147,7 +173,7 @@ func tryToLoadVM(path string) (*VmDBEntry, error) {
 	}
 
 	// Es wird eine Hashliste aus allen Hashes erstellt
-	mergedHashList := []string{manifestFile.fileHash, mainJsFile.fileHash}
+	mergedHashList := []string{manifestFile.GetFileHash(), mainJsFile.fileHash}
 	for _, item := range extractedNodejSModules {
 		mergedHashList = append(mergedHashList, item.merkleRoot)
 	}

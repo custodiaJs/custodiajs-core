@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"vnh1/core/databaseservices/services"
+	"vnh1/core/jsvm"
+	"vnh1/core/vmdb"
 	"vnh1/types"
 	"vnh1/utils"
 )
@@ -12,19 +15,34 @@ func (o *CoreVM) GetVMName() string {
 	return o.vmDbEntry.GetVMName()
 }
 
-func (o *CoreVM) GetFingerprint() string {
-	return o.vmDbEntry.GetVMContainerMerkleHash()
+func (o *CoreVM) GetFingerprint() types.CoreVMFingerprint {
+	return types.CoreVMFingerprint(strings.ToLower(o.vmDbEntry.GetVMContainerMerkleHash()))
 }
 
-func (o *CoreVM) GetVMModuleNames() []string {
+func (o *CoreVM) GetVMJSModules() []*types.VmNodeJsModuleDetails {
 	if o.vmDbEntry.GetTotalNodeJsModules() < 1 {
-		return make([]string, 0)
+		return make([]*types.VmNodeJsModuleDetails, 0)
 	}
-	modNames := make([]string, 0)
+	modNames := make([]*types.VmNodeJsModuleDetails, 0)
 	for _, item := range o.vmDbEntry.GetNodeJsModules() {
-		modNames = append(modNames, item.GetName())
+		modNames = append(modNames, &types.VmNodeJsModuleDetails{
+			Name:  item.GetName(),
+			Alias: item.GetAlias(),
+		})
 	}
 	return modNames
+}
+
+func (o *CoreVM) GetOwner() string {
+	return o.vmDbEntry.GetOwner()
+}
+
+func (o *CoreVM) GetRepoURL() string {
+	return o.vmDbEntry.GetRepoURL()
+}
+
+func (o *CoreVM) GetMode() string {
+	return o.vmDbEntry.GetMode()
 }
 
 func (o *CoreVM) serveGorutine(syncWaitGroup *sync.WaitGroup) error {
@@ -63,16 +81,46 @@ func (o *CoreVM) GetState() types.VmState {
 	return o.vmState
 }
 
-func (o *CoreVM) GetWhitelist() []types.TransportWhitelistVmEntryInterface {
-	returnList := make([]types.TransportWhitelistVmEntryInterface, 0)
+func (o *CoreVM) GetWhitelist() []*types.TransportWhitelistVmEntryData {
+	returnList := make([]*types.TransportWhitelistVmEntryData, 0)
 	for _, item := range o.vmDbEntry.GetWhitelist() {
-		returnList = append(returnList, &TransportWhitelistVmEntry{url: item.URL, alias: item.Alias})
+		returnList = append(returnList, &types.TransportWhitelistVmEntryData{
+			WildCardDomains: item.Endpoint.Domain.Wildcards,
+			ExactDomains:    item.Endpoint.Domain.Exact,
+			Methods:         item.Methods,
+			IPv4List:        item.Endpoint.IPv4List,
+			Ipv6List:        item.Endpoint.IPv6List,
+		})
 	}
 	return returnList
 }
 
-func (o *CoreVM) GetMemberCertKeyIds() []string {
-	return o.vmDbEntry.GetMemberCertKeyIds()
+func (o *CoreVM) GetMemberCertsPkeys() []*types.CAMemberData {
+	ret := make([]*types.CAMemberData, 0)
+	for _, item := range o.vmDbEntry.GetMemberCertsPkeys() {
+		ret = append(ret, &types.CAMemberData{
+			Fingerprint: item.Fingerprint,
+			Type:        item.Type,
+			ID:          item.ID,
+		})
+	}
+	return ret
+}
+
+func (o *CoreVM) GetDatabaseServices() []*types.VMDatabaseData {
+	vmdlist := make([]*types.VMDatabaseData, 0)
+	for _, item := range o.vmDbEntry.GetAllDatabaseServices() {
+		vmdlist = append(vmdlist, &types.VMDatabaseData{
+			Type:     item.Type,
+			Host:     item.Host,
+			Port:     item.Port,
+			Username: item.Username,
+			Password: item.Password,
+			Database: item.Database,
+			Alias:    item.Alias,
+		})
+	}
+	return vmdlist
 }
 
 func (o *CoreVM) ValidateRPCRequestSource(soruce string) bool {
@@ -98,4 +146,13 @@ func (o *CoreVM) ValidateRPCRequestSource(soruce string) bool {
 
 func (o *CoreVM) GetConsoleOutputWatcher() types.WatcherInterface {
 	return o.JsVM.GetConsoleOutputWatcher()
+}
+
+func (o *CoreVM) addDatabaseServiceLink(dbserviceLink services.DbServiceLinkinterface) error {
+	o.dbServiceLinks = append(o.dbServiceLinks, dbserviceLink)
+	return nil
+}
+
+func newCoreVM(jsvm *jsvm.JsVM, vmDb *vmdb.VmDBEntry) *CoreVM {
+	return &CoreVM{JsVM: jsvm, vmDbEntry: vmDb, vmState: types.StillWait, dbServiceLinks: make([]services.DbServiceLinkinterface, 0)}
 }

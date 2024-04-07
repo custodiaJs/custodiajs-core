@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -115,4 +117,34 @@ func BuildMerkleRoot(hexHashes []string) (string, error) {
 	}
 
 	return hex.EncodeToString(nodes[0]), nil
+}
+
+func BuildStringHashChain(values ...string) (string, error) {
+	hashes := make([]string, 0)
+	for _, item := range values {
+		hashes = append(hashes, HashOfString(item))
+	}
+	return BuildMerkleRoot(hashes)
+}
+
+func ComputeTlsCertFingerprint(tlsCert *tls.Certificate) []byte {
+	if len(tlsCert.Certificate) == 0 {
+		return nil
+	}
+
+	x509Cert, err := x509.ParseCertificate(tlsCert.Certificate[0])
+	if err != nil {
+		return nil
+	}
+
+	// Berechne den Fingerprint des Zertifikats (hier weiterhin SHA-256)
+	hash := sha3.New256()
+	_, err = hash.Write(x509Cert.Raw)
+	if err != nil {
+		return nil
+	}
+	fingerprintBytes := hash.Sum(nil)
+
+	// Der Fingerabdruck werden zurückgegeben
+	return fingerprintBytes
 }

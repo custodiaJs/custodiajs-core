@@ -5,41 +5,54 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"vnh1/utils"
 
 	"github.com/gofrs/flock"
 )
-
-type ManifestFile struct {
-	osFile   *os.File
-	fileLock *flock.Flock
-	fileHash string
-	manifest *Manifest
-	fSize    uint64
-}
 
 func (o *ManifestFile) GetManifestObject() *Manifest {
 	return o.manifest
 }
 
 func (o *ManifestFile) GetFileHash() string {
-	return o.fileHash
+	return strings.ToLower(o.fileHash)
 }
 
 func (o *ManifestFile) NodeJsEnable() bool {
 	return o.manifest.NodeJS.Enable
 }
 
+func (o *ManifestFile) GetAllDatabaseServices() []*VMDatabaseData {
+	vmdlist := make([]*VMDatabaseData, 0)
+	for _, item := range o.manifest.Databases {
+		vmdlist = append(vmdlist, &VMDatabaseData{
+			Type:     item.Type,
+			Host:     item.Host,
+			Port:     item.Port,
+			Username: item.Username,
+			Password: item.Password,
+			Database: item.Database,
+			Alias:    item.Alias,
+		})
+	}
+	return vmdlist
+}
+
 func (o *ManifestFile) GetNodeJsScriptAlias() []string {
 	resolv := []string{}
 	for _, item := range o.manifest.NodeJS.Modules {
-		resolv = append(resolv, item.Alias)
+		resolv = append(resolv, strings.ToLower(item.Alias))
 	}
 	return resolv
 }
 
 func (o *ManifestFile) GetFileSize() uint64 {
 	return o.fSize
+}
+
+func (o *ManifestFile) ValidateWithState() error {
+	return nil
 }
 
 func loadManifestFile(path string) (*ManifestFile, error) {

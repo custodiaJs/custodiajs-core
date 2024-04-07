@@ -7,19 +7,16 @@ import (
 	"vnh1/utils"
 )
 
-type NodeJsModule struct {
-	merkleRoot string
-	files      []utils.FileInfo
-	baseSize   uint64
-	name       string
-}
-
 func (o *NodeJsModule) GetBaseSize() uint64 {
 	return o.baseSize
 }
 
 func (o *NodeJsModule) GetName() string {
 	return o.name
+}
+
+func (o *NodeJsModule) GetAlias() string {
+	return o.alias
 }
 
 func tryToLoadNodeJsModules(path string) ([]*NodeJsModule, error) {
@@ -93,7 +90,7 @@ func tryToLoadNodeJsModules(path string) ([]*NodeJsModule, error) {
 		}
 
 		// Das Objekt wird zwischegespeichert
-		loadedNodeJsModules = append(loadedNodeJsModules, &NodeJsModule{merkleRoot: merkleRoot, files: folderOverview, name: utils.ExtractFileName(folderPath)})
+		loadedNodeJsModules = append(loadedNodeJsModules, &NodeJsModule{merkleRoot: merkleRoot, files: folderOverview, name: utils.ExtractFileName(folderPath), alias: ""})
 	}
 
 	// Die NodeJS Module werden zurückgegeben
