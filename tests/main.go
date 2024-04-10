@@ -11,7 +11,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	"vnh1/alternativeservices"
 	"vnh1/apiservices/httpjson"
 	"vnh1/apiservices/localgrpc"
 	"vnh1/core"
@@ -135,11 +134,6 @@ func main() {
 
 	// Der Datenbank Hostservice wird erstellt
 	dbservice := databaseservices.NewDbService()
-
-	// Die Alternativen Dienste werden geladen
-	alternativeService := alternativeservices.LoadAllAlternativeServices()
-	_ = alternativeService
-
 	// Der Core wird erzeugt
 	core, err := core.NewCore(hostCert, ikdb, dbservice)
 	if err != nil {

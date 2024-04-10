@@ -13,5 +13,7 @@ api/vm/client/*.js
 # Ignore TypeScript build output directory
 dist/
 
+tests/
+testlib/
 tests/tests
 .vscode
