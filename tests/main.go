@@ -17,6 +17,7 @@ import (
 	"vnh1/core/databaseservices"
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
+	"vnh1/experimental/modules"
 	"vnh1/types"
 	"vnh1/utils"
 )
@@ -112,6 +113,8 @@ func main() {
 		panic(err)
 	}
 	fmt.Println("done")
+
+	modules.TestLoad()
 
 	// Die Metadaten des Host Zertifikates werden angezeigt
 	printLocalHostTlsMetaData(hostCert)

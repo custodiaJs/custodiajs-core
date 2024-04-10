@@ -1,4 +1,4 @@
-package main
+package modules
 
 /*
 #cgo LDFLAGS: -ldl
@@ -11,21 +11,23 @@ import (
 	"unsafe"
 )
 
-//export myGoCallback
-func myGoCallback() {
-	fmt.Println("Dies ist mein Go-Callback!")
-}
-
-func main() {
+func TestLoad() {
 	// Pfad zur Shared Library
-	libPath := C.CString("/home/fluffelbuff/Dokumente/Projekte/vnh1/testlib/clib/lib.so")
+	libPath := C.CString("/home/fluffelbuff/Schreibtisch/lib.so")
 	defer C.free(unsafe.Pointer(libPath))
 
 	// Rufe die Wrapper-Funktion auf
 	lib := C.load_external_lib(libPath)
-	fmt.Println(lib)
+	errV := C.GoString(lib.err)
+	if errV != "" {
+		panic(errV)
+	}
 
-	C.callGoCallback(C.callback_func(unsafe.Pointer(C.myGoCallback)))
+	// Die Daten werden Extrahiert
+	name := C.GoString(lib.lib.name)
+	version := int(lib.lib.version)
+
+	fmt.Println(name, version)
 
 	// Die Lib wird entladen
 	C.unload_lib()

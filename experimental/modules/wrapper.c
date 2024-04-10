@@ -1,39 +1,53 @@
+// wrapper.c
+
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "wrapper.h"
+#include "lib_bridge.h"
 
 // Speichert die Geladene LIB ab
-EXTERNAL_LIB global_lib;
+void* lib;
 
 // Lädt die Lib
-const char* load_external_lib(const char* lib_path) {
-    // Es wird versucht die lib zu laden
-    void* lib = dlopen(lib_path, RTLD_LAZY);
-    if (!lib) return "cant_open_lib";
+STARTUP_RESULT load_external_lib(const char* lib_path) {
+    // Das Ergebniss wird zurückgegeben
+    STARTUP_RESULT result;
 
-    // Die Lib wird zwischengespeichert
-    global_lib.state = 1;
-    global_lib.lib = lib;
+    // Es wird versucht die lib zu laden
+    lib = dlopen(lib_path, RTLD_LAZY);
+    if (!lib) {
+        result.err = "cant_open_lib";
+        return result;
+    }
+
+    // Die Startup Funktion wird geladen
+    LIB_LOAD lib_load = (LIB_LOAD) dlsym(lib, "lib_load");
+    if (!lib_load) {
+        dlclose(lib);
+        result.err = "cant_call_function";
+        return result;
+    }
+
+    // Die Shutdown Funktion wird geladen
+    LIB_STOP lib_stop = (LIB_STOP) dlsym(lib, "lib_stop");
+    if (!lib_stop) {
+        dlclose(lib);
+        result.err = "cant_call_function";
+        return result;
+    }
+
+    // Die Lib wird geladen
+    SHARED_LIB slib = lib_load();
 
     // Der Wert wird zurückgegeben
-    return "ok";
+    result.err = "";
+    result.lib = slib;
+    return result;
 }
 
 // Entlädt die Lib
 void unload_lib() {
-    if (global_lib.lib == NULL) return;
-    dlclose(global_lib.lib);
-}
-
-// Initalisiert die Library
-const char* initialize() {
-    return "ok";
-}
-
-// Funktion, die den Callback aufruft
-void callGoCallback(callback_func callback) {
-    // Aufruf des übergebenen Go-Callbacks
-    callback();
+    if (lib == NULL) return;
 }

@@ -1,15 +1,13 @@
 // wrapper.h
+#include "lib_bridge.h"
 
-// Sterllt den LIB Struct dar
-typedef struct EXTERNAL_LIB {
-    uint state;
-    void* lib;
-} EXTERNAL_LIB;
+typedef struct {
+    const char* err;
+    SHARED_LIB lib;
+} STARTUP_RESULT;
 
-typedef void (*callback_func)();
+typedef SHARED_LIB (*LIB_LOAD)();
+typedef void (*LIB_STOP)();
 
-const char* load_external_lib(const char* lib_path);
-void callGoCallback(callback_func callback);
-extern void myGoCallback();
-const char* initialize();
+STARTUP_RESULT load_external_lib(const char* lib_path);
 void unload_lib();
