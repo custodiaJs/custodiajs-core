@@ -14,21 +14,25 @@ import (
 func TestLoad() {
 	// Pfad zur Shared Library
 	libPath := C.CString("/home/fluffelbuff/Schreibtisch/lib.so")
-	defer C.free(unsafe.Pointer(libPath))
+	defer func() {
+		C.free(unsafe.Pointer(libPath))
+	}()
 
 	// Rufe die Wrapper-Funktion auf
 	lib := C.load_external_lib(libPath)
-	errV := C.GoString(lib.err)
-	if errV != "" {
-		panic(errV)
+	if C.GoString(lib.err) != "" {
+		panic(C.GoString(lib.err))
 	}
 
-	// Die Daten werden Extrahiert
-	name := C.GoString(lib.lib.name)
-	version := int(lib.lib.version)
+	// Es werden alle Verfügbaren Funktionen abgerufen
+	sharedFunctions := C.get_global_functions()
+	fmt.Println(sharedFunctions)
 
-	fmt.Println(name, version)
+	// Wird aufgerufen wenn die Funktion zueende ist
+	defer func() {
+		C.unload_lib()
+	}()
 
-	// Die Lib wird entladen
-	C.unload_lib()
+	name := C.GoString(lib.name)
+	fmt.Println(name, lib.version)
 }
