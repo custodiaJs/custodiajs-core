@@ -17,7 +17,7 @@ import (
 	"vnh1/core/databaseservices"
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
-	"vnh1/modules"
+	"vnh1/extmodules"
 	"vnh1/types"
 	"vnh1/utils"
 )
@@ -114,14 +114,14 @@ func main() {
 	}
 	fmt.Println("done")
 
-	lib1, err := modules.LoadModuleLib("/home/fluffelbuff/Schreibtisch/lib1.so")
+	// Speichert alle Abgerufen Libs ab
+	extModuleLibs := make([]*extmodules.ExternalModule, 0)
+
+	lib1, err := extmodules.LoadModuleLib("/home/fluffelbuff/Schreibtisch/lib1.so")
 	if err != nil {
 		panic(err)
 	}
-
-	for _, item := range lib1.GetGlobalFunctions() {
-		item.Call()
-	}
+	extModuleLibs = append(extModuleLibs, lib1)
 
 	// Die Metadaten des Host Zertifikates werden angezeigt
 	printLocalHostTlsMetaData(hostCert)
@@ -144,10 +144,22 @@ func main() {
 
 	// Der Datenbank Hostservice wird erstellt
 	dbservice := databaseservices.NewDbService()
+
 	// Der Core wird erzeugt
 	core, err := core.NewCore(hostCert, ikdb, dbservice)
 	if err != nil {
 		panic(err)
+	}
+
+	// Die Externen Module libs werden hinzugefügt
+	for _, item := range extModuleLibs {
+		// Es wird versucht das Externe Modul Lib zu laden
+		if err := core.AddExternalModuleLibrary(item); err != nil {
+			panic(err)
+		}
+
+		// LOG
+		fmt.Printf("External module lib '%s' version %d loaded\n", item.GetName(), item.GetVersion())
 	}
 
 	// Die CLI Terminals werden erzeugt
@@ -222,4 +234,9 @@ func main() {
 
 	// Es wird gewartet bis der Core beendet wurde
 	waitGroupForServing.Wait()
+
+	// Die Externen Module Libs werden entladen
+	for _, item := range extModuleLibs {
+		item.Unload()
+	}
 }

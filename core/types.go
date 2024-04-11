@@ -8,6 +8,7 @@ import (
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/jsvm"
 	"vnh1/core/vmdb"
+	"vnh1/extmodules"
 	"vnh1/types"
 )
 
@@ -21,6 +22,7 @@ type Core struct {
 	vmSyncWaitGroup      sync.WaitGroup
 	apiSyncWaitGroup     sync.WaitGroup
 	state                types.CoreState
+	extModules           map[string]*extmodules.ExternalModule
 	serviceSignaling     chan struct{}
 	holdOpenChan         chan struct{}
 	objectMutex          *sync.Mutex
@@ -29,7 +31,9 @@ type Core struct {
 
 type CoreVM struct {
 	*jsvm.JsVM
-	dbServiceLinks []services.DbServiceLinkinterface
-	vmDbEntry      *vmdb.VmDBEntry
-	vmState        types.VmState
+	core            *Core
+	dbServiceLinks  []services.DbServiceLinkinterface
+	vmDbEntry       *vmdb.VmDBEntry
+	vmState         types.VmState
+	externalModules []*extmodules.ExternalModule
 }

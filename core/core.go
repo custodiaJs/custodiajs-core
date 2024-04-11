@@ -9,11 +9,38 @@ import (
 	"vnh1/core/databaseservices"
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
+	extmodules "vnh1/extmodules"
 	"vnh1/types"
 	"vnh1/utils"
 
 	"vnh1/core/jsvm"
 )
+
+// Fügt eine Externe Modul Lib dem Core hinzu
+func (o *Core) AddExternalModuleLibrary(modLib *extmodules.ExternalModule) error {
+	// Es wird geprüft ob es sich um einen Zulässigen Module namen handelt
+	if val := utils.ValidateExternalModuleName(modLib.GetName()); !val {
+		return fmt.Errorf("Core->AddExternalModuleLibrary: Invalid module name, cant added module")
+	}
+
+	// Der Mutex wird angewendet
+	o.objectMutex.Lock()
+
+	// Es wird ermittelt ob es bereits ein Externes Module mit dem gleichen Namen gibt
+	if _, found := o.extModules[modLib.GetName()]; found {
+		o.objectMutex.Unlock()
+		return fmt.Errorf("Core->AddExternalModuleLibrary: module always added")
+	}
+
+	// Die Module Lib wird zwischengspeichert
+	o.extModules[modLib.GetName()] = modLib
+
+	// Der Mutex wird freigegeben
+	o.objectMutex.Unlock()
+
+	// Es ist kein Fehler aufgetreten
+	return nil
+}
 
 // Fügt einen neune Script Container hinzu
 func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
@@ -38,8 +65,40 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 		}
 	}
 
+	// Es wird eine Liste mit allen Benötigten externen Libs abgerufen
+	neededExternalModulesNameSlice := make([]string, 0)
+	for _, item := range vmDbEntry.GetAllExternalServices() {
+		neededExternalModulesNameSlice = append(neededExternalModulesNameSlice, item.Name)
+	}
+
+	// Es werden alle Module welche benötigt werden abgerufen
+	modList := o._core_util_get_list_of_extmods_by_name(neededExternalModulesNameSlice...)
+
+	// Es wird geprüft ob die benötigten Module gefunden wurden
+	notFoundExtModules := make([]string, 0)
+	for _, item := range vmDbEntry.GetAllExternalServices() {
+		if item.Required {
+			found := false
+			for _, xtem := range modList {
+				if xtem.GetName() == item.Name {
+					if xtem.GetVersion() >= uint64(item.MinVersion) {
+						found = true
+						break
+					}
+				}
+			}
+			if !found {
+				notFoundExtModules = append(notFoundExtModules, item.Name)
+			}
+		}
+	}
+
+	// Es wird ein Fehler ausgelöst wenn ein benötigtes Modul nicht gefunden wurde
+	if len(notFoundExtModules) != 0 {
+		return nil, fmt.Errorf("Core->AddScriptContainer: external modules '%s' not found", strings.Join(neededExternalModulesNameSlice, ","))
+	}
+
 	// Der Mutex wird angewendet
-	// und nach beenden der Funktion freigegeben
 	o.objectMutex.Lock()
 
 	// Es wird geprüft ob bereits eiein VM Link hinzugefügtne VM mit der Selben ID vorhanden ist
@@ -56,7 +115,7 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 	}
 
 	// Das Detailspaket wird erzeugt
-	vmobject := newCoreVM(tvmobj, vmDbEntry)
+	vmobject := newCoreVM(o, tvmobj, vmDbEntry, modList)
 
 	// Das VMObjekt wird zwischengespeichert
 	o.vmsByID[strings.ToLower(vmDbEntry.GetVMContainerMerkleHash())] = vmobject // Merklehash
@@ -65,6 +124,11 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 
 	// Der Mutex wird freigegeben
 	o.objectMutex.Unlock()
+
+	// Die VM wird Initalisiert
+	if err := vmobject.init(); err != nil {
+		return nil, fmt.Errorf("Core->AddScriptContainer: " + err.Error())
+	}
 
 	// Die VM wird mit allen Datenbankdiensten Verknüpft
 	for _, item := range vmDbEntry.GetAllDatabaseServices() {
@@ -107,11 +171,6 @@ func (o *Core) AddAPISocket(apiSocket types.APISocketInterface) error {
 
 	// Es ist kein Fehler aufgetreten
 	return nil
-}
-
-// Fügt einen alternativen Dienst hinzus
-func (o *Core) AddAlternativeService(altService types.AlternativeServiceInterface) error {
-	panic("FUNCTION_NOT_IMPLEMENTATED")
 }
 
 // Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
@@ -209,6 +268,7 @@ func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase
 		hostTlsCert:     hostTlsCert,
 		databaseService: dbService,
 		state:           types.NEW,
+		extModules:      make(map[string]*extmodules.ExternalModule),
 		// Chans
 		holdOpenChan:     make(chan struct{}),
 		serviceSignaling: make(chan struct{}),

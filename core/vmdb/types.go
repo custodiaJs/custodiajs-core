@@ -68,4 +68,13 @@ type VMDatabaseData struct {
 	Alias    string
 }
 
+type VmExternalService struct {
+	MinVersion uint
+	Name       string
+	Required   bool
+}
+
+type VmExperimentalWebservice struct {
+}
+
 type DatabaseFingerprint string

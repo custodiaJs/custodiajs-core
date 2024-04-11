@@ -42,5 +42,5 @@ func (o *Core) SignalShutdown() {
 }
 
 func (o *Core) prepareForShutdown() {
-	fmt.Println("By!")
+	fmt.Println("Core closed\nBy!")
 }

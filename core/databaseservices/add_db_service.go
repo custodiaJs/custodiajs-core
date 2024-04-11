@@ -54,7 +54,7 @@ func (o *DbService) AddDatabaseService(dmdb *vmdb.VMDatabaseData) error {
 	o.databaseServiceTable[strings.ToLower(string(dmdb.GetDatabaseFingerprint()))] = dbservice
 
 	// Log
-	fmt.Printf("New Database service added: %s, %s, %s\n", dmdb.Type, dmdb.Alias, strings.ToUpper(string(dmdb.GetDatabaseFingerprint())))
+	fmt.Printf("Database service added: %s, %s, %s\n", dmdb.Type, dmdb.Alias, strings.ToUpper(string(dmdb.GetDatabaseFingerprint())))
 
 	// Der Vorgang wurde ohne Fehler durchgeführt
 	return nil

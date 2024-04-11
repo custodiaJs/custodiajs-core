@@ -7,6 +7,7 @@ import (
 	"vnh1/core/databaseservices/services"
 	"vnh1/core/jsvm"
 	"vnh1/core/vmdb"
+	extmodules "vnh1/extmodules"
 	"vnh1/types"
 	"vnh1/utils"
 )
@@ -153,6 +154,25 @@ func (o *CoreVM) addDatabaseServiceLink(dbserviceLink services.DbServiceLinkinte
 	return nil
 }
 
-func newCoreVM(jsvm *jsvm.JsVM, vmDb *vmdb.VmDBEntry) *CoreVM {
-	return &CoreVM{JsVM: jsvm, vmDbEntry: vmDb, vmState: types.StillWait, dbServiceLinks: make([]services.DbServiceLinkinterface, 0)}
+func (o *CoreVM) init() error {
+	// Die Basis Funktionen werden Initalisiert
+	o.core._init_vm_kernel_base(o)
+
+	// Die Externenen Module werden Registriert
+	return nil
+}
+
+func newCoreVM(core *Core, jsvm *jsvm.JsVM, vmDb *vmdb.VmDBEntry, extModules []*extmodules.ExternalModule) *CoreVM {
+	// Das Core Objekt wird erstellt
+	coreObject := &CoreVM{
+		JsVM:            jsvm,
+		core:            core,
+		vmDbEntry:       vmDb,
+		vmState:         types.StillWait,
+		dbServiceLinks:  make([]services.DbServiceLinkinterface, 0),
+		externalModules: extModules,
+	}
+
+	// Das Objekt wird zurückgegeben
+	return coreObject
 }

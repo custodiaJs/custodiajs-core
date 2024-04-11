@@ -52,3 +52,11 @@ func ValidateVMIdString(idString string) bool {
 	x := hex.EncodeToString(v)
 	return strings.EqualFold(idString, x)
 }
+
+func ValidateExternalModuleName(funcName string) bool {
+	// Regulärer Ausdruck, um zu überprüfen, ob der String den Variablennamenkriterien entspricht
+	validVariable := regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+
+	// Überprüfe, ob der String den Variablennamenkriterien entspricht
+	return validVariable.MatchString(funcName)
+}

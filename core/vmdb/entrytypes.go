@@ -1,16 +1,31 @@
 package vmdb
 
 type Manifest struct {
-	Name         string               `json:"name"`
-	Version      string               `json:"version"`
-	Owner        string               `json:"owner"`
-	RepoURL      string               `json:"repourl"`
-	Mode         string               `json:"mode"`
-	Whitelist    []Whitelist          `json:"whitelist"`
-	HostCAMember []CAMember           `json:"hostcamember"`
-	Databases    []Database           `json:"databases"`
-	NodeJS       ScriptDetail         `json:"nodejs"`
-	Services     ExperimentalServices `json:"services"`
+	Name         string       `json:"name"`
+	Version      string       `json:"version"`
+	Owner        string       `json:"owner"`
+	RepoURL      string       `json:"repourl"`
+	Mode         string       `json:"mode"`
+	Whitelist    []Whitelist  `json:"whitelist"`
+	HostCAMember []CAMember   `json:"hostcamember"`
+	Databases    []Database   `json:"databases"`
+	NodeJS       ScriptDetail `json:"nodejs"`
+	Services     Services     `json:"services"`
+}
+
+type Services struct {
+	Experimental ExperimentalServices `json:"experimental"`
+	External     []ExternalService    `json:"external"`
+}
+
+type ExternalService struct {
+	Name       string `json:"name"`
+	MinVersion int    `json:"min_version"`
+	Required   bool   `json:"required"`
+}
+
+type ExperimentalServices struct {
+	Webservice []WebService `json:"webservice"`
 }
 
 type Whitelist struct {
@@ -51,10 +66,6 @@ type ScriptModule struct {
 	StartCommand   string `json:"startcommand"`
 	InstallCommand string `json:"installcommand,omitempty"`
 	Name           string `json:"name"`
-}
-
-type ExperimentalServices struct {
-	Webservice []WebService `json:"webservice"`
 }
 
 type WebService struct {

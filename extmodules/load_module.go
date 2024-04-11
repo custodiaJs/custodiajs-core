@@ -1,8 +1,8 @@
-package modules
+package extmodules
 
 import (
 	"fmt"
-	cgowrapper "vnh1/modules/cgo_wrapper"
+	cgowrapper "vnh1/extmodules/cgo_wrapper"
 )
 
 // Lädt ein Libmodule
@@ -14,7 +14,7 @@ func LoadModuleLib(pathv string) (*ExternalModule, error) {
 	}
 
 	// Das Rückgabeobjekt wird erstellt
-	returnValue := &ExternalModule{*result}
+	returnValue := &ExternalModule{result}
 
 	// Rückgabe
 	return returnValue, nil

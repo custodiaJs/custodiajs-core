@@ -89,6 +89,18 @@ func (o *VmDBEntry) GetAllDatabaseServices() []*VMDatabaseData {
 	return vmdlist
 }
 
+func (o *VmDBEntry) GetAllExternalServices() []*VmExternalService {
+	servicesList := make([]*VmExternalService, 0)
+	for _, item := range o.manifestFile.GetManifestObject().Services.External {
+		servicesList = append(servicesList, &VmExternalService{MinVersion: uint(item.MinVersion), Name: item.Name, Required: item.Required})
+	}
+	return servicesList
+}
+
+func (o *VmDBEntry) GetAllExperimentalWebservices() []*VmExperimentalWebservice {
+	return []*VmExperimentalWebservice{}
+}
+
 func tryToLoadVM(path string) (*VmDBEntry, error) {
 	// Die Kernpfade für die VM werden erstellt
 	manifestVMJsonFilePath := filepath.Join(path, "manifest.json")

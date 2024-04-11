@@ -55,45 +55,58 @@ func (o *CGOWrappedLibModule) GetGlobalFunctions() []*CGOWrappedLibModuleFunctio
 	return o.global_functions
 }
 
-func (o *CGOWrappedLibModuleFunction) Call() (string, error) {
+func (o *CGOWrappedLibModuleFunction) Call() (string, interface{}, error) {
 	// Setup eines defer-Blocks zur Abfangung von Panics
+	var err error
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println(fmt.Errorf("LoadWrappedCGOLibModule failed: %v", r))
+			err = fmt.Errorf("LoadWrappedCGOLibModule failed: %v", r)
 		}
 	}()
 
+	// Die Funktion wird aufgerufen
 	retData := C.cgo_call_function(o.functionPtr)
 
 	// Prüfe den Datentyp und handle entsprechend
+	var value interface{}
+	var valueType string
 	switch retData._type {
 	case C.NONE:
-		fmt.Println("Keine Daten zurückgegeben")
+		valueType = "null"
+		value = nil
 	case C.STRING:
-		fmt.Println("String Daten:", C.GoString(retData.string_data))
+		value = C.GoString(retData.string_data)
+		valueType = "string"
 	case C.ERROR:
-		fmt.Println("Fehlermeldung:", C.GoString(retData.error_data))
+		value = C.GoString(retData.error_data)
+		valueType = "error"
 	case C.BYTES:
-		// Handle byte data, assuming it returns a null-terminated string for simplicity
-		fmt.Println("Byte Daten:", C.GoString(retData.byte_data))
+		value = retData.byte_data
+		valueType = "bytes"
 	case C.INT:
-		fmt.Println("Integer Daten:", int(retData.int_data))
+		value = int(retData.int_data)
+		valueType = "int"
 	case C.FLOAT:
-		fmt.Println("Float Daten:", float64(retData.float_data))
+		value = float64(retData.float_data)
+		valueType = "float"
 	case C.BOOLEAN:
-		fmt.Println("Boolean Daten:", bool(retData.bool_data))
+		value = bool(retData.bool_data)
+		valueType = "bool"
 	case C.TIMESTAMP:
-		fmt.Println("Timestamp Daten:", C.GoString(retData.timestamp_data))
+		value = C.GoString(retData.timestamp_data)
+		valueType = "timestamp"
 	case C.OBJECT:
-		fmt.Println("Object Daten:", retData.object_data)
+		value = retData.object_data
+		valueType = "object"
 	case C.ARRAY:
-		fmt.Println("Array Daten:", retData.array_data)
+		value = retData.array_data
+		valueType = "array"
 	default:
-		fmt.Println("Unbekannter Typ")
+		return "", nil, fmt.Errorf("unkown datatype")
 	}
 
 	// Die Daten werden zurückgegeben
-	return "", nil
+	return valueType, value, err
 }
 
 func (o *CGOWrappedLibModuleFunction) GetName() string {
