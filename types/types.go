@@ -11,11 +11,6 @@ type SOCKET_PATH string
 type ALTERNATIVE_SERVICE_PATH string
 type CoreVMFingerprint string
 
-type VmNodeJsModuleDetails struct {
-	Name  string
-	Alias string
-}
-
 type TransportWhitelistVmEntryData struct {
 	WildCardDomains []string
 	ExactDomains    []string

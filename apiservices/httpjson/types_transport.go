@@ -40,7 +40,6 @@ type SharedFunctions struct {
 type vmInfoResponse struct {
 	Name            string          `json:"name" cbor:"name"`
 	Id              string          `json:"hash" cbor:"hash"`
-	Modules         []string        `json:"modules" cbor:"modules"`
 	State           string          `json:"state" cbor:"state"`
 	SharedFunctions SharedFunctions `json:"sharedfunctions" cbor:"sharedfunctions"`
 }

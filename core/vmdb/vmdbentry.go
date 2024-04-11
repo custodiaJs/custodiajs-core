@@ -39,14 +39,6 @@ func (o *VmDBEntry) GetBaseSize() uint64 {
 	return o.containerBaseSize
 }
 
-func (o *VmDBEntry) GetTotalNodeJsModules() uint64 {
-	return uint64(len(o.nodeJsModules))
-}
-
-func (o *VmDBEntry) GetNodeJsModules() []*NodeJsModule {
-	return o.nodeJsModules
-}
-
 func (p *VmDBEntry) GetWhitelist() []Whitelist {
 	return p.manifestFile.GetManifestObject().Whitelist
 }
@@ -104,7 +96,6 @@ func (o *VmDBEntry) GetAllExperimentalWebservices() []*VmExperimentalWebservice 
 func tryToLoadVM(path string) (*VmDBEntry, error) {
 	// Die Kernpfade für die VM werden erstellt
 	manifestVMJsonFilePath := filepath.Join(path, "manifest.json")
-	nodeJsModulesPath := filepath.Join(path, "nodejs")
 	signatureFilePath := filepath.Join(path, "signature")
 	mainJSFilePath := filepath.Join(path, "main.js")
 
@@ -131,64 +122,8 @@ func tryToLoadVM(path string) (*VmDBEntry, error) {
 		return nil, fmt.Errorf("tryToLoadVM: " + err.Error())
 	}
 
-	// Es wird geprüft ob die Manifestdatei Scripte angibt
-	extractedNodejSModules := make([]*NodeJsModule, 0)
-	if manifestFile.NodeJsEnable() {
-		// Sollte der Scriptsordner nicht vorhanden sein, wird der Vorgang abgebrochen
-		if !utils.FolderExists(nodeJsModulesPath) {
-			return nil, fmt.Errorf("tryToLoadVM: no scripts found")
-		}
-
-		// Es werden die Verfügbaren Scripte eingelesen
-		scripts, err := tryToLoadNodeJsModules(nodeJsModulesPath)
-		if err != nil {
-			return nil, fmt.Errorf("tryToLoadVM: " + err.Error())
-		}
-
-		// Es wird geprüft ob alle NodeJs Module welche das Manifest angibt, vorhanden sind
-		if len(manifestFile.manifest.NodeJS.Modules) != len(scripts) {
-			return nil, fmt.Errorf("tryToLoadVM: invalid vm container, not all scriptes avail")
-		}
-
-		// Speichert alle NodeJs Module ab, welche die Manifestdatei angibt
-		validateNodeJsModules := make(map[string]string)
-		for _, scriptItem := range manifestFile.manifest.NodeJS.Modules {
-			validateNodeJsModules[scriptItem.Name] = scriptItem.Alias
-		}
-
-		// Jedes NodeJS Modul wird geprüft
-		unkownModules := make([]string, 0)
-		for _, item := range scripts {
-			// Es wird geprüft ob es sich um ein bekanntes Module handelt
-			val, found := validateNodeJsModules[item.name]
-			if !found {
-				unkownModules = append(unkownModules, item.name)
-				continue
-			}
-
-			// Der Alias wert word gesetzt
-			item.alias = val
-
-			// Das Modul wird abgespeichert
-			extractedNodejSModules = append(extractedNodejSModules, item)
-		}
-
-		// Es dürfen keine Unbekannten Module vorhanden sein
-		if len(unkownModules) != 0 {
-			return nil, fmt.Errorf("tryToLoadVM: broken vm container, nodejs module '%s' not in manifest file", strings.Join(unkownModules, ", "))
-		}
-	} else {
-		// Sollte der Scriptsordner vorhanden sein, wird der Vorgang abgebrochen
-		if utils.FolderExists(nodeJsModulesPath) {
-			return nil, fmt.Errorf("tryToLoadVM: scripts not allowed")
-		}
-	}
-
 	// Es wird eine Hashliste aus allen Hashes erstellt
 	mergedHashList := []string{manifestFile.GetFileHash(), mainJsFile.fileHash}
-	for _, item := range extractedNodejSModules {
-		mergedHashList = append(mergedHashList, item.merkleRoot)
-	}
 
 	// Die Hashliste wird Sortiert
 	sortedHashList, err := utils.SortHexStrings(mergedHashList)
@@ -204,9 +139,6 @@ func tryToLoadVM(path string) (*VmDBEntry, error) {
 
 	// Die Gesamtgröße der VM wird ermittelt
 	containerBaseSize := mainJsFile.GetFileSize() + manifestFile.GetFileSize()
-	for _, item := range extractedNodejSModules {
-		containerBaseSize += item.GetBaseSize()
-	}
 
 	// Das Objekt wird erstellt
 	newObject := &VmDBEntry{
@@ -214,7 +146,6 @@ func tryToLoadVM(path string) (*VmDBEntry, error) {
 		mainJSFile:            mainJsFile,
 		manifestFile:          manifestFile,
 		signatureFile:         sigFile,
-		nodeJsModules:         extractedNodejSModules,
 		vmContainerMerkleHash: merkleRoot,
 		containerBaseSize:     containerBaseSize,
 	}

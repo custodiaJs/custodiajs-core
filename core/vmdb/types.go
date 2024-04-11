@@ -2,7 +2,6 @@ package vmdb
 
 import (
 	"os"
-	"vnh1/utils"
 
 	"github.com/gofrs/flock"
 )
@@ -12,7 +11,6 @@ type VmDBEntry struct {
 	mainJSFile            *MainJsFile
 	manifestFile          *ManifestFile
 	signatureFile         *SignatureFile
-	nodeJsModules         []*NodeJsModule
 	vmContainerMerkleHash string
 	containerBaseSize     uint64
 }
@@ -27,14 +25,6 @@ type SignatureFile struct {
 	fileLock       *flock.Flock
 	ownerCert      string
 	ownerSignature string
-}
-
-type NodeJsModule struct {
-	merkleRoot string
-	files      []utils.FileInfo
-	baseSize   uint64
-	name       string
-	alias      string
 }
 
 type ManifestFile struct {

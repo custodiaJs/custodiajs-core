@@ -20,20 +20,6 @@ func (o *CoreVM) GetFingerprint() types.CoreVMFingerprint {
 	return types.CoreVMFingerprint(strings.ToLower(o.vmDbEntry.GetVMContainerMerkleHash()))
 }
 
-func (o *CoreVM) GetVMJSModules() []*types.VmNodeJsModuleDetails {
-	if o.vmDbEntry.GetTotalNodeJsModules() < 1 {
-		return make([]*types.VmNodeJsModuleDetails, 0)
-	}
-	modNames := make([]*types.VmNodeJsModuleDetails, 0)
-	for _, item := range o.vmDbEntry.GetNodeJsModules() {
-		modNames = append(modNames, &types.VmNodeJsModuleDetails{
-			Name:  item.GetName(),
-			Alias: item.GetAlias(),
-		})
-	}
-	return modNames
-}
-
 func (o *CoreVM) GetOwner() string {
 	return o.vmDbEntry.GetOwner()
 }

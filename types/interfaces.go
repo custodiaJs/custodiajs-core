@@ -18,7 +18,6 @@ type CoreInterface interface {
 type CoreVMInterface interface {
 	GetVMName() string
 	GetFingerprint() CoreVMFingerprint
-	GetVMJSModules() []*VmNodeJsModuleDetails
 	GetLocalSharedFunctions() []SharedLocalFunctionInterface
 	GetPublicSharedFunctions() []SharedPublicFunctionInterface
 	GetConsoleOutputWatcher() WatcherInterface

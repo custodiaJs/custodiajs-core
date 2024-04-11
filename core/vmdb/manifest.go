@@ -19,10 +19,6 @@ func (o *ManifestFile) GetFileHash() string {
 	return strings.ToLower(o.fileHash)
 }
 
-func (o *ManifestFile) NodeJsEnable() bool {
-	return o.manifest.NodeJS.Enable
-}
-
 func (o *ManifestFile) GetAllDatabaseServices() []*VMDatabaseData {
 	vmdlist := make([]*VMDatabaseData, 0)
 	for _, item := range o.manifest.Databases {
@@ -37,14 +33,6 @@ func (o *ManifestFile) GetAllDatabaseServices() []*VMDatabaseData {
 		})
 	}
 	return vmdlist
-}
-
-func (o *ManifestFile) GetNodeJsScriptAlias() []string {
-	resolv := []string{}
-	for _, item := range o.manifest.NodeJS.Modules {
-		resolv = append(resolv, strings.ToLower(item.Alias))
-	}
-	return resolv
 }
 
 func (o *ManifestFile) GetFileSize() uint64 {
