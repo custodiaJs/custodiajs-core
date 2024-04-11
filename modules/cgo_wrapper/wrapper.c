@@ -51,50 +51,49 @@ STARTUP_RESULT cgo_load_external_lib(const char* lib_path) {
 }
 
 // Gibt alle Funktionen zurück
-C_VM_FUNCTION_LIST cgo_get_global_functions() {
+CVmFunctionList cgo_get_global_functions() {
     // Stelle sicher, dass vm_module gültig und initialisiert ist.
     if (vm_module == NULL || vm_module->nvm_function_list == NULL) {
         // Hier solltest du entscheiden, wie du mit dieser Situation umgehen willst.
-        // Zum Beispiel könntest du eine leere C_VM_FUNCTION_LIST zurückgeben:
-        C_VM_FUNCTION_LIST empty = {0};
+        // Zum Beispiel könntest du eine leere CVmFunctionList zurückgeben:
+        CVmFunctionList empty = {0};
         return empty;
     }
 
-    // Gibt eine Kopie der C_VM_FUNCTION_LIST Struktur zurück
+    // Gibt eine Kopie der CVmFunctionList Struktur zurück
     return *(vm_module->nvm_function_list);
 }
 
 // Gibt alle Verfügbaren Module zurück
-C_VM_MODULES_LIST cgo_get_modules() {
+CVmModulesList cgo_get_modules() {
     // Stelle sicher, dass vm_module gültig und initialisiert ist.
     if (vm_module == NULL || vm_module->nvm_modules == NULL) {
         // Hier solltest du entscheiden, wie du mit dieser Situation umgehen willst.
-        // Zum Beispiel könntest du eine leere C_VM_FUNCTION_LIST zurückgeben:
-        C_VM_MODULES_LIST empty = {0};
+        // Zum Beispiel könntest du eine leere CVmFunctionList zurückgeben:
+        CVmModulesList empty = {0};
         return empty;
     }
 
-    // Gibt eine Kopie der C_VM_FUNCTION_LIST Struktur zurück
+    // Gibt eine Kopie der CVmFunctionList Struktur zurück
     return *(vm_module->nvm_modules);
 }
 
 // Gibt alle Globalen Objekte zurück
-C_VM_OBJECT_LIST cgo_get_global_object() {
+CVmObjectList cgo_get_global_object() {
     // Stelle sicher, dass vm_module gültig und initialisiert ist.
     if (vm_module == NULL || vm_module->nvm_objects == NULL) {
         // Hier solltest du entscheiden, wie du mit dieser Situation umgehen willst.
-        // Zum Beispiel könntest du eine leere C_VM_OBJECT_LIST zurückgeben:
-        C_VM_OBJECT_LIST empty = {0};
+        // Zum Beispiel könntest du eine leere CVmObjectList zurückgeben:
+        CVmObjectList empty = {0};
         return empty;
     }
 
-    // Gibt eine Kopie der C_VM_OBJECT_LIST Struktur zurück
+    // Gibt eine Kopie der CVmObjectList Struktur zurück
     return *(vm_module->nvm_objects);
 }
 
 // Wir verwendet um eine Module Funktion aufzurufen
-CFunctionReturnData cgo_call_function(C_VM_FUNCTION* function) {
-    printf("FUNC_NAME: %s\n", function->name);
+CFunctionReturnData cgo_call_function(CVmFunction* function) {
     CFunctionReturnData res = function->fptr();
     return res;
 }

@@ -17,7 +17,7 @@ import (
 	"vnh1/core/databaseservices"
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
-	"vnh1/experimental/modules"
+	"vnh1/modules"
 	"vnh1/types"
 	"vnh1/utils"
 )
@@ -114,7 +114,14 @@ func main() {
 	}
 	fmt.Println("done")
 
-	modules.TestLoad()
+	lib1, err := modules.LoadModuleLib("/home/fluffelbuff/Schreibtisch/lib1.so")
+	if err != nil {
+		panic(err)
+	}
+
+	for _, item := range lib1.GetGlobalFunctions() {
+		item.Call()
+	}
 
 	// Die Metadaten des Host Zertifikates werden angezeigt
 	printLocalHostTlsMetaData(hostCert)

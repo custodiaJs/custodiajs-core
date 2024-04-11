@@ -44,47 +44,47 @@ typedef CFunctionReturnData (*FUNCTION_PTR)();
 typedef struct {
     char* name;
     FUNCTION_PTR fptr;
-} C_VM_FUNCTION;
+} CVmFunction;
 
 // Stellt eine Funktionsliste dar
 typedef struct {
-    C_VM_FUNCTION *array;
+    CVmFunction *array;
     size_t size;
     size_t capacity;
-} C_VM_FUNCTION_LIST;
+} CVmFunctionList;
 
 // Stellt eine Liste von VM Objekten dar
 typedef struct {
-    void *C_VM_OBJECT;
+    void *CVmObject;
     size_t size;
     size_t capacity;
-} C_VM_OBJECT_LIST;
+} CVmObjectList;
 
 // Stellt ein VM Objekt dar
 typedef struct {
     char* name;
-    C_VM_FUNCTION_LIST* nvm_function_list;
-    C_VM_OBJECT_LIST* nvm_objects;
-} C_VM_OBJECT;
+    CVmFunctionList* nvm_function_list;
+    CVmObjectList* nvm_objects;
+} CVmObject;
 
 // Stellt ein Module dar
 typedef struct {
     char* name;
-    C_VM_FUNCTION_LIST* nvm_function_list;
-} C_VM_MODULE;
+    CVmFunctionList* nvm_function_list;
+} CVmModule;
 
 // Stellt eine Liste von Modulen dar
 typedef struct {
-    C_VM_MODULE *array;
+    CVmModule *array;
     size_t size;
     size_t capacity;
-} C_VM_MODULES_LIST;
+} CVmModulesList;
 
 // Stellt eine Shared Lib dar
 typedef struct {
-    C_VM_FUNCTION_LIST* nvm_function_list;
-    C_VM_MODULES_LIST* nvm_modules;
-    C_VM_OBJECT_LIST* nvm_objects;
+    CVmFunctionList* nvm_function_list;
+    CVmModulesList* nvm_modules;
+    CVmObjectList* nvm_objects;
     char* name;
     int version;
 } VmModule;
@@ -93,14 +93,14 @@ typedef struct {
 VmModule* new_vm_module(const char* name, int version);
 
 // Array Funktionen
-void init_vm_object_list(C_VM_OBJECT_LIST *list);
-void init_vm_modules_list(C_VM_MODULES_LIST *list);
-void init_shared_function_array(C_VM_FUNCTION_LIST *arr);
-int add_shared_function_array(C_VM_FUNCTION_LIST *pa, const char *name, FUNCTION_PTR fptr);
-int add_vm_module(C_VM_MODULES_LIST *list, C_VM_MODULE *module);
-void free_vm_modules_list(C_VM_MODULES_LIST *list);
-void free_vm_object_list(C_VM_OBJECT_LIST* list);
-void free_vm_function_list(C_VM_FUNCTION_LIST *pa);
+void init_vm_object_list(CVmObjectList *list);
+void init_vm_modules_list(CVmModulesList *list);
+void init_shared_function_array(CVmFunctionList *arr);
+int add_shared_function_array(CVmFunctionList *pa, const char *name, FUNCTION_PTR fptr);
+int add_vm_module(CVmModulesList *list, CVmModule *module);
+void free_vm_modules_list(CVmModulesList *list);
+void free_vm_object_list(CVmObjectList* list);
+void free_vm_function_list(CVmFunctionList *pa);
 void free_module(VmModule* module);
 
 /*
@@ -137,5 +137,8 @@ CFunctionReturnData CFunctionReturnData_NewObject();
 
 // Erstellt ein neues Leers Array
 CFunctionReturnData CFunctionReturnData_NewArray();
+
+// Erstellt ein neues Objekt
+CVmObject* CVmObject_New();
 
 #endif /* LIBRARY_H */
