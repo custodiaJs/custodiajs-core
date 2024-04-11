@@ -8,10 +8,10 @@
 #include "lib_bridge.h"
 
 void* lib;                  // Speichert die LIB ab (.so / .dll)
-VM_MODULE* vm_module;       // Speichert das Verwendetbare lib Module Struct ab
+VmModule* vm_module;        // Speichert das Verwendetbare lib Module Struct ab
 
 // Lädt die Lib
-STARTUP_RESULT load_external_lib(const char* lib_path) {
+STARTUP_RESULT cgo_load_external_lib(const char* lib_path) {
     // Das Ergebniss wird zurückgegeben
     STARTUP_RESULT result;
 
@@ -51,7 +51,7 @@ STARTUP_RESULT load_external_lib(const char* lib_path) {
 }
 
 // Gibt alle Funktionen zurück
-C_VM_FUNCTION_LIST get_global_functions() {
+C_VM_FUNCTION_LIST cgo_get_global_functions() {
     // Stelle sicher, dass vm_module gültig und initialisiert ist.
     if (vm_module == NULL || vm_module->nvm_function_list == NULL) {
         // Hier solltest du entscheiden, wie du mit dieser Situation umgehen willst.
@@ -65,7 +65,7 @@ C_VM_FUNCTION_LIST get_global_functions() {
 }
 
 // Gibt alle Verfügbaren Module zurück
-C_VM_MODULES_LIST get_modules() {
+C_VM_MODULES_LIST cgo_get_modules() {
     // Stelle sicher, dass vm_module gültig und initialisiert ist.
     if (vm_module == NULL || vm_module->nvm_modules == NULL) {
         // Hier solltest du entscheiden, wie du mit dieser Situation umgehen willst.
@@ -79,7 +79,7 @@ C_VM_MODULES_LIST get_modules() {
 }
 
 // Gibt alle Globalen Objekte zurück
-C_VM_OBJECT_LIST get_global_object() {
+C_VM_OBJECT_LIST cgo_get_global_object() {
     // Stelle sicher, dass vm_module gültig und initialisiert ist.
     if (vm_module == NULL || vm_module->nvm_objects == NULL) {
         // Hier solltest du entscheiden, wie du mit dieser Situation umgehen willst.
@@ -92,8 +92,15 @@ C_VM_OBJECT_LIST get_global_object() {
     return *(vm_module->nvm_objects);
 }
 
+// Wir verwendet um eine Module Funktion aufzurufen
+CFunctionReturnData cgo_call_function(C_VM_FUNCTION* function) {
+    printf("FUNC_NAME: %s\n", function->name);
+    CFunctionReturnData res = function->fptr();
+    return res;
+}
+
 // Entlädt die Lib
-void unload_lib() {
+void cgo_unload_lib() {
     if (lib) {
         dlclose(lib);
         lib = NULL;

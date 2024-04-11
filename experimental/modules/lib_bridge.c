@@ -3,11 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include "lib_bridge.h"
+#include <stdbool.h>
 
 // Erstellt eine neue Lib Configugartion
-VM_MODULE* new_vm_module_config(const char* name, int version) {
-    // Alloziere Speicher für die VM_MODULE Struktur
-    VM_MODULE* result = malloc(sizeof(VM_MODULE));
+VmModule* new_vm_module(const char* name, int version) {
+    // Alloziere Speicher für die VmModule Struktur
+    VmModule* result = malloc(sizeof(VmModule));
     if (result == NULL) {
         // Speicherreservierung fehlgeschlagen
         return NULL;
@@ -62,7 +63,7 @@ VM_MODULE* new_vm_module_config(const char* name, int version) {
 }
 
 // Fügt eine neue Globale Funktion hinzu
-int add_global_function(VM_MODULE* slib, const char* name, FUNCTION_PTR fptr) {
+int add_global_function(VmModule* slib, const char* name, FUNCTION_PTR fptr) {
     add_shared_function_array(slib->nvm_function_list, name, fptr);
     printf("add function %s\n", name);
     return 0;
@@ -219,7 +220,7 @@ void free_vm_modules_list(C_VM_MODULES_LIST *list) {
 }
 
 // Zerstört eine ganze Shared LIB
-void free_module(VM_MODULE* lib) {
+void free_module(VmModule* lib) {
     if (lib == NULL) return;
 
     // Freigabe des `name` Feldes
@@ -254,6 +255,197 @@ void free_module(VM_MODULE* lib) {
         lib->nvm_objects = NULL;
     }
 
-    // Zum Schluss, freigabe der `VM_MODULE` Struktur selbst
+    // Zum Schluss, freigabe der `VmModule` Struktur selbst
     free(lib);
+}
+
+// Erstellt einen neuen Leeren Datensatz
+CFunctionReturnData CFunctionReturnData_NewEmpty() {
+    CFunctionReturnData res;
+    res.type = NONE;
+    res.string_data = NULL;
+    res.error_data = NULL;
+    res.byte_data = NULL;
+    res.timestamp_data = NULL;
+    res.int_data = 0;
+    res.float_data = 0.0;
+    res.bool_data = false;
+    res.object_data = NULL;
+    res.array_data = NULL;
+    return res;
+}
+
+// Erstellt aus einem String, ein Rückgabewert
+CFunctionReturnData CFunctionReturnData_NewString(const char* str_value) {
+    CFunctionReturnData res;
+    res.type = STRING;
+    res.string_data = strdup(str_value);  // Kopiert str_value und weist es zu
+
+    // Stelle sicher, dass strdup erfolgreich war
+    if (res.string_data == NULL) {
+        // Fehlerbehandlung, z.B. durch Setzen eines Fehlers oder Rückgabe eines speziellen Werts
+        res.type = ERROR;
+        res.error_data = "unkown internal c error";
+    }
+
+    res.byte_data = NULL;
+    res.timestamp_data = NULL;
+    res.int_data = 0;
+    res.float_data = 0.0;
+    res.bool_data = false;
+    res.object_data = NULL;
+    res.array_data = NULL;
+
+    return res;
+}
+
+// Erstellt einen Fehler, Rückgabewert
+CFunctionReturnData CFunctionReturnData_NewError(const char* error_value) {
+    CFunctionReturnData res;
+    res.type = ERROR;
+    res.error_data = strdup(error_value);  // Kopiert error_value und weist es zu
+
+    // Stelle sicher, dass strdup erfolgreich war
+    if (res.error_data == NULL) {
+        // Fehlerbehandlung, z.B. durch Setzen eines Fehlers oder Rückgabe eines speziellen Werts
+        res.type = ERROR;
+        res.error_data = "unkown internal c error";
+    }
+
+    res.string_data = NULL;
+    res.byte_data = NULL;
+    res.timestamp_data = NULL;
+    res.int_data = 0;
+    res.float_data = 0.0;
+    res.bool_data = false;
+    res.object_data = NULL;
+    res.array_data = NULL;
+
+    return res;
+}
+
+// Erstellt einen neuen Byte Datensatz
+CFunctionReturnData CFunctionReturnData_NewByteData(const char* bytes_value) {
+    CFunctionReturnData res;
+    res.type = BYTES;
+    res.byte_data = strdup(bytes_value);
+
+    // Stelle sicher, dass strdup erfolgreich war
+    if (res.byte_data == NULL) {
+        // Fehlerbehandlung, z.B. durch Setzen eines Fehlers oder Rückgabe eines speziellen Werts
+        res.type = ERROR;
+        res.error_data = "unkown internal c error";
+    }
+
+    res.string_data = NULL;
+    res.timestamp_data = NULL;
+    res.int_data = 0;
+    res.float_data = 0.0;
+    res.bool_data = false;
+    res.object_data = NULL;
+    res.array_data = NULL;
+
+    return res;
+}
+
+// Erstellt einen neuen Integer Datensatz
+CFunctionReturnData CFunctionReturnData_NewInt(int int_value) {
+    CFunctionReturnData res;
+    res.type = INT;
+    res.int_data = int_value;
+    res.string_data = NULL;
+    res.error_data = NULL;
+    res.byte_data = NULL;
+    res.timestamp_data = NULL;
+    res.float_data = 0.0;
+    res.bool_data = false;
+    res.object_data = NULL;
+    res.array_data = NULL;
+    return res;
+}
+
+// Erstellt einen neuen Float Datensatz
+CFunctionReturnData CFunctionReturnData_NewFloat(float float_value) {
+    CFunctionReturnData res;
+    res.type = FLOAT;
+    res.float_data = float_value;
+    res.string_data = NULL;
+    res.error_data = NULL;
+    res.byte_data = NULL;
+    res.timestamp_data = NULL;
+    res.int_data = 0;
+    res.bool_data = false;
+    res.object_data = NULL;
+    res.array_data = NULL;
+    return res;
+}
+
+// Erstellt einen neuen Bool Datensatz
+CFunctionReturnData CFunctionReturnData_NewBool(bool bool_value) {
+    CFunctionReturnData res;
+    res.type = BOOLEAN;
+    res.bool_data = bool_value;
+    res.string_data = NULL;
+    res.error_data = NULL;
+    res.byte_data = NULL;
+    res.timestamp_data = NULL;
+    res.int_data = 0;
+    res.float_data = 0.0;
+    res.object_data = NULL;
+    res.array_data = NULL;
+    return res;
+}
+
+// Erstellt einen neuen Timestamp
+CFunctionReturnData CFunctionReturnData_NewTimestamp(const char* timesptamp_value) {
+    CFunctionReturnData res;
+    res.type = TIMESTAMP;
+    res.timestamp_data = strdup(timesptamp_value);
+
+    // Stelle sicher, dass strdup erfolgreich war
+    if (res.timestamp_data == NULL) {
+        // Fehlerbehandlung, z.B. durch Setzen eines Fehlers oder Rückgabe eines speziellen Werts
+        res.type = ERROR;
+        res.error_data = "unkown internal c error";
+    }
+
+    res.string_data = NULL;
+    res.byte_data = NULL;
+    res.int_data = 0;
+    res.float_data = 0.0;
+    res.bool_data = false;
+    res.object_data = NULL;
+    res.array_data = NULL;
+
+    return res;
+}
+
+// Erstellt ein neues Leeres Objekt
+CFunctionReturnData CFunctionReturnData_NewObject() {
+    CFunctionReturnData res;
+    res.type = OBJECT;
+    res.string_data = NULL;
+    res.error_data = NULL;
+    res.byte_data = NULL;
+    res.timestamp_data = NULL;
+    res.int_data = 0;
+    res.float_data = 0.0;
+    res.bool_data = false;
+    res.array_data = NULL;
+    return res;
+}
+
+// Erstellt ein neues Leers Array
+CFunctionReturnData CFunctionReturnData_NewArray() {
+    CFunctionReturnData res;
+    res.type = ARRAY;
+    res.string_data = NULL;
+    res.error_data = NULL;
+    res.byte_data = NULL;
+    res.timestamp_data = NULL;
+    res.int_data = 0;
+    res.float_data = 0.0;
+    res.bool_data = false;
+    res.object_data = NULL;
+    return res;
 }
