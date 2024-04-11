@@ -46,16 +46,6 @@ message VmDetailDatabaseEntry {
   string alias = 7;
 }
 
-message VmDetailNodeJsModuleEntry {
-  string alias = 1;
-  string name = 2;
-}
-
-message VmDetailNodeJsModuleEntryList {
-  bool isEnable = 1;
-  repeated VmDetailNodeJsModuleEntry modules = 2;
-}
-
 message VmDetailSharedFunctionEntry {
   string name = 1;
   repeated uint32 parmTypes = 2;
@@ -70,11 +60,10 @@ message VmDetailsResponse {
   string mode = 5;
   string state = 6;
   uint64 startTimestamp = 7;
-  VmDetailNodeJsModuleEntryList nodejs = 8;
-  repeated VmDetailWhitelistEntry whitelist = 9;
-  repeated VmDetailHostCAMemberEntry hostcamember = 10;
-  repeated VmDetailDatabaseEntry databases = 11;
-  repeated VmDetailSharedFunctionEntry sharedFunctions = 12;
+  repeated VmDetailWhitelistEntry whitelist = 8;
+  repeated VmDetailHostCAMemberEntry hostcamember = 9;
+  repeated VmDetailDatabaseEntry databases = 10;
+  repeated VmDetailSharedFunctionEntry sharedFunctions = 11;
 }
 
 message VmDetailsParms {

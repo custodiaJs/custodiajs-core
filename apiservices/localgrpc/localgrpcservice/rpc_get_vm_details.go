@@ -73,9 +73,6 @@ func (s *CliGrpcServer) GetVMDetails(ctx context.Context, vmDetailParms *localgr
 		})
 	}
 
-	// Die NodeJS Module werden extrahiert
-	nodeJSModuleList := make([]*localgrpcproto.VmDetailNodeJsModuleEntry, 0)
-
 	// Die geteilten Funktionen werden abgerufen
 	sharedFunctions := make([]*localgrpcproto.VmDetailSharedFunctionEntry, 0)
 	for _, item := range foundedVM.GetAllSharedFunctions() {
@@ -146,10 +143,6 @@ func (s *CliGrpcServer) GetVMDetails(ctx context.Context, vmDetailParms *localgr
 		Hostcamember:    extractedHostCAList,
 		Databases:       extractedDBList,
 		SharedFunctions: sharedFunctions,
-		Nodejs: &localgrpcproto.VmDetailNodeJsModuleEntryList{
-			IsEnable: len(nodeJSModuleList) > 0,
-			Modules:  nodeJSModuleList,
-		},
 	}
 
 	// Die Daten werden zurückgesendet
