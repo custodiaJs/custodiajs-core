@@ -125,6 +125,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	extModuleLibs = append(extModuleLibs, lib1)
 	extModuleLibs = append(extModuleLibs, lib2)
 

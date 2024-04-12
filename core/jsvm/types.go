@@ -1,7 +1,6 @@
 package jsvm
 
 import (
-	"sync"
 	"vnh1/core/consolecache"
 
 	"github.com/dop251/goja"
@@ -15,11 +14,9 @@ type JsVM struct {
 	allowedBuckets        []string
 	config                *JsVMConfig
 	gojaVM                *goja.Runtime
-	exports               *goja.Object
 	loadRootLib           bool
 	scriptLoaded          bool
 	startTimeUnix         uint64
-	mutex                 *sync.Mutex
 }
 
 type S3MetaData struct {

@@ -154,13 +154,8 @@ func (o *JsVM) GetAllSharedFunctions() []types.SharedFunctionInterface {
 	return vat
 }
 
-func (o *JsVM) Set(name string, value interface{}) error {
-	// Der Mutex wird verwendet
-	o.mutex.Lock()
-	defer o.mutex.Unlock()
-
-	// Die Goja Set Funktion wird aufgerufen
-	return o.gojaVM.Set(name, value)
+func (o *JsVM) GetRuntime() *goja.Runtime {
+	return o.gojaVM
 }
 
 func NewVM(config *JsVMConfig) (*JsVM, error) {
@@ -174,7 +169,6 @@ func NewVM(config *JsVMConfig) (*JsVM, error) {
 			config:                &defaultConfig,
 			gojaVM:                gojaVM,
 			scriptLoaded:          false,
-			exports:               gojaVM.NewObject(),
 			sharedLocalFunctions:  make(map[string]*SharedLocalFunction),
 			sharedPublicFunctions: make(map[string]*SharedPublicFunction),
 			consoleCache:          consolecache.NewConsoleOutputCache(),
@@ -187,7 +181,6 @@ func NewVM(config *JsVMConfig) (*JsVM, error) {
 			config:                config,
 			gojaVM:                gojaVM,
 			scriptLoaded:          false,
-			exports:               gojaVM.NewObject(),
 			sharedLocalFunctions:  make(map[string]*SharedLocalFunction),
 			sharedPublicFunctions: make(map[string]*SharedPublicFunction),
 			consoleCache:          consolecache.NewConsoleOutputCache(),

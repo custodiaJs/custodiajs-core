@@ -9,31 +9,28 @@
 #include "lib_bridge.h"
 
 // Lädt die Lib
-STARTUP_RESULT cgo_load_external_lib(const char* lib_path) {
+STARTUP_RESULT cgo_load_external_dynamic_unix_lib(const char* lib_path) {
     // Das Ergebniss wird zurückgegeben
     STARTUP_RESULT result;
 
-    // Es wird versucht die lib zu laden
-    void* lib = dlopen(lib_path, RTLD_LAZY);
-    if (!lib) {
-        result.err = "cant_open_lib";
-        return result;
+    // Handle für die geladene DLL
+    HINSTANCE hDll;
+
+    // Funktionszeiger für die Funktion in der DLL
+    DLLFunctionPointer functionPtr;
+
+    // Lade die DLL
+    hDll = LoadLibraryA(lib_path);
+    if (hDll == NULL) {
+        fprintf(stderr, "Fehler beim Laden der DLL.\n");
+        return 1;
     }
 
-    // Die Startup Funktion wird geladen
-    LIB_LOAD lib_load = (LIB_LOAD) dlsym(lib, "lib_load");
-    if (!lib_load) {
-        dlclose(lib);
-        result.err = "cant_call_function";
-        return result;
-    }
-
-    // Die Shutdown Funktion wird geladen
-    LIB_STOP lib_stop = (LIB_STOP) dlsym(lib, "lib_stop");
-    if (!lib_stop) {
-        dlclose(lib);
-        result.err = "cant_call_function";
-        return result;
+    // Hole den Funktionszeiger für die Funktion in der DLL
+    functionPtr = (DLLFunctionPointer)GetProcAddress(hDll, "NameOfFunctionInDLL");
+    if (functionPtr == NULL) {
+        fprintf(stderr, "Fehler beim Holen des Funktionszeigers.\n");
+        return 1;
     }
 
     // Die Lib wird geladen

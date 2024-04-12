@@ -10,6 +10,8 @@ import (
 	"vnh1/core/vmdb"
 	"vnh1/extmodules"
 	"vnh1/types"
+
+	"github.com/dop251/goja"
 )
 
 type Core struct {
@@ -32,8 +34,10 @@ type Core struct {
 type CoreVM struct {
 	*jsvm.JsVM
 	core            *Core
+	objectMutex     *sync.Mutex
 	dbServiceLinks  []services.DbServiceLinkinterface
 	vmDbEntry       *vmdb.VmDBEntry
 	vmState         types.VmState
 	externalModules []*extmodules.ExternalModule
+	vmExports       *goja.Object
 }

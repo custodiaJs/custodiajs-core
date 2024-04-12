@@ -20,7 +20,9 @@ typedef void (*LIB_STOP)();
 CFunctionReturnData cgo_call_function(CVmFunction* function);
 
 // Wird verwenet um die Lib zu Laden
-STARTUP_RESULT cgo_load_external_lib(const char* lib_path);
+STARTUP_RESULT cgo_load_external_dynamic_unix_lib(const char* lib_path);
+STARTUP_RESULT cgo_load_external_win32_dynamic_lib(const char* lib_path);
+STARTUP_RESULT cgo_load_external_macos_dynamic_lib(const char* lib_path);
 
 // Gibt alle Verfügbaren Globalen Funktionen zurück
 CVmFunctionList cgo_get_global_functions(CWrappedModuleLib* vm_module);

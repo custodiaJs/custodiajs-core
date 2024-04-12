@@ -1,7 +1,12 @@
 package cgowrapper
 
 /*
-#cgo CFLAGS: -I./c_lib
+#cgo linux CFLAGS: -I/usr/include/python3.11
+#cgo linux LDFLAGS: -lpython3.11
+#cgo darwin CFLAGS: -I/usr/local/include/python3.11
+#cgo darwin LDFLAGS: -L/usr/local/lib -lpython3.11
+#cgo windows CFLAGS: -I"C:/Python311/include"
+#cgo windows LDFLAGS: -L"C:/Python311/libs" -lpython311
 #include <stdlib.h>
 #include "wrapper.h"
 */
@@ -9,7 +14,9 @@ import "C"
 
 import (
 	"fmt"
+	"strings"
 	"unsafe"
+	"vnh1/utils"
 )
 
 type CGOWrappedLibModuleFunction struct {
@@ -126,13 +133,63 @@ func LoadWrappedCGOLibModule(pathv string) (*CGOWrappedLibModule, error) {
 		}
 	}()
 
-	// Pfad zur Shared Library
-	libPath := C.CString(pathv)
+	// Der Datentyp des Module Libs wird ermittelt, danach wird versucht
+	// passend zum Datentyp die Lib einzulesen
+	var lib C.STARTUP_RESULT
+	var libPath *C.char
+	if utils.FileExists(pathv) {
+		// Pfad zur Shared Library
+		libPath = C.CString(pathv)
 
-	// Rufe die Wrapper-Funktion auf
-	lib := C.cgo_load_external_lib(libPath)
-	if C.GoString(lib.err) != "" {
-		panic(C.GoString(lib.err))
+		// Es wird überprüft, ob es sich um eine UNIX .SO-Datei,
+		// eine Windows .DLL-Datei, oder um eine Apple DYLIB-Datei handelt.
+		// Außerdem wird überprüft, ob es sich um eine .PY-Skriptdatei oder um ein Python-Modul handelt.
+		// Sollte es sich nicht um eines dieser Dateiformate handeln, wird ein Fehler ausgelöst.
+		if strings.HasSuffix(pathv, ".so") {
+			// Es wird geprüft ob es sich um eine Unix .so Datei handelt
+			if !utils.IsUnixSOFile(pathv) {
+				defer C.free(unsafe.Pointer(libPath))
+				return nil, fmt.Errorf("LoadWrappedCGOLibModule: invalid lib file")
+			}
+
+			// Rufe die Wrapper-Funktion auf
+			lib = C.cgo_load_external_dynamic_unix_lib(libPath)
+			if C.GoString(lib.err) != "" {
+				defer C.free(unsafe.Pointer(libPath))
+				return nil, fmt.Errorf("LoadWrappedCGOLibModule: lib loading c error: %s", C.GoString(lib.err))
+			}
+		} else if strings.HasSuffix(pathv, ".dll") {
+			// Es wird geprüft ob es sich um eine Windows .DLL handelt
+			if !utils.IsWindowsDLL(pathv) {
+				defer C.free(unsafe.Pointer(libPath))
+				return nil, fmt.Errorf("LoadWrappedCGOLibModule: not supported data binary format")
+			}
+
+			// Rufe die Wrapper-Funktion auf
+			lib = C.cgo_load_external_win32_dynamic_lib(libPath)
+			if C.GoString(lib.err) != "" {
+				defer C.free(unsafe.Pointer(libPath))
+				return nil, fmt.Errorf("LoadWrappedCGOLibModule: lib loading c error: %s", C.GoString(lib.err))
+			}
+		} else if strings.HasSuffix(pathv, ".dylib") {
+			// Es wird gerprüft ob der Header korrekt ist
+			if !utils.IsDylib(pathv) {
+				defer C.free(unsafe.Pointer(libPath))
+				return nil, fmt.Errorf("LoadWrappedCGOLibModule: not supported data binary format")
+			}
+
+			// Rufe die Wrapper-Funktion auf
+			lib = C.cgo_load_external_macos_dynamic_lib(libPath)
+			if C.GoString(lib.err) != "" {
+				defer C.free(unsafe.Pointer(libPath))
+				return nil, fmt.Errorf("LoadWrappedCGOLibModule: lib loading c error: %s", C.GoString(lib.err))
+			}
+		} else {
+			defer C.free(unsafe.Pointer(libPath))
+			return nil, fmt.Errorf("LoadWrappedCGOLibModule: not supported data binary format")
+		}
+	} else {
+		return nil, fmt.Errorf("LoadWrappedCGOLibModule: unkown path %s", pathv)
 	}
 
 	// Es werden alle Verfügbaren Funktionen abgerufen

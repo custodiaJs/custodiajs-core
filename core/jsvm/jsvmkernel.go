@@ -50,14 +50,6 @@ func (o *JsVM) prepareVM() error {
 	vnh1Obj.Set("com", o.gojaCOMFunctionModule)
 	o.gojaVM.Set("vnh1", vnh1Obj)
 
-	// Die JS Exports werden bereitgestellt
-	o.gojaVM.Set("exports", o.exports)
-
-	/* Es wird geprüft ob das API Root Script durch die VM bereitgestellt werden soll
-	if o.loadRootLib {
-
-	}*/
-
 	// Der Vorgang ist ohne Fehler durchgeführt wurden
 	return nil
 }

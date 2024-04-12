@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 #include "wrapper.h"
 #include "lib_bridge.h"
 

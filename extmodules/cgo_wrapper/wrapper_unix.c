@@ -7,8 +7,8 @@
 #include "wrapper.h"
 #include "lib_bridge.h"
 
-// Lädt die Lib
-STARTUP_RESULT cgo_load_external_lib(const char* lib_path) {
+// Lädt eine Unix .SO Lib
+STARTUP_RESULT cgo_load_external_dynamic_unix_lib(const char* lib_path) {
     // Das Ergebniss wird zurückgegeben
     STARTUP_RESULT result;
 
@@ -51,6 +51,20 @@ STARTUP_RESULT cgo_load_external_lib(const char* lib_path) {
 
     // Rückgabe
     return result;
+}
+
+// Lädt eine Win32 .DLL Lib
+STARTUP_RESULT cgo_load_external_win32_dynamic_lib(const char* lib_path) {
+    STARTUP_RESULT notSupported;
+    notSupported.err = "win32_not_supported_unix_host";
+    return notSupported;
+}
+
+// Lädt eine MacOS .DYLIB Lib
+STARTUP_RESULT cgo_load_external_macos_dynamic_lib(const char* lib_path) {
+    STARTUP_RESULT notSupported;
+    notSupported.err = "win32_not_supported_unix_host";
+    return notSupported;
 }
 
 // Entlädt die Lib und gibt das vm_module frei

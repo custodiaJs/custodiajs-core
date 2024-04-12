@@ -141,8 +141,19 @@ func (o *CoreVM) addDatabaseServiceLink(dbserviceLink services.DbServiceLinkinte
 }
 
 func (o *CoreVM) init() error {
+	// Der Mutex wird angewendet
+	o.objectMutex.Lock()
+	defer o.objectMutex.Unlock()
+
 	// Die Basis Funktionen werden Initalisiert
-	o.core._init_vm_kernel_base(o)
+	if err := o.core._init_vm_kernel_base(o); err != nil {
+		return fmt.Errorf("CoreVM->init: " + err.Error())
+	}
+
+	// Die Externen Module werden abgearbeitet
+	for _, item := range o.externalModules {
+		fmt.Println(item)
+	}
 
 	// Die Externenen Module werden Registriert
 	return nil
@@ -155,6 +166,8 @@ func newCoreVM(core *Core, jsvm *jsvm.JsVM, vmDb *vmdb.VmDBEntry, extModules []*
 		core:            core,
 		vmDbEntry:       vmDb,
 		vmState:         types.StillWait,
+		objectMutex:     &sync.Mutex{},
+		vmExports:       jsvm.GetRuntime().NewObject(),
 		dbServiceLinks:  make([]services.DbServiceLinkinterface, 0),
 		externalModules: extModules,
 	}
