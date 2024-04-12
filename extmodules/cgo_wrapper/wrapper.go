@@ -20,7 +20,7 @@ type CGOWrappedLibModuleFunction struct {
 type CGOWrappedLibModule struct {
 	path             *C.char
 	lib              unsafe.Pointer
-	unload_lib       func()
+	cmodule          *C.CWrappedModuleLib
 	name             string
 	version          uint
 	global_functions []*CGOWrappedLibModuleFunction
@@ -37,7 +37,7 @@ func (o *CGOWrappedLibModule) Unload() {
 	}()
 
 	// Es wird versucht die LIB zu entladen
-	o.unload_lib()
+	C.cgo_unload_lib(o.cmodule)
 
 	// Es wird aufgeärumt
 	C.free(unsafe.Pointer(o.path))
@@ -137,18 +137,13 @@ func LoadWrappedCGOLibModule(pathv string) (*CGOWrappedLibModule, error) {
 
 	// Es werden alle Verfügbaren Funktionen abgerufen
 	c_functions := make([]*CGOWrappedLibModuleFunction, 0)
-	cgo_global_functions := C.cgo_get_global_functions()
+	cgo_global_functions := C.cgo_get_global_functions(lib.moduleLib)
 	for i := 0; i < int(cgo_global_functions.size); i++ {
 		// Berechne die Adresse des i-ten Elements
 		functionPtr := (*C.CVmFunction)(unsafe.Pointer(uintptr(unsafe.Pointer(cgo_global_functions.array)) + uintptr(i)*unsafe.Sizeof(*cgo_global_functions.array)))
 
 		// Die Funktion wird zwischengespeichert
 		c_functions = append(c_functions, &CGOWrappedLibModuleFunction{name: C.GoString(functionPtr.name), functionPtr: functionPtr})
-	}
-
-	// Wird ausgeführt um die LIB zu Entladen
-	unloadFunc := func() {
-		C.cgo_unload_lib()
 	}
 
 	// Das Rückgabe Objekt wird erstellt
@@ -158,7 +153,7 @@ func LoadWrappedCGOLibModule(pathv string) (*CGOWrappedLibModule, error) {
 		lib:              unsafe.Pointer(libPath),
 		name:             C.GoString(lib.name),
 		version:          uint(lib.version),
-		unload_lib:       unloadFunc,
+		cmodule:          lib.moduleLib,
 	}
 
 	// Das Objekt wird zurückgegeben

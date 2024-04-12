@@ -7,16 +7,13 @@
 #include "wrapper.h"
 #include "lib_bridge.h"
 
-void* lib;                  // Speichert die LIB ab (.so / .dll)
-VmModule* vm_module;        // Speichert das Verwendetbare lib Module Struct ab
-
 // Lädt die Lib
 STARTUP_RESULT cgo_load_external_lib(const char* lib_path) {
     // Das Ergebniss wird zurückgegeben
     STARTUP_RESULT result;
 
     // Es wird versucht die lib zu laden
-    lib = dlopen(lib_path, RTLD_LAZY);
+    void* lib = dlopen(lib_path, RTLD_LAZY);
     if (!lib) {
         result.err = "cant_open_lib";
         return result;
@@ -39,21 +36,27 @@ STARTUP_RESULT cgo_load_external_lib(const char* lib_path) {
     }
 
     // Die Lib wird geladen
-    vm_module = lib_load();
+    VmModule* vm_module = lib_load();
+
+    // Die Lib wird Extrahiert
+    CWrappedModuleLib* module = (CWrappedModuleLib*)malloc(sizeof(CWrappedModuleLib));
+    module->vm_module = vm_module;
+    module->lib = lib;
 
     // Der Wert wird zurückgegeben
     result.err = "";
     result.name = vm_module->name;
     result.version = vm_module->version;
+    result.moduleLib = module;
 
     // Rückgabe
     return result;
 }
 
 // Gibt alle Funktionen zurück
-CVmFunctionList cgo_get_global_functions() {
+CVmFunctionList cgo_get_global_functions(CWrappedModuleLib* vm_module) {
     // Stelle sicher, dass vm_module gültig und initialisiert ist.
-    if (vm_module == NULL || vm_module->nvm_function_list == NULL) {
+    if (vm_module == NULL || vm_module->vm_module->nvm_function_list == NULL) {
         // Hier solltest du entscheiden, wie du mit dieser Situation umgehen willst.
         // Zum Beispiel könntest du eine leere CVmFunctionList zurückgeben:
         CVmFunctionList empty = {0};
@@ -61,13 +64,13 @@ CVmFunctionList cgo_get_global_functions() {
     }
 
     // Gibt eine Kopie der CVmFunctionList Struktur zurück
-    return *(vm_module->nvm_function_list);
+    return *(vm_module->vm_module->nvm_function_list);
 }
 
 // Gibt alle Verfügbaren Module zurück
-CVmModulesList cgo_get_modules() {
+CVmModulesList cgo_get_modules(CWrappedModuleLib* vm_module) {
     // Stelle sicher, dass vm_module gültig und initialisiert ist.
-    if (vm_module == NULL || vm_module->nvm_modules == NULL) {
+    if (vm_module == NULL || vm_module->vm_module->nvm_modules == NULL) {
         // Hier solltest du entscheiden, wie du mit dieser Situation umgehen willst.
         // Zum Beispiel könntest du eine leere CVmFunctionList zurückgeben:
         CVmModulesList empty = {0};
@@ -75,13 +78,13 @@ CVmModulesList cgo_get_modules() {
     }
 
     // Gibt eine Kopie der CVmFunctionList Struktur zurück
-    return *(vm_module->nvm_modules);
+    return *(vm_module->vm_module->nvm_modules);
 }
 
 // Gibt alle Globalen Objekte zurück
-CVmObjectList cgo_get_global_object() {
+CVmObjectList cgo_get_global_object(CWrappedModuleLib* vm_module) {
     // Stelle sicher, dass vm_module gültig und initialisiert ist.
-    if (vm_module == NULL || vm_module->nvm_objects == NULL) {
+    if (vm_module == NULL || vm_module->vm_module->nvm_objects == NULL) {
         // Hier solltest du entscheiden, wie du mit dieser Situation umgehen willst.
         // Zum Beispiel könntest du eine leere CVmObjectList zurückgeben:
         CVmObjectList empty = {0};
@@ -89,7 +92,7 @@ CVmObjectList cgo_get_global_object() {
     }
 
     // Gibt eine Kopie der CVmObjectList Struktur zurück
-    return *(vm_module->nvm_objects);
+    return *(vm_module->vm_module->nvm_objects);
 }
 
 // Wir verwendet um eine Module Funktion aufzurufen
@@ -98,15 +101,24 @@ CFunctionReturnData cgo_call_function(CVmFunction* function) {
     return res;
 }
 
-// Entlädt die Lib
-void cgo_unload_lib() {
-    if (lib) {
-        dlclose(lib);
-        lib = NULL;
-    }
+// Entlädt die Lib und gibt das vm_module frei
+void cgo_unload_lib(CWrappedModuleLib* vm_module) {
+    if (vm_module != NULL) {
+        // Erst das Modul freigeben, wenn es existiert
+        if (vm_module->vm_module != NULL) {
+            // Angenommen, free_module ist die korrekte Freigabefunktion
+            free_module(vm_module->vm_module);
+            vm_module->vm_module = NULL;
+        }
 
-    if (vm_module) {
-        free_module(vm_module);
-        vm_module = NULL;
+        // Dann die Bibliothek schließen, wenn sie geladen wurde
+        if (vm_module->lib != NULL) {
+            dlclose(vm_module->lib);
+            vm_module->lib = NULL;
+        }
+
+        // Schließlich das Hauptobjekt freigeben
+        free(vm_module);
     }
 }
+

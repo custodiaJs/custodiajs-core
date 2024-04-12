@@ -121,7 +121,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	lib2, err := extmodules.LoadModuleLib("/home/fluffelbuff/Schreibtisch/lib2.so")
+	if err != nil {
+		panic(err)
+	}
 	extModuleLibs = append(extModuleLibs, lib1)
+	extModuleLibs = append(extModuleLibs, lib2)
 
 	// Die Metadaten des Host Zertifikates werden angezeigt
 	printLocalHostTlsMetaData(hostCert)
