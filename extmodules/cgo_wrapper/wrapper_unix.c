@@ -12,32 +12,28 @@ STARTUP_RESULT cgo_load_external_lib(const char* lib_path) {
     // Das Ergebniss wird zurückgegeben
     STARTUP_RESULT result;
 
-    // Handle für die geladene DLL
-    HINSTANCE hDll;
-
-    // Funktionszeiger für die Funktion in der DLL
-    DLLFunctionPointer functionPtr;
-
-    // Lade die DLL
-    hDll = LoadLibraryA(lib_path);
-    if (hDll == NULL) {
-        fprintf(stderr, "Fehler beim Laden der DLL.\n");
-        return 1;
+    // Es wird versucht die lib zu laden
+    void* lib = dlopen(lib_path, RTLD_LAZY);
+    if (!lib) {
+        result.err = "cant_open_lib";
+        return result;
     }
 
-    // Hole den Funktionszeiger für die Funktion in der DLL
-    functionPtr = (DLLFunctionPointer)GetProcAddress(hDll, "lib_load");
-    if (functionPtr == NULL) {
-        fprintf(stderr, "Fehler beim Holen des Funktionszeigers.\n");
-        return 1;
+    // Die Startup Funktion wird geladen
+    LIB_LOAD lib_load = (LIB_LOAD) dlsym(lib, "lib_load");
+    if (!lib_load) {
+        dlclose(lib);
+        result.err = "cant_call_function";
+        return result;
     }
 
-    // Rufe die Funktion in der DLL auf
-    int result = functionPtr(42);
-    printf("Ergebnis der Funktion: %d\n", result);
-
-    // Schließe die DLL
-    FreeLibrary(hDll);
+    // Die Shutdown Funktion wird geladen
+    LIB_STOP lib_stop = (LIB_STOP) dlsym(lib, "lib_stop");
+    if (!lib_stop) {
+        dlclose(lib);
+        result.err = "cant_call_function";
+        return result;
+    }
 
     // Die Lib wird geladen
     VmModule* vm_module = lib_load();
