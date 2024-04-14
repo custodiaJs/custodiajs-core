@@ -1,6 +1,11 @@
 package types
 
-import "github.com/dop251/goja"
+import (
+	"vnh1/core/consolecache"
+
+	"github.com/dop251/goja"
+	v8 "rogchap.com/v8go"
+)
 
 type JsVmInterface interface {
 	GetPublicSharedFunctions() []SharedPublicFunctionInterface
@@ -73,4 +78,19 @@ type FunctionParameterBundleInterface interface {
 }
 
 type AlternativeServiceInterface interface {
+}
+
+type KernelInterface interface {
+	Isolate() *v8.Isolate
+	GloablRegisterWrite(string, interface{}) error
+	GloablRegisterRead(string) interface{}
+	Console() *consolecache.ConsoleOutputCache
+	KernelThrow(*v8.Context, string)
+	ContextV8() *v8.Context
+	Global() *v8.Object
+}
+
+type KernelModuleInterface interface {
+	GetName() string
+	Init(KernelInterface) error
 }

@@ -134,7 +134,7 @@ func (o *CoreVM) ValidateRPCRequestSource(soruce string) bool {
 }
 
 func (o *CoreVM) GetConsoleOutputWatcher() types.WatcherInterface {
-	return o.Kernel.Console.GetOutputStream()
+	return o.Kernel.Console().GetOutputStream()
 }
 
 func (o *CoreVM) addDatabaseServiceLink(dbserviceLink services.DbServiceLinkinterface) error {
@@ -168,12 +168,68 @@ func (o *CoreVM) runScript(script string) error {
 	return nil
 }
 
+func (o *CoreVM) GetLocalSharedFunctions() []types.SharedLocalFunctionInterface {
+	extracted := make([]types.SharedLocalFunctionInterface, 0)
+	table, isok := o.GloablRegisterRead("rpc_local").(map[string]types.SharedLocalFunctionInterface)
+	if !isok {
+		return extracted
+	}
+	for _, item := range table {
+		extracted = append(extracted, item)
+	}
+	return extracted
+}
+
+func (o *CoreVM) GetPublicSharedFunctions() []types.SharedPublicFunctionInterface {
+	extracted := make([]types.SharedPublicFunctionInterface, 0)
+	table, isok := o.GloablRegisterRead("rpc_public").(map[string]types.SharedPublicFunctionInterface)
+	if !isok {
+		return extracted
+	}
+	for _, item := range table {
+		extracted = append(extracted, item)
+	}
+	return extracted
+}
+
+func (o *CoreVM) GetAllSharedFunctions() []types.SharedFunctionInterface {
+	vat := make([]types.SharedFunctionInterface, 0)
+	for _, item := range o.GetLocalSharedFunctions() {
+		vat = append(vat, item)
+	}
+	for _, item := range o.GetPublicSharedFunctions() {
+		vat = append(vat, item)
+	}
+	return vat
+}
+
 func newCoreVM(core *Core, vmDb *vmdb.VmDBEntry, extModules []*extmodules.ExternalModule) *CoreVM {
 	// Es wird ein neuer Konsolen Stream erzeugt
 	consoleStream := consolecache.NewConsoleOutputCache()
 
+	// Es werden alle Externen Module geladen
+	extMods := make([]types.KernelModuleInterface, 0)
+	for _, item := range extModules {
+		// Es wird versucht das Modul zu bauen
+		extMod, err := kernel.LinkWithExternalModule(item)
+		if err != nil {
+			panic("linking error")
+		}
+
+		// Die Daten werden abgespeichert
+		extMods = append(extMods, extMod)
+	}
+
+	// Die KernelModule werden Initalisiert
+	var kernelConfig *kernel.KernelConfig
+	if len(extMods) > 0 {
+		kernelConfig = kernel.NewFromExist(&kernel.DEFAULT_CONFIG, extMods...)
+	} else {
+		kernelConfig = &kernel.DEFAULT_CONFIG
+	}
+
 	// Es wird ein neuer Kernel erzeugt
-	vmKernel, err := kernel.NewKernel(consoleStream)
+	vmKernel, err := kernel.NewKernel(consoleStream, kernelConfig)
 	if err != nil {
 		return nil
 	}

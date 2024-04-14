@@ -1,32 +1,64 @@
 package kernel
 
 import (
-	"vnh1/types"
+	"fmt"
+	"sync"
+	"vnh1/core/consolecache"
+
+	v8 "rogchap.com/v8go"
 )
 
-func (o *Kernel) GetLocalSharedFunctions() []types.SharedLocalFunctionInterface {
-	extracted := make([]types.SharedLocalFunctionInterface, 0)
-	for _, item := range o.sharedLocalFunctions {
-		extracted = append(extracted, item)
-	}
-	return extracted
+func (o *Kernel) Console() *consolecache.ConsoleOutputCache {
+	return o.console
 }
 
-func (o *Kernel) GetPublicSharedFunctions() []types.SharedPublicFunctionInterface {
-	extracted := make([]types.SharedPublicFunctionInterface, 0)
-	for _, item := range o.sharedPublicFunctions {
-		extracted = append(extracted, item)
-	}
-	return extracted
+func (o *Kernel) ContextV8() *v8.Context {
+	return o.Context
 }
 
-func (o *Kernel) GetAllSharedFunctions() []types.SharedFunctionInterface {
-	vat := make([]types.SharedFunctionInterface, 0)
-	for _, item := range o.GetLocalSharedFunctions() {
-		vat = append(vat, item)
+func (o *Kernel) KernelThrow(context *v8.Context, msg string) {
+	errMsg, err := v8.NewValue(o.Isolate(), msg)
+	if err != nil {
+		panic(err)
 	}
-	for _, item := range o.GetPublicSharedFunctions() {
-		vat = append(vat, item)
+	context.Isolate().ThrowException(errMsg)
+}
+
+func (o *Kernel) GloablRegisterRead(name_id string) interface{} {
+	value, no := o.register[name_id]
+	if !no {
+		return nil
 	}
-	return vat
+	return value
+}
+
+func (o *Kernel) GloablRegisterWrite(name_id string, value interface{}) error {
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	o.register[name_id] = value
+	return nil
+}
+
+func NewKernel(consoleCache *consolecache.ConsoleOutputCache, kernelConfig *KernelConfig) (*Kernel, error) {
+	// DIe VM wird erezugt
+	iso := v8.NewIsolate()
+
+	// Das Kernelobjekt wird erzeugt
+	kernelObj := &Kernel{
+		register: make(map[string]interface{}),
+		mutex:    &sync.Mutex{},
+		console:  consoleCache,
+		Context:  v8.NewContext(iso),
+		config:   kernelConfig,
+	}
+
+	// Die Einzelnen Kernel Module werden Registriert
+	for _, item := range kernelConfig.Modules {
+		if err := item.Init(kernelObj); err != nil {
+			return nil, fmt.Errorf("Kernel->NewKernel: " + err.Error())
+		}
+	}
+
+	// Das Kernelobejkt wird zurückgegeben
+	return kernelObj, nil
 }
