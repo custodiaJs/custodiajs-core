@@ -39,17 +39,27 @@ func (o *Kernel) GloablRegisterWrite(name_id string, value interface{}) error {
 	return nil
 }
 
+func (o *Kernel) AddImportModule(name string, v8Value *v8.Value) error {
+	return nil
+}
+
 func NewKernel(consoleCache *consolecache.ConsoleOutputCache, kernelConfig *KernelConfig) (*Kernel, error) {
 	// DIe VM wird erezugt
 	iso := v8.NewIsolate()
 
 	// Das Kernelobjekt wird erzeugt
 	kernelObj := &Kernel{
-		register: make(map[string]interface{}),
-		mutex:    &sync.Mutex{},
-		console:  consoleCache,
-		Context:  v8.NewContext(iso),
-		config:   kernelConfig,
+		register:  make(map[string]interface{}),
+		mutex:     &sync.Mutex{},
+		console:   consoleCache,
+		Context:   v8.NewContext(iso),
+		config:    kernelConfig,
+		vmImports: make(map[string]*v8.Value),
+	}
+
+	// Die Require Funktionen werden Registriert
+	if err := kernelObj._setup_require(); err != nil {
+		return nil, fmt.Errorf("Kernel->NewKernel: " + err.Error())
 	}
 
 	// Die Einzelnen Kernel Module werden Registriert

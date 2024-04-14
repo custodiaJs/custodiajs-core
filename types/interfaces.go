@@ -81,12 +81,13 @@ type AlternativeServiceInterface interface {
 }
 
 type KernelInterface interface {
-	Isolate() *v8.Isolate
 	GloablRegisterWrite(string, interface{}) error
-	GloablRegisterRead(string) interface{}
 	Console() *consolecache.ConsoleOutputCache
+	AddImportModule(string, *v8.Value) error
+	GloablRegisterRead(string) interface{}
 	KernelThrow(*v8.Context, string)
 	ContextV8() *v8.Context
+	Isolate() *v8.Isolate
 	Global() *v8.Object
 }
 

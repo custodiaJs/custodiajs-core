@@ -231,7 +231,7 @@ func newCoreVM(core *Core, vmDb *vmdb.VmDBEntry, extModules []*extmodules.Extern
 	// Es wird ein neuer Kernel erzeugt
 	vmKernel, err := kernel.NewKernel(consoleStream, kernelConfig)
 	if err != nil {
-		return nil
+		panic(err)
 	}
 
 	// Das Core Objekt wird erstellt

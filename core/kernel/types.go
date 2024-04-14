@@ -14,8 +14,9 @@ type KernelConfig struct {
 
 type Kernel struct {
 	*v8.Context
-	config   *KernelConfig
-	mutex    *sync.Mutex
-	console  *consolecache.ConsoleOutputCache
-	register map[string]interface{}
+	config    *KernelConfig
+	mutex     *sync.Mutex
+	console   *consolecache.ConsoleOutputCache
+	register  map[string]interface{}
+	vmImports map[string]*v8.Value
 }
