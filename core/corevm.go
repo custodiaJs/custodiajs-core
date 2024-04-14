@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
+	"vnh1/core/consolecache"
 	"vnh1/core/databaseservices/services"
-	"vnh1/core/jsvm"
+	"vnh1/core/kernel"
 	"vnh1/core/vmdb"
 	extmodules "vnh1/extmodules"
 	"vnh1/types"
@@ -56,7 +58,7 @@ func (o *CoreVM) serveGorutine(syncWaitGroup *sync.WaitGroup) error {
 	// Diese Funktion wird als Goroutine ausgeführt
 	go func(item *CoreVM, scriptContent []byte) {
 		o.vmState = types.Running
-		item.RunScript(string(scriptContent))
+		item.runScript(string(scriptContent))
 		syncWaitGroup.Done()
 	}(o, scriptContent)
 
@@ -132,7 +134,7 @@ func (o *CoreVM) ValidateRPCRequestSource(soruce string) bool {
 }
 
 func (o *CoreVM) GetConsoleOutputWatcher() types.WatcherInterface {
-	return o.JsVM.GetConsoleOutputWatcher()
+	return o.Kernel.Console.GetOutputStream()
 }
 
 func (o *CoreVM) addDatabaseServiceLink(dbserviceLink services.DbServiceLinkinterface) error {
@@ -140,36 +142,51 @@ func (o *CoreVM) addDatabaseServiceLink(dbserviceLink services.DbServiceLinkinte
 	return nil
 }
 
-func (o *CoreVM) init() error {
-	// Der Mutex wird angewendet
-	o.objectMutex.Lock()
-	defer o.objectMutex.Unlock()
+func (o *CoreVM) GetStartingTimestamp() uint64 {
+	return o.startTimeUnix
+}
 
-	// Die Basis Funktionen werden Initalisiert
-	if err := o.core._init_vm_kernel_base(o); err != nil {
-		return fmt.Errorf("CoreVM->init: " + err.Error())
+func (o *CoreVM) runScript(script string) error {
+	// Es wird geprüft ob das Script beretis geladen wurden
+	if o.scriptLoaded {
+		return fmt.Errorf("LoadScript: always script loaded")
 	}
 
-	// Die Externen Module werden abgearbeitet
-	for _, item := range o.externalModules {
-		fmt.Println(item)
+	// Es wird markiert dass das Script geladen wurde
+	o.scriptLoaded = true
+
+	// Das Script wird ausgeführt
+	_, err := o.Kernel.RunScript(script, "main.js")
+	if err != nil {
+		panic(err)
 	}
 
-	// Die Externenen Module werden Registriert
+	// Die Aktuelle Uhrzeit wird ermittelt
+	o.startTimeUnix = uint64(time.Now().Unix())
+
+	// Es ist kein Fehler aufgetreten
 	return nil
 }
 
-func newCoreVM(core *Core, jsvm *jsvm.JsVM, vmDb *vmdb.VmDBEntry, extModules []*extmodules.ExternalModule) *CoreVM {
+func newCoreVM(core *Core, vmDb *vmdb.VmDBEntry, extModules []*extmodules.ExternalModule) *CoreVM {
+	// Es wird ein neuer Konsolen Stream erzeugt
+	consoleStream := consolecache.NewConsoleOutputCache()
+
+	// Es wird ein neuer Kernel erzeugt
+	vmKernel, err := kernel.NewKernel(consoleStream)
+	if err != nil {
+		return nil
+	}
+
 	// Das Core Objekt wird erstellt
 	coreObject := &CoreVM{
-		JsVM:            jsvm,
+		Kernel:          vmKernel,
 		core:            core,
 		vmDbEntry:       vmDb,
-		vmState:         types.StillWait,
-		objectMutex:     &sync.Mutex{},
-		vmExports:       jsvm.GetRuntime().NewObject(),
-		dbServiceLinks:  make([]services.DbServiceLinkinterface, 0),
 		externalModules: extModules,
+		objectMutex:     &sync.Mutex{},
+		vmState:         types.StillWait,
+		dbServiceLinks:  make([]services.DbServiceLinkinterface, 0),
 	}
 
 	// Das Objekt wird zurückgegeben

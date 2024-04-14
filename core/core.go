@@ -12,8 +12,6 @@ import (
 	extmodules "vnh1/extmodules"
 	"vnh1/types"
 	"vnh1/utils"
-
-	"vnh1/core/jsvm"
 )
 
 // Fügt eine Externe Modul Lib dem Core hinzu
@@ -107,15 +105,8 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 		return nil, fmt.Errorf("Core->AddScriptContainer: You cannot add a VM container '%s' multiple times", vmDbEntry.GetVMContainerMerkleHash())
 	}
 
-	// Es wird eine neue VM erzeugt
-	tvmobj, err := jsvm.NewVM(nil)
-	if err != nil {
-		o.objectMutex.Unlock()
-		return nil, fmt.Errorf("AddScriptContainer: " + err.Error())
-	}
-
 	// Das Detailspaket wird erzeugt
-	vmobject := newCoreVM(o, tvmobj, vmDbEntry, modList)
+	vmobject := newCoreVM(o, vmDbEntry, modList)
 
 	// Das VMObjekt wird zwischengespeichert
 	o.vmsByID[strings.ToLower(vmDbEntry.GetVMContainerMerkleHash())] = vmobject // Merklehash
@@ -124,11 +115,6 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 
 	// Der Mutex wird freigegeben
 	o.objectMutex.Unlock()
-
-	// Die VM wird Initalisiert
-	if err := vmobject.init(); err != nil {
-		return nil, fmt.Errorf("Core->AddScriptContainer: " + err.Error())
-	}
 
 	// Die VM wird mit allen Datenbankdiensten Verknüpft
 	for _, item := range vmDbEntry.GetAllDatabaseServices() {

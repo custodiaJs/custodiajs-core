@@ -7,7 +7,7 @@ import (
 )
 
 func ValidateDatatypeString(dType string) bool {
-	switch dType {
+	switch strings.ToLower(dType) {
 	case "boolean":
 		return true
 	case "number":

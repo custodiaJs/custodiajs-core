@@ -6,12 +6,10 @@ import (
 	"vnh1/core/databaseservices"
 	"vnh1/core/databaseservices/services"
 	"vnh1/core/identkeydatabase"
-	"vnh1/core/jsvm"
+	"vnh1/core/kernel"
 	"vnh1/core/vmdb"
 	"vnh1/extmodules"
 	"vnh1/types"
-
-	"github.com/dop251/goja"
 )
 
 type Core struct {
@@ -32,12 +30,13 @@ type Core struct {
 }
 
 type CoreVM struct {
-	*jsvm.JsVM
+	*kernel.Kernel
 	core            *Core
+	scriptLoaded    bool
+	startTimeUnix   uint64
 	objectMutex     *sync.Mutex
-	dbServiceLinks  []services.DbServiceLinkinterface
-	vmDbEntry       *vmdb.VmDBEntry
 	vmState         types.VmState
+	vmDbEntry       *vmdb.VmDBEntry
 	externalModules []*extmodules.ExternalModule
-	vmExports       *goja.Object
+	dbServiceLinks  []services.DbServiceLinkinterface
 }
