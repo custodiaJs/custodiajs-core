@@ -1,4 +1,4 @@
-package kmodules
+package kmoduleconsole
 
 import (
 	"fmt"

@@ -1,13 +1,14 @@
 package kernel
 
 import (
-	kmodules "vnh1/core/kernel/modules"
+	kmoduleconsole "vnh1/core/kernel/modules/console"
+	kmodulerpc "vnh1/core/kernel/modules/rpc"
 	"vnh1/types"
 )
 
 var DEFAULT_CONFIG = KernelConfig{
 	Modules: []types.KernelModuleInterface{
-		kmodules.NewConsoleModule(),
-		kmodules.NewRPCModule(),
+		kmoduleconsole.NewConsoleModule(),
+		kmodulerpc.NewRPCModule(),
 	},
 }

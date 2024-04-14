@@ -1,4 +1,4 @@
-package kmodules
+package kmodulerpc
 
 import (
 	"fmt"

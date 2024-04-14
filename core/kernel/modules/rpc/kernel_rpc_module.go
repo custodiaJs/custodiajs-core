@@ -1,4 +1,4 @@
-package kmodules
+package kmodulerpc
 
 import (
 	"fmt"
@@ -10,27 +10,6 @@ import (
 )
 
 type RPCModule int
-
-type SharedLocalFunction struct {
-	v8VM         *v8.Context
-	callFunction *v8.Function
-	name         string
-	parmTypes    []string
-	returnType   string
-}
-
-type SharedPublicFunction struct {
-	v8VM         *v8.Context
-	callFunction *v8.Function
-	name         string
-	parmTypes    []string
-	returnType   string
-}
-
-type FunctionCallReturn struct {
-	CType string
-	Value interface{}
-}
 
 func _util_rpc_shareFunctionParmArrayReader(result *v8.Value) []string {
 	// Das resultierende v8go.Value sollte ein Array sein
