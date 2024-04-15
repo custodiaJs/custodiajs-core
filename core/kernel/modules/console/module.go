@@ -2,7 +2,6 @@ package kmoduleconsole
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"vnh1/types"
 
@@ -24,7 +23,7 @@ func (o *ModuleConsole) _kernel_console_log(kernel types.KernelInterface) *v8.Fu
 
 		// Die Ausgabe wird an den Console Cache übergeben
 		kernel.Console().InfoLog(outputStr)
-		log.Println(outputStr)
+		kernel.LogPrint("Console", "%s\n", outputStr)
 
 		// Rückgabe ohne Fehler
 		return nil
@@ -44,7 +43,7 @@ func (o *ModuleConsole) _kernel_console_error(kernel types.KernelInterface) *v8.
 
 		// Die Ausgabe wird an den Console Cache übergeben
 		kernel.Console().ErrorLog(outputStr)
-		log.Printf("ERROR: %s\n", outputStr)
+		kernel.LogPrint("Console", "ERROR: %s\n", outputStr)
 
 		// Rückgabe ohne Fehler
 		return nil

@@ -39,7 +39,7 @@ func _util_rpc_shareFunctionParmArrayReader(result *v8.Value) []string {
 	return extrStr
 }
 
-func (o *RPCModule) _kernel_rpc_NewShareLocalFunction(kernel types.KernelInterface) *v8.FunctionTemplate {
+func (o *RPCModule) _kernel_rpc_NewShareFunction(usedTable string, kernel types.KernelInterface) *v8.FunctionTemplate {
 	return v8.NewFunctionTemplate(kernel.ContextV8().Isolate(), func(info *v8.FunctionCallbackInfo) *v8.Value {
 		// Die Parameter werden geprüft
 		var sharedFunction *v8.Function
@@ -187,36 +187,77 @@ func (o *RPCModule) _kernel_rpc_NewShareLocalFunction(kernel types.KernelInterfa
 			}
 		}
 
-		// Es wird versucht die Tabelle abzurufen
-		table, isok := kernel.GloablRegisterRead("rpc_local").(map[string]*SharedLocalFunction)
-		if !isok {
-			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			kernel.KernelThrow(info.Context(), "some type error 1")
+		// Der Eintrag wird aus der Tabelle abgerufen
+		tableR := kernel.GloablRegisterRead(usedTable)
 
-			// Der Vorgang wird beendet
-			return nil
-		}
+		// Die Funktion wird in der Richtigen Tabelle gesucht
+		var resolve interface{}
+		if usedTable == "rpc_public" {
+			// Es wird versucht die Tabelle abzurufen
+			resolveData, isOk := tableR.(map[string]types.SharedPublicFunctionInterface)
+			if !isOk {
+				// Die Fehlermeldung wird erstellt und an JS zurückgegeben
+				kernel.KernelThrow(info.Context(), "some type error 1")
 
-		// Es wird geprüft ob diese Funktion bereits registriert wurde
-		if _, found := table[functionName]; found {
-			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			kernel.KernelThrow(info.Context(), "some type error")
+				// Der Vorgang wird beendet
+				return nil
+			}
 
-			// Der Vorgang wird beendet
-			return nil
-		}
+			// Es wird geprüft ob diese Funktion bereits registriert wurde
+			if _, found := resolveData[functionName]; found {
+				// Die Fehlermeldung wird erstellt und an JS zurückgegeben
+				kernel.KernelThrow(info.Context(), "some type error")
 
-		// Die Geteilte Funktion wird erzeugt
-		table[functionName] = &SharedLocalFunction{
-			callFunction: sharedFunction,
-			name:         info.Args()[0].String(),
-			parmTypes:    parameterTypes,
-			returnType:   returnType,
-			v8VM:         kernel.ContextV8(),
+				// Der Vorgang wird beendet
+				return nil
+			}
+
+			// Die Geteilte Funktion wird erzeugt
+			resolveData[functionName] = &SharedPublicFunction{
+				SharedFunction: &SharedFunction{
+					callFunction: sharedFunction,
+					name:         info.Args()[0].String(),
+					parmTypes:    parameterTypes,
+					returnType:   returnType,
+					v8VM:         kernel.ContextV8(),
+				},
+			}
+			resolve = resolveData
+		} else {
+			// Es wird versucht die Tabelle abzurufen
+			resolveData, isOk := tableR.(map[string]types.SharedLocalFunctionInterface)
+			if !isOk {
+				// Die Fehlermeldung wird erstellt und an JS zurückgegeben
+				kernel.KernelThrow(info.Context(), "some type error 1")
+
+				// Der Vorgang wird beendet
+				return nil
+			}
+
+			// Es wird geprüft ob diese Funktion bereits registriert wurde
+			if _, found := resolveData[functionName]; found {
+				// Die Fehlermeldung wird erstellt und an JS zurückgegeben
+				kernel.KernelThrow(info.Context(), "some type error")
+
+				// Der Vorgang wird beendet
+				return nil
+			}
+
+			// Die Geteilte Funktion wird erzeugt
+			resolveData[functionName] = &SharedLocalFunction{
+				SharedFunction: &SharedFunction{
+					callFunction: sharedFunction,
+					name:         info.Args()[0].String(),
+					parmTypes:    parameterTypes,
+					returnType:   returnType,
+					v8VM:         kernel.ContextV8(),
+				},
+			}
+			resolve = resolveData
 		}
 
 		// Der Eintrag in der Datenbank wird geupdated
-		if err := kernel.GloablRegisterWrite("rpc_local", table); err != nil {
+		if err := kernel.GloablRegisterWrite(usedTable, resolve); err != nil {
 			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
 			kernel.KernelThrow(info.Context(), "some type error")
 
@@ -224,205 +265,20 @@ func (o *RPCModule) _kernel_rpc_NewShareLocalFunction(kernel types.KernelInterfa
 			return nil
 		}
 
-		// Die Funktion wird im Core registriert
-		fmt.Println("VM:SHARE_LOCAL_FUNCTION:", functionName, "")
+		// LOG
+		kernel.LogPrint("RPC", "Add sharing function '%s'\n", functionName)
 
 		// Der Vorgang wurde ohne Fehler durchgeführt
 		return nil
 	})
 }
 
+func (o *RPCModule) _kernel_rpc_NewShareLocalFunction(kernel types.KernelInterface) *v8.FunctionTemplate {
+	return o._kernel_rpc_NewShareFunction("rpc_local", kernel)
+}
+
 func (o *RPCModule) _kernel_rpc_NewSharePublicFunction(kernel types.KernelInterface) *v8.FunctionTemplate {
-	return v8.NewFunctionTemplate(kernel.ContextV8().Isolate(), func(info *v8.FunctionCallbackInfo) *v8.Value {
-		// Die Parameter werden geprüft
-		var sharedFunction *v8.Function
-		parameterTypes := make([]string, 0)
-		var functionName string
-		returnType := "none"
-		var err error
-		if len(info.Args()) == 2 {
-			// Es wird geprüft ob als erstes ein String angegeben wurde
-			if !info.Args()[0].IsString() {
-				// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-				kernel.KernelThrow(info.Context(), "invalid parameter chain")
-
-				// Der Vorgang wird beendet
-				return nil
-			}
-
-			// Es wird geprüft ob als nächstes eine Funktion vorhanden ist
-			if !info.Args()[1].IsAsyncFunction() {
-				// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-				kernel.KernelThrow(info.Context(), "invalid parameter chain")
-
-				// Der Vorgang wird beendet
-				return nil
-			}
-
-			// Der Funktionsname wird extrahiert
-			functionName = info.Args()[0].String()
-
-			// Die Funktion wird Extrahiert
-			sharedFunction, err = info.Args()[1].AsFunction()
-			if err != nil {
-				panic(err)
-			}
-		} else if len(info.Args()) >= 3 {
-			// Es wird geprüft ob als erstes ein String angegeben wurde
-			if !info.Args()[0].IsString() {
-				// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-				kernel.KernelThrow(info.Context(), "invalid parameter chain")
-
-				// Der Vorgang wird beendet
-				return nil
-			}
-
-			// Es wird geprüft ob als zweites ein Array nur mit Strings angegeben wurde
-			if !info.Args()[1].IsArray() {
-				// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-				kernel.KernelThrow(info.Context(), "invalid parameter chain")
-
-				// Der Vorgang wird beendet
-				return nil
-			}
-
-			// Es wird geprüft ob ein Rückgabetyp angegeben wurde
-			if len(info.Args()) >= 4 {
-				// Es wird geprüft ob als Drittes ein String vorhanden ist, welcher Angibt was für ein Datentyp zurückgegeben wird
-				if !info.Args()[2].IsString() {
-					// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-					kernel.KernelThrow(info.Context(), "invalid parameter chain")
-
-					// Der Vorgang wird beendet
-					return nil
-				}
-
-				// Es wird geprüft ob als nächstes eine Funktion vorhanden ist
-				if !info.Args()[3].IsAsyncFunction() {
-					// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-					kernel.KernelThrow(info.Context(), "invalid parameter chain")
-
-					// Der Vorgang wird beendet
-					return nil
-				}
-
-				// Der Funktionsname wird extrahiert
-				functionName = info.Args()[0].String()
-
-				// Die Parametertypen werden ausgelsen
-				parameterTypes = _util_rpc_shareFunctionParmArrayReader(info.Args()[1])
-
-				// Der Rückgabe Type wird ausgelsen
-				returnType = info.Args()[2].String()
-
-				// Die Funktion wird Extrahiert
-				sharedFunction, err = info.Args()[3].AsFunction()
-				if err != nil {
-					panic(err)
-				}
-			} else {
-				// Es wird geprüft ob als nächstes eine Funktion vorhanden ist
-				if !info.Args()[2].IsAsyncFunction() {
-					// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-					kernel.KernelThrow(info.Context(), "invalid parameter chain")
-
-					// Der Vorgang wird beendet
-					return nil
-				}
-
-				// Der Funktionsname wird extrahiert
-				functionName = info.Args()[0].String()
-
-				// Die Parametertypen werden ausgelsen
-				parameterTypes = _util_rpc_shareFunctionParmArrayReader(info.Args()[1])
-
-				// Die Funktion wird Extrahiert
-				sharedFunction, err = info.Args()[2].AsFunction()
-				if err != nil {
-					panic(err)
-				}
-			}
-		} else {
-			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			kernel.KernelThrow(info.Context(), "invalid parameter chain")
-
-			// Der Vorgang wird beendet
-			return nil
-		}
-
-		// Es wird geprüft ob es sich um einen Zulässigen Funktionsnamen handelt
-		if !utils.ValidateFunctionName(functionName) {
-			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			kernel.KernelThrow(info.Context(), "invalid function name")
-
-			// Der Vorgang wird beendet
-			return nil
-		}
-
-		// Der Rückgabetype wird geprüft
-		if !utils.ValidateDatatypeString(returnType) && returnType != "none" {
-			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			kernel.KernelThrow(info.Context(), fmt.Sprintf("invalid return type '%s'", returnType))
-
-			// Der Vorgang wird beendet
-			return nil
-		}
-
-		// Die Einzelnen Parametertypen werden geprüft
-		for index, item := range parameterTypes {
-			// Der Einzelne Parameter wird geprüft
-			if !utils.ValidateDatatypeString(item) {
-				// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-				kernel.KernelThrow(info.Context(), fmt.Sprintf("Failed to get element at index %d: %v", index, "invalid return datatype"))
-
-				// Der Vorgang wird beendet
-				return nil
-			}
-		}
-
-		// Es wird versucht die Tabelle abzurufen
-		table, isok := kernel.GloablRegisterRead("rpc_public").(map[string]*SharedPublicFunction)
-		if !isok {
-			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			kernel.KernelThrow(info.Context(), "some type error")
-
-			// Der Vorgang wird beendet
-			return nil
-		}
-
-		// Es wird geprüft ob diese Funktion bereits registriert wurde
-		if _, found := table[functionName]; found {
-			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			kernel.KernelThrow(info.Context(), "some type error")
-
-			// Der Vorgang wird beendet
-			return nil
-		}
-
-		// Die Geteilte Funktion wird erzeugt
-		table[functionName] = &SharedPublicFunction{
-			callFunction: sharedFunction,
-			name:         info.Args()[0].String(),
-			parmTypes:    parameterTypes,
-			returnType:   returnType,
-			v8VM:         kernel.ContextV8(),
-		}
-
-		// Der Eintrag in der Datenbank wird geupdated
-		if err := kernel.GloablRegisterWrite("rpc_public", table); err != nil {
-			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			kernel.KernelThrow(info.Context(), "some type error")
-
-			// Der Vorgang wird beendet
-			return nil
-		}
-
-		// Die Funktion wird im Core registriert
-		fmt.Println("VM:SHARE_LOCAL_FUNCTION:", functionName, "")
-
-		// Der Vorgang wurde ohne Fehler durchgeführt
-		return nil
-	})
+	return o._kernel_rpc_NewShareFunction("rpc_public", kernel)
 }
 
 func (o *RPCModule) _kernel_rpc_CallLocal(kernel types.KernelInterface) *v8.FunctionTemplate {
@@ -452,7 +308,7 @@ func (o *RPCModule) _kernel_rpc_GetFunctionDetailsRemote(kernel types.KernelInte
 func (o *RPCModule) _kernel_rpc_IsShareLocal(kernel types.KernelInterface) *v8.FunctionTemplate {
 	return v8.NewFunctionTemplate(kernel.ContextV8().Isolate(), func(info *v8.FunctionCallbackInfo) *v8.Value {
 		// Es wird versucht die Tabelle abzurufen
-		table, isok := kernel.GloablRegisterRead("rpc_local").(map[string]*SharedLocalFunction)
+		table, isok := kernel.GloablRegisterRead("rpc_local").(map[string]types.SharedLocalFunctionInterface)
 		if !isok {
 			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
 			kernel.KernelThrow(info.Context(), "some type erro 1r")
@@ -478,7 +334,7 @@ func (o *RPCModule) _kernel_rpc_IsShareLocal(kernel types.KernelInterface) *v8.F
 func (o *RPCModule) _kernel_rpc_IsShareRemote(kernel types.KernelInterface) *v8.FunctionTemplate {
 	return v8.NewFunctionTemplate(kernel.ContextV8().Isolate(), func(info *v8.FunctionCallbackInfo) *v8.Value {
 		// Es wird versucht die Tabelle abzurufen
-		table, isok := kernel.GloablRegisterRead("rpc_public").(map[string]*SharedPublicFunction)
+		table, isok := kernel.GloablRegisterRead("rpc_public").(map[string]types.SharedPublicFunctionInterface)
 		if !isok {
 			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
 			kernel.KernelThrow(info.Context(), "some type error 2")
@@ -503,11 +359,11 @@ func (o *RPCModule) _kernel_rpc_IsShareRemote(kernel types.KernelInterface) *v8.
 
 func (o *RPCModule) Init(kernel types.KernelInterface) error {
 	// Es wird versucht ein Global Register Eintrag zu erzeugen
-	slfmap := make(map[string]*SharedLocalFunction)
+	slfmap := make(map[string]types.SharedLocalFunctionInterface)
 	if err := kernel.GloablRegisterWrite("rpc_local", slfmap); err != nil {
 		return fmt.Errorf("")
 	}
-	spfmap := make(map[string]*SharedPublicFunction)
+	spfmap := make(map[string]types.SharedPublicFunctionInterface)
 	if err := kernel.GloablRegisterWrite("rpc_public", spfmap); err != nil {
 		return fmt.Errorf("")
 	}
@@ -529,8 +385,10 @@ func (o *RPCModule) Init(kernel types.KernelInterface) error {
 		return fmt.Errorf("Kernel->_new_kernel_load_rpc_module: " + err.Error())
 	}
 
-	// Das RFC Modul wird hinzugefügt
-	kernel.Global().Set("rpc", rpcObj)
+	// Das Objekt wird als Import Registriert
+	if err := kernel.AddImportModule("rpc", rpcObj.Value); err != nil {
+		return fmt.Errorf("ModuleHttp->Init: " + err.Error())
+	}
 
 	// Kein Fehler
 	return nil

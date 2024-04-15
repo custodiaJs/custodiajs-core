@@ -214,11 +214,11 @@ func main() {
 		}
 
 		// Log
-		fmt.Printf("%s-> VM '%s' <-> %s loaded %d bytes\n", spaces, newVM.GetVMName(), strings.ToUpper(string(newVM.GetFingerprint())), item.GetBaseSize())
+		fmt.Printf("%s-> VM '%s' <-> %s loaded %d bytes [%s]\n", spaces, newVM.GetVMName(), strings.ToUpper(string(newVM.GetFingerprint())), item.GetBaseSize(), newVM.GetKId())
 	}
 
 	// Der Core wird gestartet
-	fmt.Println()
+	fmt.Println("Starting done...")
 	var waitGroupForServing sync.WaitGroup
 	waitGroupForServing.Add(1)
 	go func() {

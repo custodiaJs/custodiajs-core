@@ -34,3 +34,14 @@ type VMDatabaseData struct {
 	Database string
 	Alias    string
 }
+
+type FunctionCallReturnData struct {
+	CType string
+	Value interface{}
+}
+
+type FunctionCallState struct {
+	State  string
+	Error  string
+	Return []*FunctionCallReturnData
+}

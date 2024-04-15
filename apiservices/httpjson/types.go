@@ -8,7 +8,8 @@ import (
 )
 
 type RpcRequest struct {
-	parms []types.FunctionParameterBundleInterface
+	parms      []types.FunctionParameterBundleInterface
+	rpcRequest types.HttpJsonRequestData
 }
 
 type HttpApiService struct {
@@ -41,4 +42,9 @@ type RequestData struct {
 	Origin            string
 	TLS               *tls.ConnectionState
 	Cookies           []*http.Cookie
+}
+
+type ResponseCapsle struct {
+	Data  []*RPCResponseData
+	Error string
 }

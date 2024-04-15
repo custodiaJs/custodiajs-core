@@ -14,6 +14,7 @@ type KernelConfig struct {
 
 type Kernel struct {
 	*v8.Context
+	id        string
 	config    *KernelConfig
 	mutex     *sync.Mutex
 	console   *consolecache.ConsoleOutputCache

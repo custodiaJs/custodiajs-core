@@ -170,25 +170,39 @@ func (o *CoreVM) runScript(script string) error {
 
 func (o *CoreVM) GetLocalSharedFunctions() []types.SharedLocalFunctionInterface {
 	extracted := make([]types.SharedLocalFunctionInterface, 0)
-	table, isok := o.GloablRegisterRead("rpc_local").(map[string]types.SharedLocalFunctionInterface)
-	if !isok {
+	table := o.GloablRegisterRead("rpc_local")
+	if table == nil {
 		return extracted
 	}
-	for _, item := range table {
+
+	ctable, istable := table.(map[string]types.SharedLocalFunctionInterface)
+	if !istable {
+		return extracted
+	}
+
+	for _, item := range ctable {
 		extracted = append(extracted, item)
 	}
+
 	return extracted
 }
 
 func (o *CoreVM) GetPublicSharedFunctions() []types.SharedPublicFunctionInterface {
 	extracted := make([]types.SharedPublicFunctionInterface, 0)
-	table, isok := o.GloablRegisterRead("rpc_public").(map[string]types.SharedPublicFunctionInterface)
-	if !isok {
+	table := o.GloablRegisterRead("rpc_local")
+	if table == nil {
 		return extracted
 	}
-	for _, item := range table {
+
+	ctable, istable := table.(map[string]types.SharedPublicFunctionInterface)
+	if !istable {
+		return extracted
+	}
+
+	for _, item := range ctable {
 		extracted = append(extracted, item)
 	}
+
 	return extracted
 }
 

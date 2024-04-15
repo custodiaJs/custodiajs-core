@@ -1,4 +1,4 @@
-package kmodulenet
+package kmodulehttp
 
 import (
 	"fmt"
@@ -7,11 +7,11 @@ import (
 	v8 "rogchap.com/v8go"
 )
 
-type ModuleNetwork struct {
+type ModuleHttp struct {
 	context *v8.Context
 }
 
-func (o *ModuleNetwork) Init(kernel types.KernelInterface) error {
+func (o *ModuleHttp) Init(kernel types.KernelInterface) error {
 	// Das Consolen Objekt wird definiert
 	console := v8.NewObjectTemplate(kernel.Isolate())
 
@@ -25,18 +25,18 @@ func (o *ModuleNetwork) Init(kernel types.KernelInterface) error {
 	}
 
 	// Das Objekt wird als Import Registriert
-	if err := kernel.AddImportModule("net", consoleObj.Value); err != nil {
-		return fmt.Errorf("ModuleNetwork->Init: " + err.Error())
+	if err := kernel.AddImportModule("http", consoleObj.Value); err != nil {
+		return fmt.Errorf("ModuleHttp->Init: " + err.Error())
 	}
 
 	// Kein Fehler
 	return nil
 }
 
-func (o *ModuleNetwork) GetName() string {
-	return "console"
+func (o *ModuleHttp) GetName() string {
+	return "http"
 }
 
-func NewNetworkModule() *ModuleNetwork {
-	return new(ModuleNetwork)
+func NewHttpModule() *ModuleHttp {
+	return new(ModuleHttp)
 }

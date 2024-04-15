@@ -1,26 +1,28 @@
 package kmodulerpc
 
 import (
+	"vnh1/types"
+
 	v8 "rogchap.com/v8go"
 )
 
-type SharedLocalFunction struct {
+type SharedFunction struct {
 	v8VM         *v8.Context
 	callFunction *v8.Function
 	name         string
 	parmTypes    []string
 	returnType   string
+}
+
+type SharedLocalFunction struct {
+	*SharedFunction
 }
 
 type SharedPublicFunction struct {
-	v8VM         *v8.Context
-	callFunction *v8.Function
-	name         string
-	parmTypes    []string
-	returnType   string
+	*SharedFunction
 }
 
-type FunctionCallReturn struct {
-	CType string
-	Value interface{}
+type SharedFunctionRequest struct {
+	resolveChan chan *types.FunctionCallState
+	parms       types.RpcRequestInterface
 }

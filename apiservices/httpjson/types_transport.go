@@ -12,13 +12,13 @@ type RPCFunctionCall struct {
 
 type RPCResponseData struct {
 	DType string      `json:"type" cbor:"type"`
-	Value interface{} `json:"value" cbor:"value"`
+	Value interface{} `json:"value,omitempty" cbor:"value"`
 }
 
 type RPCResponse struct {
-	Result string           `json:"result" cbor:"result"`
-	Data   *RPCResponseData `json:"data,omitempty" cbor:"data,omitempty"`
-	Error  *string          `json:"error" cbor:"error"`
+	Result string             `json:"result" cbor:"result"`
+	Data   []*RPCResponseData `json:"data" cbor:"data"`
+	Error  *string            `json:"error" cbor:"error"`
 }
 
 type Response struct {

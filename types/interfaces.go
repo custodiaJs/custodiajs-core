@@ -3,7 +3,6 @@ package types
 import (
 	"vnh1/core/consolecache"
 
-	"github.com/dop251/goja"
 	v8 "rogchap.com/v8go"
 )
 
@@ -46,19 +45,19 @@ type APISocketInterface interface {
 type SharedLocalFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(RpcRequestData, RpcRequestInterface) (goja.Value, error)
+	EnterFunctionCall(RpcRequestInterface) (*FunctionCallState, error)
 }
 
 type SharedPublicFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(RpcRequestData, RpcRequestInterface) (goja.Value, error)
+	EnterFunctionCall(RpcRequestInterface) (*FunctionCallState, error)
 }
 
 type SharedFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(RpcRequestData, RpcRequestInterface) (goja.Value, error)
+	EnterFunctionCall(RpcRequestInterface) (*FunctionCallState, error)
 }
 
 type WatcherInterface interface {
@@ -69,7 +68,7 @@ type RpcRequestInterface interface {
 	GetParms() []FunctionParameterBundleInterface
 }
 
-type RpcRequestData interface {
+type HttpJsonRequestData interface {
 }
 
 type FunctionParameterBundleInterface interface {
@@ -81,6 +80,7 @@ type AlternativeServiceInterface interface {
 }
 
 type KernelInterface interface {
+	LogPrint(header string, format string, v ...any)
 	GloablRegisterWrite(string, interface{}) error
 	Console() *consolecache.ConsoleOutputCache
 	AddImportModule(string, *v8.Value) error

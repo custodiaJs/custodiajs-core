@@ -13,7 +13,6 @@ import (
 	"vnh1/utils"
 
 	"github.com/btcsuite/btcutil/base58"
-	"github.com/dop251/goja"
 )
 
 func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request) {
@@ -38,9 +37,8 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 	utils.ProcFormatConsoleText(proc, "HTTP-RPC", types.DETERMINE_THE_SCRIPT_CONTAINER, strings.ToUpper(request.VmId))
 	foundedVM, err := o.core.GetScriptContainerVMByID(request.VmId)
 	if err != nil {
-		proc.LogPrint("HTTP-RPC: determine the script container '%s' failed, unkown script vm container\n", strings.ToUpper(request.VmId))
-		errorResponse(request.ContentType, w, err.Error())
 		proc.LogPrint("HTTP-RPC: failed\n")
+		errorResponse(request.ContentType, w, "not found")
 		return
 	}
 
@@ -266,63 +264,29 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 	}
 
 	// Die Funktion wird aufgerufen
-	result, err := foundFunction.EnterFunctionCall(request, &RpcRequest{parms: extractedValues})
+	result, err := foundFunction.EnterFunctionCall(&RpcRequest{parms: extractedValues, rpcRequest: request})
 	if err != nil {
 		proc.LogPrint("HTTP-RPC: &[%s]: call function '%s' error\n\t%s\n", foundedVM.GetVMName(), foundFunction.GetName(), err)
 		errorResponse(request.ContentType, w, "an error occurred when calling the function, error: "+err.Error())
 		return
 	}
 
-	// Die Antwortdaten werden Extrahiert
-	var responseData *RPCResponseData
-	if result == nil {
-		responseData = &RPCResponseData{DType: "null", Value: nil}
-		proc.LogPrintSuccs("HTTP-RPC: &[%s@%s]: function call, return null\n", foundFunction.GetName(), foundedVM.GetVMName())
-	} else if result.ExportType() == goja.Undefined().ExportType() && result.Export() == nil {
-		responseData = &RPCResponseData{DType: "undefined", Value: nil}
-		proc.LogPrintSuccs("HTTP-RPC: &[%s@%s]: function call, return undefined\n", foundFunction.GetName(), foundedVM.GetVMName())
-	} else {
-		switch result.ExportType().Kind() {
-		case reflect.Bool:
-			responseData = &RPCResponseData{DType: "boolean", Value: result.ToBoolean()}
-			proc.LogPrint("HTTP-RPC: &[%s@%s]: function call, return boolean\n", foundFunction.GetName(), foundedVM.GetVMName())
-		case reflect.Int64:
-			responseData = &RPCResponseData{DType: "number", Value: result.ToInteger()}
-			proc.LogPrint("HTTP-RPC: &[%s@%s]: function call, return int64\n", foundFunction.GetName(), foundedVM.GetVMName())
-		case reflect.Float64:
-			responseData = &RPCResponseData{DType: "number", Value: result.ToFloat()}
-			proc.LogPrint("HTTP-RPC: &[%s@%s]: function call, return float64\n", foundFunction.GetName(), foundedVM.GetVMName())
-		case reflect.String:
-			responseData = &RPCResponseData{DType: "string", Value: result.String()}
-			proc.LogPrint("HTTP-RPC: &[%s@%s]: function call, return string\n", foundFunction.GetName(), foundedVM.GetVMName())
-		case reflect.Slice:
-			slicedObject, isConverted := result.Export().([]interface{})
-			if !isConverted {
-				http.Error(w, "invalid object datatype, slice", http.StatusBadRequest)
-				return
-			}
-			responseData = &RPCResponseData{DType: "array", Value: slicedObject}
-			proc.LogPrint("HTTP-RPC: &[%s@%s]: function call, return slice\n", foundFunction.GetName(), foundedVM.GetVMName())
-		case reflect.Map:
-			mapObjected, isConverted := result.Export().(map[string]interface{})
-			if !isConverted {
-				http.Error(w, "invalid object datatype, object", http.StatusBadRequest)
-				return
-			}
-			responseData = &RPCResponseData{DType: "object", Value: mapObjected}
-			proc.LogPrint("HTTP-RPC: &[%s@%s]: function call, return map\n", foundFunction.GetName(), foundedVM.GetVMName())
-		case reflect.Func:
-			proc.LogPrint("HTTP-RPC: &[%s@%s]: function call, return function\n", foundFunction.GetName(), foundedVM.GetVMName())
-			errorResponse(request.ContentType, w, "function return not allowed in web remote function call request")
-			return
-		default:
-			errorResponse(request.ContentType, w, fmt.Sprintf("fhe function returned a data type (%s) which is not supported, the function was executed without errors", result.ExportType().Kind().String()))
-			return
+	// Die Antwort wird gebaut
+	var responseData *ResponseCapsle
+	if result.State == "ok" {
+		dt := make([]*RPCResponseData, 0)
+		for _, item := range result.Return {
+			dt = append(dt, &RPCResponseData{DType: item.CType, Value: item.Value})
 		}
+		responseData = &ResponseCapsle{Data: dt}
+	} else if result.State == "failed" {
+		responseData = &ResponseCapsle{Error: result.Error}
+	} else {
+		responseData = &ResponseCapsle{Error: "unkown return state"}
 	}
 
 	// Die Daten werden zurückgesendet
-	responsSize, err := finalResponse(request.ContentType, w, responseData)
+	responsSize, err := responseWrite(request.ContentType, w, responseData)
 	if err != nil {
 		proc.LogPrint("HTTP-RPC: &[%s]: call function response sending '%s' error\n\t%s\n", foundedVM.GetVMName(), foundFunction.GetName(), err)
 	}

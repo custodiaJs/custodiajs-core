@@ -14,7 +14,7 @@ func (o *Kernel) _require(value string) (*v8.Value, error) {
 	// Es wird geprüft ob es sich um ein bekanntes Module handelt
 	importModule, foundIt := o.vmImports[value]
 	if !foundIt {
-		return nil, fmt.Errorf("unkown import")
+		return nil, fmt.Errorf("unkown import '%s'", value)
 	}
 
 	/* Es wird ein neuer Kontext verwendet
