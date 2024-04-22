@@ -10,6 +10,7 @@ import (
 	"vnh1/core/kernel"
 	"vnh1/core/vmdb"
 	extmodules "vnh1/extmodules"
+	"vnh1/static"
 	"vnh1/types"
 	"vnh1/utils"
 )
@@ -19,7 +20,7 @@ func (o *CoreVM) GetVMName() string {
 }
 
 func (o *CoreVM) GetFingerprint() types.CoreVMFingerprint {
-	return types.CoreVMFingerprint(strings.ToLower(o.vmDbEntry.GetVMContainerMerkleHash()))
+	return types.CoreVMFingerprint(o.Kernel.GetFingerprint())
 }
 
 func (o *CoreVM) GetOwner() string {
@@ -34,9 +35,20 @@ func (o *CoreVM) GetMode() string {
 	return o.vmDbEntry.GetMode()
 }
 
+func (o *CoreVM) _routine(scriptContent []byte, syncWaitGroup *sync.WaitGroup) {
+	// Das Script wird als ausgeführt markiert
+	o.vmState = static.Running
+
+	// Das Script wird ausgeführt
+	o.runScript(string(scriptContent))
+
+	// Es wird Signalisiert das die VM nicht mehr ausgeführt wird
+	syncWaitGroup.Done()
+}
+
 func (o *CoreVM) serveGorutine(syncWaitGroup *sync.WaitGroup) error {
 	// Es wird geprüft ob der Server bereits gestartet wurde
-	if o.GetState() != types.StillWait && o.GetState() != types.Closed {
+	if o.GetState() != static.StillWait && o.GetState() != static.Closed {
 		return fmt.Errorf("serveGorutine: vm always running")
 	}
 
@@ -44,7 +56,7 @@ func (o *CoreVM) serveGorutine(syncWaitGroup *sync.WaitGroup) error {
 	syncWaitGroup.Add(1)
 
 	// Die VM wird als Startend Markiert
-	o.vmState = types.Starting
+	o.vmState = static.Starting
 
 	// Es wird versucht den MainCode einzulesen
 	mainCode := o.vmDbEntry.GetMainCodeFile()
@@ -56,11 +68,7 @@ func (o *CoreVM) serveGorutine(syncWaitGroup *sync.WaitGroup) error {
 	}
 
 	// Diese Funktion wird als Goroutine ausgeführt
-	go func(item *CoreVM, scriptContent []byte) {
-		o.vmState = types.Running
-		item.runScript(string(scriptContent))
-		syncWaitGroup.Done()
-	}(o, scriptContent)
+	go o._routine([]byte(scriptContent), syncWaitGroup)
 
 	// Es ist kein Fehler aufgetreten
 	return nil
@@ -84,9 +92,9 @@ func (o *CoreVM) GetWhitelist() []*types.TransportWhitelistVmEntryData {
 	return returnList
 }
 
-func (o *CoreVM) GetMemberCertsPkeys() []*types.CAMemberData {
+func (o *CoreVM) GetRootMemberIDS() []*types.CAMemberData {
 	ret := make([]*types.CAMemberData, 0)
-	for _, item := range o.vmDbEntry.GetMemberCertsPkeys() {
+	for _, item := range o.vmDbEntry.GetRootMemberIDS() {
 		ret = append(ret, &types.CAMemberData{
 			Fingerprint: item.Fingerprint,
 			Type:        item.Type,
@@ -168,58 +176,61 @@ func (o *CoreVM) runScript(script string) error {
 	return nil
 }
 
-func (o *CoreVM) GetLocalSharedFunctions() []types.SharedLocalFunctionInterface {
-	extracted := make([]types.SharedLocalFunctionInterface, 0)
-	table := o.GloablRegisterRead("rpc_local")
-	if table == nil {
-		return extracted
-	}
-
-	ctable, istable := table.(map[string]types.SharedLocalFunctionInterface)
-	if !istable {
-		return extracted
-	}
-
-	for _, item := range ctable {
-		extracted = append(extracted, item)
-	}
-
-	return extracted
-}
-
-func (o *CoreVM) GetPublicSharedFunctions() []types.SharedPublicFunctionInterface {
-	extracted := make([]types.SharedPublicFunctionInterface, 0)
-	table := o.GloablRegisterRead("rpc_local")
-	if table == nil {
-		return extracted
-	}
-
-	ctable, istable := table.(map[string]types.SharedPublicFunctionInterface)
-	if !istable {
-		return extracted
-	}
-
-	for _, item := range ctable {
-		extracted = append(extracted, item)
-	}
-
-	return extracted
-}
-
 func (o *CoreVM) GetAllSharedFunctions() []types.SharedFunctionInterface {
-	vat := make([]types.SharedFunctionInterface, 0)
-	for _, item := range o.GetLocalSharedFunctions() {
-		vat = append(vat, item)
+	extracted := make([]types.SharedFunctionInterface, 0)
+	table := o.GloablRegisterRead("rpc")
+	if table == nil {
+		return extracted
 	}
-	for _, item := range o.GetPublicSharedFunctions() {
-		vat = append(vat, item)
+
+	ctable, istable := table.(map[string]types.SharedFunctionInterface)
+	if !istable {
+		return extracted
 	}
-	return vat
+
+	for _, item := range ctable {
+		extracted = append(extracted, item)
+	}
+
+	return extracted
 }
 
-func newCoreVM(core *Core, vmDb *vmdb.VmDBEntry, extModules []*extmodules.ExternalModule) *CoreVM {
+func (o *CoreVM) GetSharedFunctionBySignature(sourceType types.RPCCallSource, funcSignature *types.FunctionSignature) (types.SharedFunctionInterface, bool, error) {
+	// Es wird versucht die RPC Tabelle zu lesen
+	var table interface{}
+	if sourceType == static.LOCAL {
+		table = o.GloablRegisterRead("rpc")
+	} else {
+		table = o.GloablRegisterRead("rpc_public")
+	}
+
+	// Es wird ermittelt ob die Tabelle gefunden wurde
+	if table == nil {
+		return nil, false, fmt.Errorf("rpc register reading error")
+	}
+
+	// Es wird versucht die Tabelle richtig einzulesen
+	ctable, istable := table.(map[string]types.SharedFunctionInterface)
+	if !istable {
+		return nil, false, fmt.Errorf("rpc register reading error")
+	}
+
+	// Es wird geprüft ob in der Tabelle eine Eintrag für die Funktion vorhanden ist
+	result, fResult := ctable[utils.FunctionOnlySignatureString(funcSignature)]
+	if !fResult {
+		return nil, false, nil
+	}
+
+	// Das Ergebniss wird zurückgegeben
+	return result, true, nil
+}
+
+func newCoreVM(core *Core, vmDb *vmdb.VmDBEntry, extModules []*extmodules.ExternalModule, loggingPath types.LOG_DIR) (*CoreVM, error) {
 	// Es wird ein neuer Konsolen Stream erzeugt
-	consoleStream := consolecache.NewConsoleOutputCache()
+	consoleStream, err := consolecache.NewConsoleOutputCache(string(loggingPath))
+	if err != nil {
+		return nil, fmt.Errorf("CoreVM->newCoreVM: " + err.Error())
+	}
 
 	// Es werden alle Externen Module geladen
 	extMods := make([]types.KernelModuleInterface, 0)
@@ -227,7 +238,7 @@ func newCoreVM(core *Core, vmDb *vmdb.VmDBEntry, extModules []*extmodules.Extern
 		// Es wird versucht das Modul zu bauen
 		extMod, err := kernel.LinkWithExternalModule(item)
 		if err != nil {
-			panic("linking error")
+			return nil, fmt.Errorf("newCoreVM: " + err.Error())
 		}
 
 		// Die Daten werden abgespeichert
@@ -243,9 +254,9 @@ func newCoreVM(core *Core, vmDb *vmdb.VmDBEntry, extModules []*extmodules.Extern
 	}
 
 	// Es wird ein neuer Kernel erzeugt
-	vmKernel, err := kernel.NewKernel(consoleStream, kernelConfig)
+	vmKernel, err := kernel.NewKernel(consoleStream, kernelConfig, vmDb, core)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("newCoreVM: " + err.Error())
 	}
 
 	// Das Core Objekt wird erstellt
@@ -255,10 +266,15 @@ func newCoreVM(core *Core, vmDb *vmdb.VmDBEntry, extModules []*extmodules.Extern
 		vmDbEntry:       vmDb,
 		externalModules: extModules,
 		objectMutex:     &sync.Mutex{},
-		vmState:         types.StillWait,
+		vmState:         static.StillWait,
 		dbServiceLinks:  make([]services.DbServiceLinkinterface, 0),
 	}
 
+	// Es wird versucht die VM mit dem Kernel zu verlinken
+	if err := vmKernel.LinkKernelWithCoreVM(coreObject); err != nil {
+		return nil, fmt.Errorf("newCoreVM: " + err.Error())
+	}
+
 	// Das Objekt wird zurückgegeben
-	return coreObject
+	return coreObject, nil
 }

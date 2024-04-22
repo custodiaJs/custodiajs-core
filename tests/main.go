@@ -18,11 +18,14 @@ import (
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
 	"vnh1/extmodules"
+	"vnh1/static"
 	"vnh1/types"
 	"vnh1/utils"
 )
 
 const spaces = "   "
+
+var logDIR types.LOG_DIR = ""
 
 func loadHostTlsCert() (*tls.Certificate, error) {
 	// Das Host Cert wird geladen
@@ -65,6 +68,28 @@ func printLocalHostTlsMetaData(cert *tls.Certificate) {
 
 	// Ausgabe
 	fmt.Printf("%sFingerprint (SHA3-256): %s\n   Algorithm: %s\n", spaces, fingerprintHex, sigAlgo)
+}
+
+func initLogDir() error {
+	if utils.FolderExists(string(static.UNIX_LINUX_LOGGING_DIR)) {
+		return nil
+	}
+
+	err := os.MkdirAll(string(static.UNIX_LINUX_LOGGING_DIR), os.ModePerm)
+	if err != nil {
+		err := os.MkdirAll(string(static.UNIX_LINUX_LOGGING_DIR_NONE_ROOT), os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("log dir making error: " + err.Error())
+		}
+
+		logDIR = static.UNIX_LINUX_LOGGING_DIR_NONE_ROOT
+		return nil
+	}
+
+	logDIR = static.UNIX_LINUX_LOGGING_DIR
+
+	// Rückgabe
+	return nil
 }
 
 func main() {
@@ -114,6 +139,12 @@ func main() {
 	}
 	fmt.Println("done")
 
+	// Die Log Verzeichnisse werden erstellen
+	fmt.Println("Prepare LOG directory...s")
+	if err := initLogDir(); err != nil {
+		panic(err)
+	}
+
 	// Speichert alle Abgerufen Libs ab
 	extModuleLibs := make([]*extmodules.ExternalModule, 0)
 
@@ -152,7 +183,7 @@ func main() {
 	dbservice := databaseservices.NewDbService()
 
 	// Der Core wird erzeugt
-	core, err := core.NewCore(hostCert, ikdb, dbservice)
+	core, err := core.NewCore(hostCert, ikdb, dbservice, logDIR)
 	if err != nil {
 		panic(err)
 	}
@@ -169,7 +200,7 @@ func main() {
 	}
 
 	// Die CLI Terminals werden erzeugt
-	noneRootCLI, err := localgrpc.NewTestTCP("/home/fluffelbuff/Schreibtisch/localhost.crt", "/home/fluffelbuff/Schreibtisch/localhost.pem", types.NONE_ROOT_ADMIN)
+	noneRootCLI, err := localgrpc.NewTestTCP("/home/fluffelbuff/Schreibtisch/localhost.crt", "/home/fluffelbuff/Schreibtisch/localhost.pem", static.NONE_ROOT_ADMIN)
 	if err != nil {
 		panic(err)
 	}

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"vnh1/static"
 	"vnh1/types"
 
 	"github.com/fxamacker/cbor/v2"
@@ -28,9 +29,9 @@ func validateRequestAndGetRequestData(methode string, r *http.Request) (*Request
 	var contentType types.HttpRequestContentType
 	switch r.Header.Get("content-type") {
 	case "application/json":
-		contentType = types.HTTP_CONTENT_JSON
+		contentType = static.HTTP_CONTENT_JSON
 	case "application/cbor":
-		contentType = types.HTTP_CONTENT_CBOR
+		contentType = static.HTTP_CONTENT_CBOR
 	default:
 		return nil, fmt.Errorf("unsuported content type")
 	}
@@ -68,7 +69,7 @@ func validateRequestAndGetRequestData(methode string, r *http.Request) (*Request
 
 	// Das Rückgabe Objekt wird erstellt
 	returnObj := &RequestData{
-		TransportProtocol: types.HTTP_JSON,
+		TransportProtocol: static.HTTP_JSON,
 		Source:            r.RemoteAddr,
 		ContentType:       contentType,
 		Cookies:           r.Cookies(),
@@ -120,7 +121,7 @@ func hasRefererOrXRequestedWith(r *RequestData) bool {
 func extractHttpRpcBody(requestContentType types.HttpRequestContentType, body io.ReadCloser) (*RPCFunctionCall, error) {
 	var data *RPCFunctionCall
 	switch requestContentType {
-	case types.HTTP_CONTENT_CBOR:
+	case static.HTTP_CONTENT_CBOR:
 		body, err := io.ReadAll(body)
 		if err != nil {
 			return nil, fmt.Errorf("extractRpcBody: " + err.Error())
@@ -128,7 +129,7 @@ func extractHttpRpcBody(requestContentType types.HttpRequestContentType, body io
 		if err := cbor.Unmarshal(body, &data); err != nil {
 			return nil, fmt.Errorf("extractRpcBody: " + err.Error())
 		}
-	case types.HTTP_CONTENT_JSON:
+	case static.HTTP_CONTENT_JSON:
 		if err := json.NewDecoder(body).Decode(&data); err != nil {
 			return nil, fmt.Errorf("extractRpcBody: " + err.Error())
 		}

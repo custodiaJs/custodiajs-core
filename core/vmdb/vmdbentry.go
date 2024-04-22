@@ -43,7 +43,7 @@ func (p *VmDBEntry) GetWhitelist() []Whitelist {
 	return p.manifestFile.GetManifestObject().Whitelist
 }
 
-func (o *VmDBEntry) GetMemberCertsPkeys() []*CAMemberData {
+func (o *VmDBEntry) GetRootMemberIDS() []*CAMemberData {
 	ret := make([]*CAMemberData, 0)
 	for _, item := range o.manifestFile.manifest.HostCAMember {
 		ret = append(ret, &CAMemberData{

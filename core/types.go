@@ -19,12 +19,14 @@ type Core struct {
 	hostTlsCert          *tls.Certificate
 	vmsByID              map[string]*CoreVM
 	vmsByName            map[string]*CoreVM
+	vmKernelPtr          map[types.KernelID]*CoreVM
 	vmSyncWaitGroup      sync.WaitGroup
 	apiSyncWaitGroup     sync.WaitGroup
 	state                types.CoreState
 	extModules           map[string]*extmodules.ExternalModule
 	serviceSignaling     chan struct{}
 	holdOpenChan         chan struct{}
+	logDIR               types.LOG_DIR
 	objectMutex          *sync.Mutex
 	vms                  []*CoreVM
 }

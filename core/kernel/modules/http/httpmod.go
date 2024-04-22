@@ -11,12 +11,12 @@ type ModuleHttp struct {
 	context *v8.Context
 }
 
-func (o *ModuleHttp) Init(kernel types.KernelInterface) error {
+func (o *ModuleHttp) Init(kernel types.KernelInterface, iso *v8.Isolate, context *v8.Context) error {
 	// Das Consolen Objekt wird definiert
-	console := v8.NewObjectTemplate(kernel.Isolate())
+	console := v8.NewObjectTemplate(iso)
 
 	// Der Kontext wird abgespeichert
-	o.context = v8.NewContext(kernel.Isolate())
+	o.context = v8.NewContext(iso)
 
 	// Das Console Objekt wird final erzeugt
 	consoleObj, err := console.NewInstance(o.context)
@@ -35,6 +35,10 @@ func (o *ModuleHttp) Init(kernel types.KernelInterface) error {
 
 func (o *ModuleHttp) GetName() string {
 	return "http"
+}
+
+func (o *ModuleHttp) OnlyForMain() bool {
+	return false
 }
 
 func NewHttpModule() *ModuleHttp {

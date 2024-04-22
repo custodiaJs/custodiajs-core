@@ -2,12 +2,13 @@ package core
 
 import (
 	"fmt"
+	"vnh1/static"
 	"vnh1/types"
 )
 
 func (o *Core) Serve() error {
 	// Es wird signalisiert das der Core ausgeführt wird
-	o.state = types.SERVING
+	o.state = static.SERVING
 
 	// Es werden alle Socketservices gestartet
 	for _, item := range o.apiSockets {

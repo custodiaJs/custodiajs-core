@@ -3,7 +3,9 @@ package kernel
 import (
 	"fmt"
 	"vnh1/extmodules"
+	cgowrapper "vnh1/extmodules/cgo_wrapper"
 	"vnh1/types"
+	"vnh1/utils"
 
 	v8 "rogchap.com/v8go"
 )
@@ -13,25 +15,79 @@ type ExtModuleLink struct {
 	name           string
 }
 
-func (o *ExtModuleLink) addGlobalFunc(extModFunc *extmodules.ExternModuleFunction, kernel types.KernelInterface) error {
+func (o *ExtModuleLink) addGlobalFunc(extModFunc *cgowrapper.CGOWrappedLibModuleFunction, iso *v8.Isolate, context *v8.Context) error {
 	// Die Funktion wird erzeugt
-	funcTemplate := v8.NewFunctionTemplate(kernel.ContextV8().Isolate(), func(info *v8.FunctionCallbackInfo) *v8.Value {
-		// Die Funktion aus der Lib wird aufgerufen
-		state, result, err := extModFunc.Call()
-		if err != nil {
-			kernel.KernelThrow(kernel.ContextV8(), "internal linking error: "+err.Error())
-			return nil
+	funcTemplate := v8.NewFunctionTemplate(iso, func(info *v8.FunctionCallbackInfo) *v8.Value {
+		// Die Einzelnen Parameter werden ausgewertet
+		for _, item := range info.Args() {
+			// Das Datentyp wird ermittelt
+			var responseData *types.FunctionCallReturnData
+			if item == nil {
+				responseData = &types.FunctionCallReturnData{CType: "null", Value: nil}
+			} else if item.IsUndefined() || item.IsNull() {
+				responseData = &types.FunctionCallReturnData{CType: "undefined", Value: nil}
+			} else {
+				switch {
+				case item.IsString():
+					responseData = &types.FunctionCallReturnData{CType: "string", Value: item.String()}
+				case item.IsNumber():
+					switch {
+					case item.IsBigInt():
+						responseData = &types.FunctionCallReturnData{CType: "number", Value: item.BigInt().String()}
+					case item.IsInt32():
+						responseData = &types.FunctionCallReturnData{CType: "number", Value: item.Int32()}
+					case item.IsUint32():
+						responseData = &types.FunctionCallReturnData{CType: "number", Value: item.Uint32()}
+					case item.IsNumber():
+						responseData = &types.FunctionCallReturnData{CType: "number", Value: item.Number()}
+					default:
+						responseData = &types.FunctionCallReturnData{CType: "number", Value: item.Integer()}
+					}
+				case item.IsBoolean():
+					responseData = &types.FunctionCallReturnData{CType: "boolean", Value: item.Boolean()}
+				case item.IsObject():
+					fmt.Println("Wert ist ein Array:")
+				case item.IsArray():
+					fmt.Println("Wert ist ein Array:")
+				case item.IsFunction():
+					fmt.Println("Wert ist ein Array:")
+				default:
+					return nil
+				}
+			}
+			_ = responseData
 		}
 
-		fmt.Println(state, result)
+		// Die CGO Wrapped Funktion wird aufgerufen
+		res, err := extModFunc.Call()
+		if err != nil {
+			// Es wird geprüft ob es sich um CGO Panic Error handelt
+			switch err.(type) {
+			case *types.ExtModCGOPanic:
+				// Der VM wird Signalisiert das ein Fehler aufgetreten ist
+				utils.V8ContextThrow(info.Context(), "cgo panic by call function from external module")
 
-		// Es ist kein Fehler aufgetreten
+				// Der Vorgang wird abgebrochen
+				return nil
+			default:
+				// Der VM wird Signalisiert das ein Fehler aufgetreten ist
+				utils.V8ContextThrow(info.Context(), err.Error())
+
+				// Der Vorgang wird abgebrochen
+				return nil
+			}
+		}
+		_ = res // NOT IMPLEM
+
+		//fmt.Println("A: ", res)
+
+		// Es gibt keine Werte welche zurückgegeben werden können
 		return nil
 	})
 
 	// Die Funktion wird hinzugefügt
-	funcObj := funcTemplate.GetFunction(kernel.ContextV8())
-	if err := kernel.Global().Set(extModFunc.GetName(), funcObj); err != nil {
+	funcObj := funcTemplate.GetFunction(context)
+	if err := context.Global().Set(extModFunc.GetName(), funcObj); err != nil {
 		panic(err)
 	}
 
@@ -39,17 +95,62 @@ func (o *ExtModuleLink) addGlobalFunc(extModFunc *extmodules.ExternModuleFunctio
 	return nil
 }
 
-func (o *ExtModuleLink) Init(kernel types.KernelInterface) error {
+func (o *ExtModuleLink) addGlobalImport(extModImport *extmodules.ExternModuleImport, kernel types.KernelInterface) error {
+	_ = extModImport
+	_ = kernel
+	// Es ist kein Fehler aufgetreten
+	return nil
+}
+
+func (o *ExtModuleLink) addGlobalObject(extModObject *extmodules.ExternModuleObject, kernel types.KernelInterface) error {
+	// Es ist kein Fehler aufgetreten
+	_ = extModObject
+	_ = kernel
+	return nil
+}
+
+func (o *ExtModuleLink) addEvent(extModEvent *extmodules.ExternModuleEvent, kernel types.KernelInterface) error {
+	// Es ist kein Fehler aufgetreten
+	_ = extModEvent
+	_ = kernel
+	return nil
+}
+
+func (o *ExtModuleLink) Init(kernel types.KernelInterface, iso *v8.Isolate, context *v8.Context) error {
 	// Die Globalen Funktionen werden Exportiert
 	for _, item := range o.exteModuleLink.GetGlobalFunctions() {
-		// Es wird versucht die Globale Funktion hinzuzufügen
-		if err := o.addGlobalFunc(item, kernel); err != nil {
+		if err := o.addGlobalFunc(item, iso, context); err != nil {
+			return fmt.Errorf("ExtModuleLink->Init: " + err.Error())
+		}
+	}
+
+	// Die Imports werden verfügbar gemacht
+	for _, item := range o.exteModuleLink.GetImports() {
+		if err := o.addGlobalImport(item, kernel); err != nil {
+			return fmt.Errorf("ExtModuleLink->Init: " + err.Error())
+		}
+	}
+
+	// Die Globalen Objekte werden verfügbar gemacht
+	for _, item := range o.exteModuleLink.GetGlobalObjects() {
+		if err := o.addGlobalObject(item, kernel); err != nil {
+			return fmt.Errorf("ExtModuleLink->Init: " + err.Error())
+		}
+	}
+
+	// Die Events, auf welche die Lib reagieren soll, werden verfügbar gemacht
+	for _, item := range o.exteModuleLink.GetEventTriggers() {
+		if err := o.addEvent(item, kernel); err != nil {
 			return fmt.Errorf("ExtModuleLink->Init: " + err.Error())
 		}
 	}
 
 	// Es ist kein Fehler aufgetreten
 	return nil
+}
+
+func (o *ExtModuleLink) OnlyForMain() bool {
+	return false
 }
 
 func (o *ExtModuleLink) GetName() string {

@@ -2,6 +2,7 @@ package kernel
 
 import (
 	"fmt"
+	"vnh1/utils"
 
 	v8 "rogchap.com/v8go"
 )
@@ -59,7 +60,7 @@ func (o *Kernel) _setup_require() error {
 		// Es wird versucht das Module zu laden
 		moduleValue, err := o._require(modulePath)
 		if err != nil {
-			o.KernelThrow(info.Context(), err.Error())
+			utils.V8ContextThrow(info.Context(), err.Error())
 		}
 
 		// Das Module wird zurückgegeben

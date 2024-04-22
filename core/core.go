@@ -10,6 +10,7 @@ import (
 	"vnh1/core/identkeydatabase"
 	"vnh1/core/vmdb"
 	extmodules "vnh1/extmodules"
+	"vnh1/static"
 	"vnh1/types"
 	"vnh1/utils"
 )
@@ -47,8 +48,9 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 		return nil, fmt.Errorf("AddScriptContainer: Broken Virtual Machine")
 	}
 
-	// Es wird geprüft welche HostCAS benötigt werden
-	for _, item := range vmDbEntry.GetMemberCertsPkeys() {
+	// Es werden alle benötigten Host CA Extrahiert
+	// sollte kein Passendes Gefunden werden, wird der Vorgang abgebrochen
+	for _, item := range vmDbEntry.GetRootMemberIDS() {
 		// Es wird ermittelt ob es sich um ein SSL Eintrag handelt, wenn nicht wird dieser Ignoriert
 		if item.Type != "ssl" {
 			continue
@@ -96,6 +98,12 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 		return nil, fmt.Errorf("Core->AddScriptContainer: external modules '%s' not found", strings.Join(neededExternalModulesNameSlice, ","))
 	}
 
+	// Das Logging Verzeichniss wird erstellt
+	logPath, err := utils.MakeLogDirForVM(o.logDIR, vmDbEntry.GetVMName())
+	if err != nil {
+		return nil, fmt.Errorf("Core->AddScriptContainer: " + err.Error())
+	}
+
 	// Der Mutex wird angewendet
 	o.objectMutex.Lock()
 
@@ -106,11 +114,15 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 	}
 
 	// Das Detailspaket wird erzeugt
-	vmobject := newCoreVM(o, vmDbEntry, modList)
+	vmobject, err := newCoreVM(o, vmDbEntry, modList, logPath)
+	if err != nil {
+		return nil, fmt.Errorf("AddScriptContainer: " + err.Error())
+	}
 
 	// Das VMObjekt wird zwischengespeichert
 	o.vmsByID[strings.ToLower(vmDbEntry.GetVMContainerMerkleHash())] = vmobject // Merklehash
 	o.vmsByName[strings.ToLower(vmDbEntry.GetVMName())] = vmobject              // VM-Name
+	o.vmKernelPtr[vmobject.GetKId()] = vmobject                                 // Speichert die VM ab, diese wird verwendet um die VM durch den Kernel der VM auffindbar zu machen
 	o.vms = append(o.vms, vmobject)                                             // Die VM wird abgespeichert
 
 	// Der Mutex wird freigegeben
@@ -160,10 +172,10 @@ func (o *Core) AddAPISocket(apiSocket types.APISocketInterface) error {
 }
 
 // Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
-func (o *Core) GetScriptContainerVMByID(vmid string) (types.CoreVMInterface, error) {
+func (o *Core) GetScriptContainerVMByID(vmid string) (types.CoreVMInterface, bool, error) {
 	// Es wird geprüft ob es sich um einen zulässigen vm Namen handelt
 	if !utils.ValidateVMIdString(vmid) {
-		return nil, fmt.Errorf("Core->GetScriptContainerVMByID: invalid vm container id")
+		return nil, false, fmt.Errorf("Core->GetScriptContainerVMByID: invalid vm container id")
 	}
 
 	// Die ID wird lowercast
@@ -177,11 +189,11 @@ func (o *Core) GetScriptContainerVMByID(vmid string) (types.CoreVMInterface, err
 	// Es wird geprüft ob die VM exestiert
 	vmObj, found := o.vmsByID[lowerCaseId]
 	if !found {
-		return nil, fmt.Errorf("Core->GetScriptContainerVMByID: unkown vm '%s'", lowerCaseId)
+		return nil, false, nil
 	}
 
 	// Das Objekt wird zurückgegeben
-	return vmObj, nil
+	return vmObj, true, nil
 }
 
 // Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
@@ -244,16 +256,17 @@ func (o *Core) GetAllVMs() []types.CoreVMInterface {
 }
 
 // Erstellt einen neuen vnh1 Core
-func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase.IdenKeyDatabase, dbService *databaseservices.DbService) (*Core, error) {
+func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase.IdenKeyDatabase, dbService *databaseservices.DbService, logDIRPath types.LOG_DIR) (*Core, error) {
 	// Das Coreobjekt wird erstellt
 	coreObj := &Core{
 		vmsByID:         make(map[string]*CoreVM),
 		vmsByName:       make(map[string]*CoreVM),
+		vmKernelPtr:     make(map[types.KernelID]*CoreVM),
 		vms:             make([]*CoreVM, 0),
 		apiSockets:      make([]types.APISocketInterface, 0),
 		hostTlsCert:     hostTlsCert,
 		databaseService: dbService,
-		state:           types.NEW,
+		state:           static.NEW,
 		extModules:      make(map[string]*extmodules.ExternalModule),
 		// Chans
 		holdOpenChan:     make(chan struct{}),
@@ -264,6 +277,8 @@ func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase
 		hostIdentKeyDatabase: hostIdenKeyDatabase,
 		// Mutexes
 		objectMutex: &sync.Mutex{},
+		// Log
+		logDIR: logDIRPath,
 	}
 
 	// Das Objekt wird zurückgegeben

@@ -21,9 +21,13 @@ func (o *HttpApiService) handleConsoleStreamWebsocket(w http.ResponseWriter, r *
 	}
 
 	// Es wird geprüft ob es sich um eine bekannte VM handelt
-	foundedVM, err := o.core.GetScriptContainerVMByID(request.VmId)
+	foundedVM, foundVm, err := o.core.GetScriptContainerVMByID(request.VmId)
 	if err != nil {
-		http.Error(w, "Die VM wurde nicht gefunden", http.StatusBadRequest)
+		http.Error(w, "internal error", http.StatusBadRequest)
+		return
+	}
+	if !foundVm {
+		http.Error(w, "vm not found", http.StatusBadRequest)
 		return
 	}
 

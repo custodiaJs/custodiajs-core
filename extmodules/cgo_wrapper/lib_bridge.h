@@ -16,10 +16,12 @@ typedef enum {
     ERROR,
     BYTES,
     INT,
+    UINT,
     FLOAT,
     BOOLEAN,
     TIMESTAMP,
     OBJECT,
+    FUNCTION,
     ARRAY
 } CVmDatatype;
 
@@ -35,10 +37,19 @@ typedef struct {
     bool bool_data;
     void* object_data;
     void* array_data;
+    uint uint_data;
+    void* callback_data;
 } CFunctionReturnData;
 
+// Stellt eine Liste von Funktionsargumenten dar
+typedef struct {
+    void *array;
+    size_t size;
+    size_t capacity;
+} CVmCallbackFunctionParameterList;
+
 // Stellt den Funktionspointer für die Geteilte Funktion dar
-typedef CFunctionReturnData (*FUNCTION_PTR)();
+typedef CFunctionReturnData (*FUNCTION_PTR)(CVmCallbackFunctionParameterList*);
 
 // Stellt eine Funtion dar
 typedef struct {
@@ -90,22 +101,23 @@ typedef struct {
 } VmModule;
 
 // Definiert die basisfunktion um die Lib zu laden
-VmModule* new_vm_module(const char* name, int version);
+VmModule* new_vm_module(const char*, int);
 
 // Array Funktionen
-void init_vm_object_list(CVmObjectList *list);
-void init_vm_modules_list(CVmModulesList *list);
-void init_shared_function_array(CVmFunctionList *arr);
-int add_shared_function_array(CVmFunctionList *pa, const char *name, FUNCTION_PTR fptr);
-int add_vm_module(CVmModulesList *list, CVmModule *module);
-void free_vm_modules_list(CVmModulesList *list);
-void free_vm_object_list(CVmObjectList* list);
-void free_vm_function_list(CVmFunctionList *pa);
-void free_module(VmModule* module);
+void free_cvm_callback_function_parameter_list(CVmCallbackFunctionParameterList*);
+int add_shared_function_array(CVmFunctionList*, const char*, FUNCTION_PTR);
+void init_function_parms_list(CVmCallbackFunctionParameterList*);
+void init_shared_function_array(CVmFunctionList*);
+int add_vm_module(CVmModulesList*, CVmModule*);
+void free_vm_function_list(CVmFunctionList*);
+void free_vm_modules_list(CVmModulesList*);
+void init_vm_modules_list(CVmModulesList*);
+void free_vm_object_list(CVmObjectList*);
+void init_vm_object_list(CVmObjectList*);
+void free_module(VmModule*);
 
-/*
-    Stellt die LIB Funktionen bereit
-*/
+
+// Stellt die LIB Funktionen bereit
 int add_global_function(VmModule* slib, const char* name, FUNCTION_PTR fptr);
 
 // Erstellt einen neuen Leeren Rückgabe wert

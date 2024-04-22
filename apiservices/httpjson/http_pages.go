@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"vnh1/types"
+	"vnh1/static"
 	"vnh1/utils"
 )
 
@@ -19,7 +19,7 @@ func (o *HttpApiService) indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Erstelle ein Response-Objekt mit deiner Nachricht.
-	response := Response{Version: uint32(types.C_VESION), ScriptContainers: ucscontainers}
+	response := Response{Version: uint32(static.C_VESION), ScriptContainers: ucscontainers}
 
 	// Setze den Content-Type der Antwort auf application/json.
 	w.Header().Set("Content-Type", "application/json")
@@ -52,9 +52,13 @@ func (o *HttpApiService) vmInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Es wird geprüft ob es sich um eine bekannte VM handelt
-	foundedVM, err := o.core.GetScriptContainerVMByID(request.VmId)
+	foundedVM, foundVm, err := o.core.GetScriptContainerVMByID(request.VmId)
 	if err != nil {
-		http.Error(w, "Die VM wurde nicht gefunden", http.StatusBadRequest)
+		http.Error(w, "internal error", http.StatusBadRequest)
+		return
+	}
+	if !foundVm {
+		http.Error(w, "vm not found", http.StatusBadRequest)
 		return
 	}
 
@@ -68,29 +72,22 @@ func (o *HttpApiService) vmInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Die Lokalen Funktionen welche geteilt wurden, werden extrahiert
-	localSharedFunctions := make([]SharedFunction, 0)
-	for _, item := range foundedVM.GetLocalSharedFunctions() {
-		newobj := SharedFunction{Name: item.GetName(), ParmTypes: item.GetParmTypes()}
-		localSharedFunctions = append(localSharedFunctions, newobj)
-	}
-
-	// Die Öffentlichen Funktionen welche geteilt wurden, werden extrahiert
-	publicSharedFunctions := make([]SharedFunction, 0)
-	for _, item := range foundedVM.GetPublicSharedFunctions() {
-		newobj := SharedFunction{Name: item.GetName(), ParmTypes: item.GetParmTypes()}
-		localSharedFunctions = append(localSharedFunctions, newobj)
+	sharedFunctions := make([]SharedFunction, 0)
+	for _, item := range foundedVM.GetAllSharedFunctions() {
+		newobj := SharedFunction{Name: item.GetName(), ParmTypes: item.GetParmTypes(), ReturnDatatype: item.GetReturnDType()}
+		sharedFunctions = append(sharedFunctions, newobj)
 	}
 
 	// Der Status wird eingelesen
 	var stateStrValue string
 	switch foundedVM.GetState() {
-	case types.Closed:
+	case static.Closed:
 		stateStrValue = "CLOSED"
-	case types.Running:
+	case static.Running:
 		stateStrValue = "RUNNING"
-	case types.Starting:
+	case static.Starting:
 		stateStrValue = "STARTING"
-	case types.StillWait:
+	case static.StillWait:
 		stateStrValue = "STILL_WAIT"
 	default:
 		stateStrValue = "UNKOWN"
@@ -98,13 +95,10 @@ func (o *HttpApiService) vmInfo(w http.ResponseWriter, r *http.Request) {
 
 	// Erstelle ein Response-Objekt mit deiner Nachricht.
 	response := vmInfoResponse{
-		Name: foundedVM.GetVMName(),
-		Id:   string(foundedVM.GetFingerprint()),
-		SharedFunctions: SharedFunctions{
-			Public: publicSharedFunctions,
-			Local:  localSharedFunctions,
-		},
-		State: stateStrValue,
+		Name:            foundedVM.GetVMName(),
+		Id:              string(foundedVM.GetFingerprint()),
+		SharedFunctions: sharedFunctions,
+		State:           stateStrValue,
 	}
 
 	// Schreibe die JSON-Daten in den ResponseWriter.

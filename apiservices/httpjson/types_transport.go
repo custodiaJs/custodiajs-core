@@ -6,8 +6,9 @@ type RPCFunctionParameter struct {
 }
 
 type RPCFunctionCall struct {
-	FunctionName string                 `json:"name" cbor:"name"`
-	Parms        []RPCFunctionParameter `json:"parms" cbor:"parms"`
+	FunctionName   string                 `json:"name" cbor:"name"`
+	Parms          []RPCFunctionParameter `json:"parms" cbor:"parms"`
+	ReturnDataType string                 `json:"rdtype" cbor:"rdtype"`
 }
 
 type RPCResponseData struct {
@@ -28,18 +29,14 @@ type Response struct {
 }
 
 type SharedFunction struct {
-	Name      string   `json:"name" cbor:"name"`
-	ParmTypes []string `json:"parmtypes" cbor:"parmtypes"`
-}
-
-type SharedFunctions struct {
-	Public []SharedFunction `json:"public" cbor:"public"`
-	Local  []SharedFunction `json:"local" cbor:"local"`
+	Name           string   `json:"name" cbor:"name"`
+	ParmTypes      []string `json:"parmtypes" cbor:"parmtypes"`
+	ReturnDatatype string   `json:"rdtype" cbor:"rdtype"`
 }
 
 type vmInfoResponse struct {
-	Name            string          `json:"name" cbor:"name"`
-	Id              string          `json:"hash" cbor:"hash"`
-	State           string          `json:"state" cbor:"state"`
-	SharedFunctions SharedFunctions `json:"sharedfunctions" cbor:"sharedfunctions"`
+	Name            string           `json:"name" cbor:"name"`
+	Id              string           `json:"hash" cbor:"hash"`
+	State           string           `json:"state" cbor:"state"`
+	SharedFunctions []SharedFunction `json:"sharedfunctions" cbor:"sharedfunctions"`
 }

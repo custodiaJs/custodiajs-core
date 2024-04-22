@@ -1,11 +1,21 @@
 package extmodules
 
-func (o *ExternalModule) GetGlobalFunctions() []*ExternModuleFunction {
-	vat := make([]*ExternModuleFunction, 0)
-	for _, item := range o.CGOWrappedLibModule.GetGlobalFunctions() {
-		vat = append(vat, &ExternModuleFunction{item})
-	}
-	return vat
+import cgowrapper "vnh1/extmodules/cgo_wrapper"
+
+func (o *ExternalModule) GetGlobalFunctions() []*cgowrapper.CGOWrappedLibModuleFunction {
+	return o.CGOWrappedLibModule.GetGlobalFunctions()
+}
+
+func (o *ExternalModule) GetImports() []*ExternModuleImport {
+	return []*ExternModuleImport{}
+}
+
+func (o *ExternalModule) GetGlobalObjects() []*ExternModuleObject {
+	return []*ExternModuleObject{}
+}
+
+func (o *ExternalModule) GetEventTriggers() []*ExternModuleEvent {
+	return []*ExternModuleEvent{}
 }
 
 func (o *ExternalModule) GetName() string {

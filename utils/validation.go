@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"regexp"
 	"strings"
+	"vnh1/utils/parser"
 )
 
 func ValidateDatatypeString(dType string) bool {
@@ -59,4 +60,45 @@ func ValidateExternalModuleName(funcName string) bool {
 
 	// Überprüfe, ob der String den Variablennamenkriterien entspricht
 	return validVariable.MatchString(funcName)
+}
+
+func ValidateContainerHexID(hxId string) bool {
+	return true
+}
+
+func ValidateFunctionSignature(funcPtr string) bool {
+	// Es wird versucht die FunctionsSignatur einzulesen
+	fname, argTypes, err := parser.ParseFunctionSignature(funcPtr)
+	if err != nil {
+		return false
+	}
+
+	// Es wird geprüft ob es sich um einen Zulässigen Funktionsnamen handelt
+	if !ValidateFunctionName(fname) {
+		return false
+	}
+
+	// Es werden alle Parameter geprüft, es dürfen nur Datentypen angegeben werden
+	for _, item := range argTypes {
+		if item != "string" && item != "array" && item != "object" && item != "number" && item != "bool" {
+			return false
+		}
+	}
+
+	// Es handelt sich um einen Zulässigen Funktionspointer
+	return true
+}
+
+func CheckHostInWhitelist(host string, whitelist []string) bool {
+	for _, allowed := range whitelist {
+		if strings.HasPrefix(allowed, "*.") {
+			wildcardDomain := strings.TrimPrefix(allowed, "*.")
+			if strings.HasSuffix(host, "."+wildcardDomain) {
+				return true
+			}
+		} else if allowed == host {
+			return true
+		}
+	}
+	return false
 }

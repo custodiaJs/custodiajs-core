@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"vnh1/static"
 	"vnh1/types"
 )
 
@@ -51,7 +52,7 @@ func createNewUnixSocket_ROOT_ADMIN(path string) (net.Listener, error) {
 
 func createNewUnixSocket(path string, userRight types.CLIUserRight) (net.Listener, error) {
 	// Sollten Rootrechte benötigt werden
-	if userRight == types.ROOT_ADMIN {
+	if userRight == static.ROOT_ADMIN {
 		if !(os.Geteuid() == 0) {
 			return nil, fmt.Errorf("createNewUnixSocket: you don't have the rights you need")
 		}
@@ -61,9 +62,9 @@ func createNewUnixSocket(path string, userRight types.CLIUserRight) (net.Listene
 	var unixSocket net.Listener
 	var err error
 	switch userRight {
-	case types.NONE_ROOT_ADMIN:
+	case static.NONE_ROOT_ADMIN:
 		unixSocket, err = createNewUnixSocket_NONE_ROOT_ADMIN(path)
-	case types.ROOT_ADMIN:
+	case static.ROOT_ADMIN:
 		unixSocket, err = createNewUnixSocket_ROOT_ADMIN(path)
 	default:
 		return nil, fmt.Errorf("createNewUnixSocket: unkown user right")

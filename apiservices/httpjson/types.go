@@ -7,11 +7,6 @@ import (
 	"vnh1/types"
 )
 
-type RpcRequest struct {
-	parms      []types.FunctionParameterBundleInterface
-	rpcRequest types.HttpJsonRequestData
-}
-
 type HttpApiService struct {
 	core         types.CoreInterface
 	cert         *x509.Certificate
@@ -25,11 +20,6 @@ type HttpApiService struct {
 type LocalAddress struct {
 	LocalIP   string
 	LocalPort uint32
-}
-
-type FunctionParameterCapsle struct {
-	Value interface{}
-	CType string
 }
 
 type RequestData struct {

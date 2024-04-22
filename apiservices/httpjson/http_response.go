@@ -3,13 +3,14 @@ package httpjson
 import (
 	"encoding/json"
 	"net/http"
+	"vnh1/static"
 	"vnh1/types"
 )
 
 func responseWrite(contentType types.HttpRequestContentType, w http.ResponseWriter, rpcd *ResponseCapsle) (int, error) {
 	// Der Passende Typ wird festgelegt
 	switch contentType {
-	case types.HTTP_CONTENT_CBOR:
+	case static.HTTP_CONTENT_CBOR:
 		w.Header().Set("Content-Type", "application/cbor")
 	default:
 		w.Header().Set("Content-Type", "application/json")
@@ -30,7 +31,7 @@ func responseWrite(contentType types.HttpRequestContentType, w http.ResponseWrit
 	var bytedResponse []byte
 	var err error
 	switch contentType {
-	case types.HTTP_CONTENT_CBOR:
+	case static.HTTP_CONTENT_CBOR:
 		bytedResponse, err = json.Marshal(response)
 	default:
 		bytedResponse, err = json.Marshal(response)

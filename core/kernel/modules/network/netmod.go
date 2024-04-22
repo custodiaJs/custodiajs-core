@@ -11,12 +11,12 @@ type ModuleNetwork struct {
 	context *v8.Context
 }
 
-func (o *ModuleNetwork) Init(kernel types.KernelInterface) error {
+func (o *ModuleNetwork) Init(kernel types.KernelInterface, iso *v8.Isolate, context *v8.Context) error {
 	// Das Consolen Objekt wird definiert
-	console := v8.NewObjectTemplate(kernel.Isolate())
+	console := v8.NewObjectTemplate(iso)
 
 	// Der Kontext wird abgespeichert
-	o.context = v8.NewContext(kernel.Isolate())
+	o.context = v8.NewContext(iso)
 
 	// Das Console Objekt wird final erzeugt
 	consoleObj, err := console.NewInstance(o.context)
@@ -31,6 +31,10 @@ func (o *ModuleNetwork) Init(kernel types.KernelInterface) error {
 
 	// Kein Fehler
 	return nil
+}
+
+func (o *ModuleNetwork) OnlyForMain() bool {
+	return false
 }
 
 func (o *ModuleNetwork) GetName() string {

@@ -6,30 +6,23 @@ import (
 	v8 "rogchap.com/v8go"
 )
 
-type JsVmInterface interface {
-	GetPublicSharedFunctions() []SharedPublicFunctionInterface
-	GetLocalSharedFunctions() []SharedLocalFunctionInterface
-	GetState() VmState
-}
-
 type CoreInterface interface {
 	GetAllVMs() []CoreVMInterface
 	GetAllActiveScriptContainerIDs() []string
-	GetScriptContainerVMByID(string) (CoreVMInterface, error)
+	GetScriptContainerVMByID(vmid string) (CoreVMInterface, bool, error)
 	GetScriptContainerByVMName(string) (CoreVMInterface, error)
 }
 
 type CoreVMInterface interface {
 	GetVMName() string
 	GetFingerprint() CoreVMFingerprint
-	GetLocalSharedFunctions() []SharedLocalFunctionInterface
-	GetPublicSharedFunctions() []SharedPublicFunctionInterface
 	GetConsoleOutputWatcher() WatcherInterface
 	GetAllSharedFunctions() []SharedFunctionInterface
+	GetSharedFunctionBySignature(sourceType RPCCallSource, funcSignature *FunctionSignature) (SharedFunctionInterface, bool, error)
 	GetWhitelist() []*TransportWhitelistVmEntryData
 	ValidateRPCRequestSource(soruce string) bool
 	GetDatabaseServices() []*VMDatabaseData
-	GetMemberCertsPkeys() []*CAMemberData
+	GetRootMemberIDS() []*CAMemberData
 	GetStartingTimestamp() uint64
 	GetState() VmState
 	GetOwner() string
@@ -42,41 +35,24 @@ type APISocketInterface interface {
 	SetupCore(CoreInterface) error
 }
 
-type SharedLocalFunctionInterface interface {
-	GetName() string
-	GetParmTypes() []string
-	EnterFunctionCall(RpcRequestInterface) (*FunctionCallState, error)
-}
-
-type SharedPublicFunctionInterface interface {
-	GetName() string
-	GetParmTypes() []string
-	EnterFunctionCall(RpcRequestInterface) (*FunctionCallState, error)
-}
-
 type SharedFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	EnterFunctionCall(RpcRequestInterface) (*FunctionCallState, error)
+	GetReturnDType() string
+	EnterFunctionCall(*RpcRequest) (*FunctionCallState, error)
 }
 
 type WatcherInterface interface {
 	Read() string
 }
 
-type RpcRequestInterface interface {
-	GetParms() []FunctionParameterBundleInterface
-}
-
 type HttpJsonRequestData interface {
 }
 
-type FunctionParameterBundleInterface interface {
-	GetType() string
-	GetValue() interface{}
+type AlternativeServiceInterface interface {
 }
 
-type AlternativeServiceInterface interface {
+type VmCaMembershipCertInterface interface {
 }
 
 type KernelInterface interface {
@@ -85,13 +61,17 @@ type KernelInterface interface {
 	Console() *consolecache.ConsoleOutputCache
 	AddImportModule(string, *v8.Value) error
 	GloablRegisterRead(string) interface{}
-	KernelThrow(*v8.Context, string)
-	ContextV8() *v8.Context
-	Isolate() *v8.Isolate
-	Global() *v8.Object
+	GetNewIsolateContext() (*v8.Isolate, *v8.Context, error)
+	GetCAMembershipCerts() []VmCaMembershipCertInterface
+	GetFingerprint() KernelFingerprint
+	AsCoreVM() CoreVMInterface
+	GetCAMembershipIDs() []string
+	GetCore() CoreInterface
+	GetKId() KernelID
 }
 
 type KernelModuleInterface interface {
 	GetName() string
-	Init(KernelInterface) error
+	Init(KernelInterface, *v8.Isolate, *v8.Context) error
+	OnlyForMain() bool
 }

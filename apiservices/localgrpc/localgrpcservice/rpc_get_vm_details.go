@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"vnh1/localgrpcproto"
+	"vnh1/static"
 	"vnh1/types"
 	"vnh1/utils"
 )
@@ -12,6 +13,7 @@ import (
 func (s *CliGrpcServer) GetVMDetails(ctx context.Context, vmDetailParms *localgrpcproto.VmDetailsParms) (*localgrpcproto.VmDetailsResponse, error) {
 	// Die VM wird ermittelt
 	var foundedVM types.CoreVMInterface
+	var foundVM bool
 	var err error
 	switch vmDetailParms.Value.(type) {
 	case *localgrpcproto.VmDetailsParms_Id:
@@ -21,7 +23,7 @@ func (s *CliGrpcServer) GetVMDetails(ctx context.Context, vmDetailParms *localgr
 		}
 
 		// Es wird versucht die VM abzurufen
-		foundedVM, err = s.core.GetScriptContainerVMByID(vmDetailParms.GetId())
+		foundedVM, foundVM, err = s.core.GetScriptContainerVMByID(vmDetailParms.GetId())
 	case *localgrpcproto.VmDetailsParms_Name:
 		// Es wird geprüft ob es sich um einen zulässigen VM Namen handelt
 		if !utils.ValidateVMName(vmDetailParms.GetName()) {
@@ -30,6 +32,9 @@ func (s *CliGrpcServer) GetVMDetails(ctx context.Context, vmDetailParms *localgr
 
 		// Es wird versucht die VM mittels ihres Namens zu Extrahieren
 		foundedVM, err = s.core.GetScriptContainerByVMName(vmDetailParms.GetName())
+		if foundedVM != nil {
+			foundVM = true
+		}
 	default:
 		return nil, fmt.Errorf("invalid 'get vm details' parameter vm id/name")
 	}
@@ -37,6 +42,11 @@ func (s *CliGrpcServer) GetVMDetails(ctx context.Context, vmDetailParms *localgr
 	// Es wird geprüft ob die VM gefunden wurde
 	if err != nil {
 		return nil, err
+	}
+
+	// Es wird geprüft ob die VM gefunden wurde
+	if !foundVM {
+		return nil, fmt.Errorf("unkown vm")
 	}
 
 	// Die Whitelist wird extrahiert
@@ -53,7 +63,7 @@ func (s *CliGrpcServer) GetVMDetails(ctx context.Context, vmDetailParms *localgr
 
 	// Die HostCA Members werden abgerufen
 	extractedHostCAList := make([]*localgrpcproto.VmDetailHostCAMemberEntry, 0)
-	for _, item := range foundedVM.GetMemberCertsPkeys() {
+	for _, item := range foundedVM.GetRootMemberIDS() {
 		extractedHostCAList = append(extractedHostCAList, &localgrpcproto.VmDetailHostCAMemberEntry{
 			Type:        1,
 			Fingerprint: strings.ToUpper(item.Fingerprint),
@@ -76,16 +86,6 @@ func (s *CliGrpcServer) GetVMDetails(ctx context.Context, vmDetailParms *localgr
 	// Die geteilten Funktionen werden abgerufen
 	sharedFunctions := make([]*localgrpcproto.VmDetailSharedFunctionEntry, 0)
 	for _, item := range foundedVM.GetAllSharedFunctions() {
-		// Es wird ermittelt um was für einen Funktionstypen es sich handelt
-		var modeStr string
-		if _, isLocal := item.(types.SharedLocalFunctionInterface); isLocal {
-			modeStr = "local"
-		} else if _, isPublic := item.(types.SharedPublicFunctionInterface); isPublic {
-			modeStr = "local"
-		} else {
-			modeStr = "unkown"
-		}
-
 		// Die Parameter Typen werden extrahiert
 		extractedParmsList := make([]uint32, 0)
 		for _, item := range item.GetParmTypes() {
@@ -110,7 +110,7 @@ func (s *CliGrpcServer) GetVMDetails(ctx context.Context, vmDetailParms *localgr
 		// Der Eintrag wird erzeugt und zwischengspeichert
 		sharedFunctions = append(sharedFunctions, &localgrpcproto.VmDetailSharedFunctionEntry{
 			Name:      item.GetName(),
-			Mode:      modeStr,
+			Mode:      "unkown",
 			ParmTypes: extractedParmsList,
 		})
 	}
@@ -118,13 +118,13 @@ func (s *CliGrpcServer) GetVMDetails(ctx context.Context, vmDetailParms *localgr
 	// Der Stauts wird als String ermittelt
 	var stateStr string
 	switch foundedVM.GetState() {
-	case types.Closed:
+	case static.Closed:
 		stateStr = "closed"
-	case types.Running:
+	case static.Running:
 		stateStr = "running"
-	case types.Starting:
+	case static.Starting:
 		stateStr = "starting"
-	case types.StillWait:
+	case static.StillWait:
 		stateStr = "still wait"
 	default:
 		stateStr = "unkown"

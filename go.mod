@@ -33,6 +33,7 @@ require (
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/fxamacker/cbor/v2 v2.6.0
 	github.com/gofrs/flock v0.8.1
+	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/grpc v1.63.2

@@ -82,7 +82,7 @@ int add_shared_function_array(CVmFunctionList *pa, const char *name, FUNCTION_PT
         CVmFunction *newArray = (CVmFunction *)realloc(pa->array, newCapacity * sizeof(CVmFunction));
         if (!newArray) {
             fprintf(stderr, "Speicherzuweisung fehlgeschlagen\n");
-            return 1; // Fehlerbehandlung könnte hier verbessert werden
+            return 1;
         }
         pa->array = newArray;
         pa->capacity = newCapacity;
@@ -152,6 +152,14 @@ void free_vm_object_list(CVmObjectList* list) {
 
 // Initalisiert eine neue Module Liste
 void init_vm_modules_list(CVmModulesList *list) {
+    if (list == NULL) return;
+    list->array = NULL;
+    list->size = 0;
+    list->capacity = 0;
+}
+
+// Initalisiert eine neue Function Parameter Liste
+void init_function_parms_list(CVmCallbackFunctionParameterList *list) {
     if (list == NULL) return;
     list->array = NULL;
     list->size = 0;
@@ -256,6 +264,21 @@ void free_module(VmModule* lib) {
 
     // Zum Schluss, freigabe der `VmModule` Struktur selbst
     free(lib);
+}
+
+// Zerstört eine ganze Shared LIB
+void free_cvm_callback_function_parameter_list(CVmCallbackFunctionParameterList *pList) {
+    if (pList != NULL) {
+        // Befreie den dynamisch zugewiesenen Array, falls vorhanden
+        if (pList->array != NULL) {
+            free(pList->array);
+            pList->array = NULL;  // Setze den Zeiger auf NULL nach dem Freigeben
+        }
+        // Optional: Befreie die Struktur selbst, wenn sie dynamisch zugewiesen wurde
+        // Dies hängt davon ab, wie die Struktur zugewiesen wurde (statisch oder dynamisch)
+        free(pList);  // Kommentieren Sie diese Zeile aus, wenn pList nicht dynamisch zugewiesen wurde
+        pList = NULL;  // Verhindert den Zugriff auf freigegebenen Speicher
+    }
 }
 
 // Erstellt einen neuen Leeren Datensatz

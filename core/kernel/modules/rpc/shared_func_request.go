@@ -2,11 +2,14 @@ package kmodulerpc
 
 import (
 	"fmt"
+	"strings"
 	"vnh1/types"
+	"vnh1/utils"
 
 	v8 "rogchap.com/v8go"
 )
 
+// Sendet eine Erfolgreiche Antwort zurück
 func (o *SharedFunctionRequest) SendResponse(info *v8.FunctionCallbackInfo) *v8.Value {
 	// Speichert alle FunktionsStates ab
 	resolves := &types.FunctionCallState{
@@ -47,6 +50,8 @@ func (o *SharedFunctionRequest) SendResponse(info *v8.FunctionCallbackInfo) *v8.
 			case item.IsFunction():
 				fmt.Println("Wert ist ein Array:")
 			default:
+				// Es wird ein Javascript Fehler zurückgegeben
+				utils.V8ContextThrow(info.Context(), "unsupported datatype for shared function response")
 				return nil
 			}
 		}
@@ -70,18 +75,61 @@ func (o *SharedFunctionRequest) SendResponse(info *v8.FunctionCallbackInfo) *v8.
 	return nil
 }
 
+// Sendet eine Fehlerantwort zurück
 func (o *SharedFunctionRequest) SendError(info *v8.FunctionCallbackInfo) *v8.Value {
-	o.resolveChan <- &types.FunctionCallState{}
-	fmt.Println("RESPONSE")
+	// Die Einzelnen Parameter werden abgearbeitet
+	extractedStrings := make([]string, 0)
+	for _, item := range info.Args() {
+		switch {
+		case item.IsString():
+			extractedStrings = append(extractedStrings, item.String())
+		default:
+			utils.V8ContextThrow(info.Context(), "unsupported datatype for shared function error response, only strings allowed")
+			return nil
+		}
+	}
+
+	// Der Finale Fehler wird gebaut
+	finalErrorStr := ""
+	if len(extractedStrings) > 0 {
+		finalErrorStr = strings.Join(extractedStrings, " ")
+	}
+
+	// Die Antwort wird zurückgesendet
+	o.resolveChan <- &types.FunctionCallState{Error: finalErrorStr, State: "failed"}
+
+	// Es ist kein Fehler aufgetreten
 	return nil
 }
 
+// Sendet eine Rejectantwort zurück
 func (o *SharedFunctionRequest) Reject(info *v8.FunctionCallbackInfo) *v8.Value {
-	o.resolveChan <- &types.FunctionCallState{}
-	fmt.Println("RESPONSE")
+	// Die Einzelnen Parameter werden abgearbeitet
+	extractedStrings := make([]string, 0)
+	for _, item := range info.Args() {
+		switch {
+		case item.IsString():
+			extractedStrings = append(extractedStrings, item.String())
+		default:
+			utils.V8ContextThrow(info.Context(), "unsupported datatype for shared function error response, only strings allowed")
+			return nil
+		}
+	}
+
+	// Der Finale Fehler wird gebaut
+	finalErrorStr := ""
+	if len(extractedStrings) > 0 {
+		finalErrorStr = strings.Join(extractedStrings, " ")
+	}
+
+	// Die Antwort wird zurückgesendet
+	o.resolveChan <- &types.FunctionCallState{Error: finalErrorStr, State: "failed"}
+
+	// Es ist kein Fehler aufgetreten
 	return nil
 }
 
-func NewSharedFunctionRequest(req types.RpcRequestInterface) *SharedFunctionRequest {
+// Erstellt einen neuen SharedFunctionRequest
+func NewSharedFunctionRequest(req *types.RpcRequest) *SharedFunctionRequest {
 	return &SharedFunctionRequest{resolveChan: make(chan *types.FunctionCallState), parms: req}
 }

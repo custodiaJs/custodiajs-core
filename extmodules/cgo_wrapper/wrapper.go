@@ -1,12 +1,6 @@
 package cgowrapper
 
 /*
-#cgo linux CFLAGS: -I/usr/include/python3.11
-#cgo linux LDFLAGS: -lpython3.11
-#cgo darwin CFLAGS: -I/usr/local/include/python3.11
-#cgo darwin LDFLAGS: -L/usr/local/lib -lpython3.11
-#cgo windows CFLAGS: -I"C:/Python311/include"
-#cgo windows LDFLAGS: -L"C:/Python311/libs" -lpython311
 #include <stdlib.h>
 #include "wrapper.h"
 */
@@ -16,12 +10,23 @@ import (
 	"fmt"
 	"strings"
 	"unsafe"
+	"vnh1/types"
 	"vnh1/utils"
 )
 
 type CGOWrappedLibModuleFunction struct {
 	name        string
 	functionPtr *C.CVmFunction
+}
+
+type CGOWrappedLibFunctionReturn struct {
+	dtype string
+	data  interface{}
+}
+
+type CGOWrappedLibFunctionParameter struct {
+	dtype string
+	data  interface{}
 }
 
 type CGOWrappedLibModule struct {
@@ -62,7 +67,7 @@ func (o *CGOWrappedLibModule) GetGlobalFunctions() []*CGOWrappedLibModuleFunctio
 	return o.global_functions
 }
 
-func (o *CGOWrappedLibModuleFunction) Call() (string, interface{}, error) {
+func (o *CGOWrappedLibModuleFunction) Call(parms ...*CGOWrappedLibFunctionParameter) (*CGOWrappedLibFunctionReturn, error) {
 	// Setup eines defer-Blocks zur Abfangung von Panics
 	var err error
 	defer func() {
@@ -71,49 +76,53 @@ func (o *CGOWrappedLibModuleFunction) Call() (string, interface{}, error) {
 		}
 	}()
 
+	// Es wird eine neue Liste an Parametern erzeugt
+	cgoParmList := C.cgo_new_function_parm_list()
+
 	// Die Funktion wird aufgerufen
-	retData := C.cgo_call_function(o.functionPtr)
+	retData := C.cgo_call_function(o.functionPtr, cgoParmList)
+
+	// Es wird geprüft ob ein CGO-Calling Panic aufgetreten ist
+	if err != nil {
+		return nil, &types.ExtModCGOPanic{ErrorValue: fmt.Errorf("CGOWrappedLibModuleFunction->Call: " + err.Error())}
+	}
+
+	// Es wird ermittelt ob ein Fehler aufgetreten ist
+	if retData.ErrorMsg != nil {
+		return nil, &types.ExtModCGOPanic{ErrorValue: fmt.Errorf("CGOWrappedLibModuleFunction->Call: " + C.GoString(retData.ErrorMsg))}
+	}
 
 	// Prüfe den Datentyp und handle entsprechend
-	var value interface{}
-	var valueType string
-	switch retData._type {
+	var value *CGOWrappedLibFunctionReturn
+	switch retData.returnData._type {
 	case C.NONE:
-		valueType = "null"
-		value = nil
+		value = &CGOWrappedLibFunctionReturn{dtype: "null"}
 	case C.STRING:
-		value = C.GoString(retData.string_data)
-		valueType = "string"
+		value = &CGOWrappedLibFunctionReturn{dtype: "string", data: C.GoString(retData.returnData.string_data)}
 	case C.ERROR:
-		value = C.GoString(retData.error_data)
-		valueType = "error"
+		value = &CGOWrappedLibFunctionReturn{dtype: "error", data: C.GoString(retData.returnData.error_data)}
 	case C.BYTES:
-		value = retData.byte_data
-		valueType = "bytes"
+		value = &CGOWrappedLibFunctionReturn{dtype: "bytes", data: retData.returnData.byte_data}
 	case C.INT:
-		value = int(retData.int_data)
-		valueType = "int"
+		value = &CGOWrappedLibFunctionReturn{dtype: "int", data: retData.returnData.int_data}
 	case C.FLOAT:
-		value = float64(retData.float_data)
-		valueType = "float"
+		value = &CGOWrappedLibFunctionReturn{dtype: "float", data: retData.returnData.float_data}
 	case C.BOOLEAN:
-		value = bool(retData.bool_data)
-		valueType = "bool"
+		value = &CGOWrappedLibFunctionReturn{dtype: "bool", data: retData.returnData.bool_data}
 	case C.TIMESTAMP:
-		value = C.GoString(retData.timestamp_data)
-		valueType = "timestamp"
+		value = &CGOWrappedLibFunctionReturn{dtype: "timestamp", data: C.GoString(retData.returnData.timestamp_data)}
 	case C.OBJECT:
-		value = retData.object_data
-		valueType = "object"
+		value = &CGOWrappedLibFunctionReturn{dtype: "object", data: retData.returnData.object_data}
 	case C.ARRAY:
-		value = retData.array_data
-		valueType = "array"
+		value = &CGOWrappedLibFunctionReturn{dtype: "array", data: retData.returnData.array_data}
+	case C.FUNCTION:
+	case C.UINT:
 	default:
-		return "", nil, fmt.Errorf("unkown datatype")
+		return nil, &types.ExtModFunctionCallError{ErrorValue: fmt.Errorf("unkown datatype")}
 	}
 
 	// Die Daten werden zurückgegeben
-	return valueType, value, err
+	return value, nil
 }
 
 func (o *CGOWrappedLibModuleFunction) GetName() string {

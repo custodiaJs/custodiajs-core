@@ -150,3 +150,13 @@ func ReadFileBytes(file *os.File) ([]byte, error) {
 	// Die Daten werden zurückgegeben
 	return data, nil
 }
+
+func CreateDirectory(path string) error {
+	// Versucht, den Ordner zu erstellen.
+	// MkdirAll erstellt auch alle nötigen übergeordneten Verzeichnisse.
+	err := os.MkdirAll(path, os.ModePerm) // os.ModePerm setzt die Berechtigungen auf 0777
+	if err != nil {
+		return fmt.Errorf("CreateDirectory: %v", err)
+	}
+	return nil
+}

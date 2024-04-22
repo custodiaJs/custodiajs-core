@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"time"
+	"vnh1/static"
 	"vnh1/types"
 	"vnh1/utils"
 
@@ -35,8 +36,13 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 
 	// Es wird geprüft ob es sich um eine bekannte VM handelt
 	utils.ProcFormatConsoleText(proc, "HTTP-RPC", types.DETERMINE_THE_SCRIPT_CONTAINER, strings.ToUpper(request.VmId))
-	foundedVM, err := o.core.GetScriptContainerVMByID(request.VmId)
+	foundedVM, foundVM, err := o.core.GetScriptContainerVMByID(request.VmId)
 	if err != nil {
+		proc.LogPrint("HTTP-RPC: failed\n")
+		errorResponse(request.ContentType, w, "internal error")
+		return
+	}
+	if !foundVM {
 		proc.LogPrint("HTTP-RPC: failed\n")
 		errorResponse(request.ContentType, w, "not found")
 		return
@@ -71,28 +77,31 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 	// Der Body wird geschlossen sobald der Vorgang beendet wurde
 	defer r.Body.Close()
 
-	// Es wird versucht die Passende Funktion zu ermitteln
-	utils.ProcFormatConsoleText(proc, "HTTP-PRC", types.DETERMINE_THE_FUNCTION, foundedVM.GetVMName(), data.FunctionName)
-	var foundFunction types.SharedFunctionInterface
-	for _, item := range foundedVM.GetLocalSharedFunctions() {
-		if item.GetName() == data.FunctionName {
-			foundFunction = item
-			break
-		}
+	// Die Datentypen der Parameter werden ausgeslesen
+	dataTypeParms := make([]string, 0)
+	for _, item := range data.Parms {
+		dataTypeParms = append(dataTypeParms, item.Type)
 	}
 
-	// Es wird geprüft ob eine Funktion gefunden wurde, wenn nicht werden die Öffentlichen Funktionen durchsucht
-	if foundFunction == nil {
-		for _, item := range foundedVM.GetPublicSharedFunctions() {
-			if item.GetName() == data.FunctionName {
-				foundFunction = item
-				break
-			}
-		}
+	// Aus dem Request wird eine Funktionssignatur erzeugt
+	searchedFunctionSignature := &types.FunctionSignature{
+		VMID:         strings.ToLower(request.VmId),
+		FunctionName: data.FunctionName,
+		Params:       dataTypeParms,
+		ReturnType:   data.ReturnDataType,
+	}
+
+	// Es wird versucht die Passende Funktion zu ermitteln
+	utils.ProcFormatConsoleText(proc, "HTTP-PRC", types.DETERMINE_THE_FUNCTION, foundedVM.GetVMName(), data.FunctionName)
+	foundFunction, hasFound, err := foundedVM.GetSharedFunctionBySignature(static.LOCAL, searchedFunctionSignature)
+	if err != nil {
+		errorResponse(request.ContentType, w, "internal error")
+		proc.LogPrint("HTTP-RPC: failed, invalid function name\n")
+		return
 	}
 
 	// Sollte keine Passende Funktion gefunden werden, wird der Vorgang abgebrochen
-	if foundFunction == nil {
+	if !hasFound {
 		proc.LogPrint("HTTP-RPC: &[%s]: determine the function '%s' failed, unkown function\n", foundedVM.GetVMName(), data.FunctionName)
 		errorResponse(request.ContentType, w, "function not found")
 		proc.LogPrint("HTTP-RPC: failed\n")
@@ -108,7 +117,7 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 	}
 
 	// Die Einzelnen Parameter werden geprüft und abgearbeitet
-	extractedValues := make([]types.FunctionParameterBundleInterface, 0)
+	extractedValues := make([]*types.FunctionParameterCapsle, 0)
 	for x := range foundFunction.GetParmTypes() {
 		// Es wird geprüft ob es sich bei dem Angefordeten Parameter um einen zulässigen Parameter handelt
 		if foundFunction.GetParmTypes()[x] != data.Parms[x].Type {
@@ -135,7 +144,7 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 			}
 
 			// Der Eintrag wird erzeugt
-			newEntry := &FunctionParameterCapsle{Value: converted, CType: "bool"}
+			newEntry := &types.FunctionParameterCapsle{Value: converted, CType: "bool"}
 
 			// Die Daten werden hinzugefügt
 			extractedValues = append(extractedValues, newEntry)
@@ -151,7 +160,7 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 				}
 
 				// Der Eintrag wird erzeugt
-				newEntry := &FunctionParameterCapsle{Value: onvertedfloat, CType: "number"}
+				newEntry := &types.FunctionParameterCapsle{Value: onvertedfloat, CType: "number"}
 
 				// Die Daten werden hinzugefügt
 				extractedValues = append(extractedValues, newEntry)
@@ -159,7 +168,7 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 			}
 
 			// Der Eintrag wird erzeugt
-			newEntry := &FunctionParameterCapsle{Value: converted, CType: "number"}
+			newEntry := &types.FunctionParameterCapsle{Value: converted, CType: "number"}
 
 			// Die Daten werden hinzugefügt
 			extractedValues = append(extractedValues, newEntry)
@@ -172,7 +181,7 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 			}
 
 			// Der Eintrag wird erzeugt
-			newEntry := &FunctionParameterCapsle{Value: converted, CType: "string"}
+			newEntry := &types.FunctionParameterCapsle{Value: converted, CType: "string"}
 
 			// Die Daten werden hinzugefügt
 			extractedValues = append(extractedValues, newEntry)
@@ -185,13 +194,13 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 			}
 
 			// Der Eintrag wird erzeugt
-			newEntry := &FunctionParameterCapsle{Value: converted, CType: "array"}
+			newEntry := &types.FunctionParameterCapsle{Value: converted, CType: "array"}
 
 			// Die Daten werden hinzugefügt
 			extractedValues = append(extractedValues, newEntry)
 		case "object":
 			// Der Eintrag wird erzeugt
-			newEntry := &FunctionParameterCapsle{Value: data.Parms[x].Value, CType: "object"}
+			newEntry := &types.FunctionParameterCapsle{Value: data.Parms[x].Value, CType: "object"}
 
 			// Die Daten werden hinzugefügt
 			extractedValues = append(extractedValues, newEntry)
@@ -240,7 +249,7 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 			}
 
 			// Der Eintrag wird erzeugt
-			newEntry := &FunctionParameterCapsle{Value: decodedDataSlice, CType: "bytearray"}
+			newEntry := &types.FunctionParameterCapsle{Value: decodedDataSlice, CType: "bytearray"}
 
 			// Die Daten werden hinzugefügt
 			extractedValues = append(extractedValues, newEntry)
@@ -256,7 +265,7 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 			timeObj := time.Unix(converted, 0)
 
 			// Der Eintrag wird erzeugt
-			newEntry := &FunctionParameterCapsle{Value: timeObj, CType: "timestamp"}
+			newEntry := &types.FunctionParameterCapsle{Value: timeObj, CType: "timestamp"}
 
 			// Die Daten werden hinzugefügt
 			extractedValues = append(extractedValues, newEntry)
@@ -264,7 +273,7 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 	}
 
 	// Die Funktion wird aufgerufen
-	result, err := foundFunction.EnterFunctionCall(&RpcRequest{parms: extractedValues, rpcRequest: request})
+	result, err := foundFunction.EnterFunctionCall(&types.RpcRequest{Parms: extractedValues, RpcRequest: request})
 	if err != nil {
 		proc.LogPrint("HTTP-RPC: &[%s]: call function '%s' error\n\t%s\n", foundedVM.GetVMName(), foundFunction.GetName(), err)
 		errorResponse(request.ContentType, w, "an error occurred when calling the function, error: "+err.Error())
