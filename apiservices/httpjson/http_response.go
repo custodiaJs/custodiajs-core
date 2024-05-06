@@ -16,14 +16,13 @@ func responseWrite(contentType types.HttpRequestContentType, w http.ResponseWrit
 		w.Header().Set("Content-Type", "application/json")
 	}
 
-	// Die Header werden festgelegt
-	w.WriteHeader(http.StatusBadRequest)
-
 	// Die Antwort wird gebaut
 	var response *RPCResponse
 	if rpcd.Data != nil {
+		w.WriteHeader(http.StatusOK)
 		response = &RPCResponse{Result: "ok", Error: nil, Data: rpcd.Data}
 	} else {
+		w.WriteHeader(http.StatusBadRequest)
 		response = &RPCResponse{Result: "failed", Error: &rpcd.Error, Data: nil}
 	}
 

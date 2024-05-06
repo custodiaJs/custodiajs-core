@@ -1,8 +1,24 @@
+// Author: fluffelpuff
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 package kmodulerpc
 
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"vnh1/types"
 	"vnh1/utils"
 
@@ -11,10 +27,32 @@ import (
 
 // Sendet eine Erfolgreiche Antwort zurück
 func (o *SharedFunctionRequest) SendResponse(info *v8.FunctionCallbackInfo) *v8.Value {
-	// Speichert alle FunktionsStates ab
-	resolves := &types.FunctionCallState{
-		Return: make([]*types.FunctionCallReturnData, 0),
+	// Es wird geprüft ob das Objekt zerstört wurde
+	if o.IsClosedAndDestroyed() {
+		panic("destroyed object")
 	}
+
+	// Der Mutex wird verwendet
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+
+	// Es wird geprüft ob die v8.FunctionCallbackInfo "info" NULL ist
+	// In diesem fall muss ein Panic ausgelöst werden, da es keine Logik gibt, wann diese Eintreten kann
+	if info == nil {
+		panic("vm information callback infor null error")
+	}
+
+	// Es wird geprüft ob SharedFunctionRequest "o" NULL ist
+	if !validateSharedFunctionRequest(o) {
+		// Es wird ein Exception zurückgegeben
+		utils.V8ContextThrow(info.Context(), "invalid function share")
+
+		// Undefined wird zurückgegeben
+		return v8.Undefined(info.Context().Isolate())
+	}
+
+	// Speichert alle FunktionsStates ab
+	resolves := &types.FunctionCallState{State: "ok", Return: make([]*types.FunctionCallReturnData, 0)}
 
 	// Die Einzelnen Parameter werden abgearbeitet
 	for _, item := range info.Args() {
@@ -65,9 +103,6 @@ func (o *SharedFunctionRequest) SendResponse(info *v8.FunctionCallbackInfo) *v8.
 		resolves.Return = append(resolves.Return, &types.FunctionCallReturnData{CType: "undefined", Value: nil})
 	}
 
-	// Der Stauts wird aktualisiert
-	resolves.State = "ok"
-
 	// Die Antwort wird zurückgesendet
 	o.resolveChan <- resolves
 
@@ -77,6 +112,21 @@ func (o *SharedFunctionRequest) SendResponse(info *v8.FunctionCallbackInfo) *v8.
 
 // Sendet eine Fehlerantwort zurück
 func (o *SharedFunctionRequest) SendError(info *v8.FunctionCallbackInfo) *v8.Value {
+	// Es wird geprüft ob die v8.FunctionCallbackInfo "info" NULL ist
+	// In diesem fall muss ein Panic ausgelöst werden, da es keine Logik gibt, wann diese Eintreten kann
+	if info == nil {
+		panic("vm information callback infor null error")
+	}
+
+	// Es wird geprüft ob SharedFunctionRequest "o" NULL ist
+	if !validateSharedFunctionRequest(o) {
+		// Es wird ein Exception zurückgegeben
+		utils.V8ContextThrow(info.Context(), "invalid function share")
+
+		// Undefined wird zurückgegeben
+		return v8.Undefined(info.Context().Isolate())
+	}
+
 	// Die Einzelnen Parameter werden abgearbeitet
 	extractedStrings := make([]string, 0)
 	for _, item := range info.Args() {
@@ -104,6 +154,21 @@ func (o *SharedFunctionRequest) SendError(info *v8.FunctionCallbackInfo) *v8.Val
 
 // Sendet eine Rejectantwort zurück
 func (o *SharedFunctionRequest) Reject(info *v8.FunctionCallbackInfo) *v8.Value {
+	// Es wird geprüft ob die v8.FunctionCallbackInfo "info" NULL ist
+	// In diesem fall muss ein Panic ausgelöst werden, da es keine Logik gibt, wann diese Eintreten kann
+	if info == nil {
+		panic("vm information callback infor null error")
+	}
+
+	// Es wird geprüft ob SharedFunctionRequest "o" NULL ist
+	if !validateSharedFunctionRequest(o) {
+		// Es wird ein Exception zurückgegeben
+		utils.V8ContextThrow(info.Context(), "invalid function share")
+
+		// Undefined wird zurückgegeben
+		return v8.Undefined(info.Context().Isolate())
+	}
+
 	// Die Einzelnen Parameter werden abgearbeitet
 	extractedStrings := make([]string, 0)
 	for _, item := range info.Args() {
@@ -129,7 +194,72 @@ func (o *SharedFunctionRequest) Reject(info *v8.FunctionCallbackInfo) *v8.Value 
 	return nil
 }
 
+// Gibt an ob das Objekt zerstört wurde
+func (o *SharedFunctionRequest) IsClosedAndDestroyed() bool {
+	// Der Mutex wird verwendet
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+
+	// Rückgabe des Destroyed Wertes
+	return o._destroyed
+}
+
+// Räumt auf und Zerstört das Objekt
+func (o *SharedFunctionRequest) ClearAndDestroy() {
+	// Es wird geprüft ob das Objekt zerstört wurde
+	if o.IsClosedAndDestroyed() {
+		panic("destroyed object")
+	}
+
+	// Der Mutex wird verwendet
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+}
+
+// Signalisiert dass die Ausführende Funktion fertigestellt wurde
+func (o *SharedFunctionRequest) functionIsDoneSignal() {
+	// Es wird geprüft ob das Objekt zerstört wurde
+	if o.IsClosedAndDestroyed() {
+		panic("destroyed object")
+	}
+
+	// Der Mutex wird verwendet
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+}
+
+// Signalisiert das beim Ausführen der RPC Funktion Throw aufgetreten ist
+func (o *SharedFunctionRequest) functionHasThrowSigal(errorvalue string) {
+	// Es wird geprüft ob das Objekt zerstört wurde
+	if o.IsClosedAndDestroyed() {
+		panic("destroyed object")
+	}
+
+	// Der Mutex wird verwendet
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+
+	// Die Antwort wird zurückgesendet
+	o.resolveChan <- &types.FunctionCallState{Error: errorvalue, State: "exception"}
+}
+
 // Erstellt einen neuen SharedFunctionRequest
-func NewSharedFunctionRequest(req *types.RpcRequest) *SharedFunctionRequest {
-	return &SharedFunctionRequest{resolveChan: make(chan *types.FunctionCallState), parms: req}
+func newSharedFunctionRequest(kernel types.KernelInterface) *SharedFunctionRequest {
+	return &SharedFunctionRequest{resolveChan: make(chan *types.FunctionCallState), mutex: &sync.Mutex{}, kernel: kernel}
+}
+
+// Überprüft ob ein SharedFunctionRequest korrekt aufgebaut ist
+func validateSharedFunctionRequest(o *SharedFunctionRequest) bool {
+	// Sollte die SharedFunctionRequest "o" NULL sein, wird ein False zurückgegeben
+	if o == nil {
+		return false
+	}
+
+	// Es wird geprüft ob die Resolve Chain NULL ist
+	if o.resolveChan == nil {
+		return false
+	}
+
+	// Es handelt sich um ein zulässiges Objekt
+	return true
 }

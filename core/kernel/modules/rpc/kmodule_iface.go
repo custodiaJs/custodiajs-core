@@ -1,3 +1,18 @@
+// Author: fluffelpuff
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 package kmodulerpc
 
 import (
@@ -21,11 +36,11 @@ func (o *RPCModule) Init(kernel types.KernelInterface, iso *v8.Isolate, context 
 
 	// Die RPC (Remote Function Call) funktionen werden bereitgestellt
 	rpc := v8.NewObjectTemplate(iso)
-	rpc.Set("IsShare", o.rpcIsShar(kernel, iso, context), v8.ReadOnly)
-	rpc.Set("Call", o.rpcCall(kernel, iso, context), v8.ReadOnly)
-	rpc.Set("SharePublic", o.rpcNewSharePublic(kernel, iso, context), v8.ReadOnly)
-	rpc.Set("ShareLocal", o.rpcNewShareLocal(kernel, iso, context), v8.ReadOnly)
-	rpc.Set("GetDetails", o.rpcGetDetails(kernel, iso, context), v8.ReadOnly)
+	rpc.Set("IsShare", o.rpcIsShar(kernel, iso), v8.ReadOnly)
+	rpc.Set("Call", o.rpcCall(kernel, iso), v8.ReadOnly)
+	rpc.Set("SharePublic", o.rpcNewSharePublic(kernel, iso), v8.ReadOnly)
+	rpc.Set("ShareLocal", o.rpcNewShareLocal(kernel, iso), v8.ReadOnly)
+	rpc.Set("GetDetails", o.rpcGetDetails(kernel, iso), v8.ReadOnly)
 
 	// Das RPC Objekt wird final erzeugt
 	rpcObj, err := rpc.NewInstance(context)

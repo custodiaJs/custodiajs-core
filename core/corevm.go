@@ -36,11 +36,63 @@ func (o *CoreVM) GetMode() string {
 }
 
 func (o *CoreVM) _routine(scriptContent []byte, syncWaitGroup *sync.WaitGroup) {
-	// Das Script wird als ausgeführt markiert
-	o.vmState = static.Running
+	// Der Mutex wird verwendet
+	o.objectMutex.Lock()
+
+	// Es wird geptüft ob der Stauts des Objektes STILL_WAIT ist
+	if o.vmState != static.Starting {
+		// Der Mutext wird freigegeben
+		o.objectMutex.Unlock()
+
+		// Rückgabe
+		return
+	}
+
+	// Die Startzeit wird festgelegt
+	o.startTimeUnix = uint64(time.Now().Unix())
+
+	// Der Mutex wird freigegeben
+	o.objectMutex.Unlock()
 
 	// Das Script wird ausgeführt
 	o.runScript(string(scriptContent))
+
+	// Das Script wird als Running Markiert
+	o.objectMutex.Lock()
+
+	// Es wird geprüft wie der Aktuele Status des Scriptes ist
+	if o.vmState != static.Starting {
+		// Der Mutext wird freigegeben
+		o.objectMutex.Unlock()
+
+		// Rückgabe
+		return
+	}
+
+	// Der Status wird auf Running gesetzt
+	o.vmState = static.Running
+
+	// Der Mutext wird freigegeben
+	o.objectMutex.Unlock()
+
+	// Log
+	o.LogPrint("", "Eventloop started")
+
+	// Die Schleife wird solange ausgeführt, solange der Status, running ist.
+	// Die Schleife für den Eventloop des Kernels auf
+	for !o.Kernel.HasCloseSignal() {
+		if err := o.Kernel.ServeEventLoop(); err != nil {
+			panic(err)
+		}
+	}
+
+	// Der Status wird geupdated
+	o.objectMutex.Lock()
+	o.vmState = static.Closed
+	o.objectMutex.Unlock()
+
+	// Log
+	o.LogPrint("", "Eventloop stoped")
 
 	// Es wird Signalisiert das die VM nicht mehr ausgeführt wird
 	syncWaitGroup.Done()
@@ -168,9 +220,6 @@ func (o *CoreVM) runScript(script string) error {
 	if err != nil {
 		panic(err)
 	}
-
-	// Die Aktuelle Uhrzeit wird ermittelt
-	o.startTimeUnix = uint64(time.Now().Unix())
 
 	// Es ist kein Fehler aufgetreten
 	return nil

@@ -7,7 +7,6 @@ import (
 	"vnh1/types"
 )
 
-// parseFunctionSignature parses a function signature string and returns a FunctionSignature struct
 func ParseFunctionSignature(input string) (*types.FunctionSignature, error) {
 	signature := &types.FunctionSignature{}
 
@@ -102,7 +101,6 @@ func ParseFunctionSignatureOptionalFunction(input string) (*types.FunctionSignat
 	return signature, nil
 }
 
-// String generates a formatted string representation of FunctionDetails.
 func String(fd *types.FunctionSignature) string {
 	var sb strings.Builder
 	if fd.VMID != "" && fd.VMName == "" {

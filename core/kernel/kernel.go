@@ -143,6 +143,55 @@ func (o *Kernel) AsCoreVM() types.CoreVMInterface {
 	return o.vmLink
 }
 
+func (o *Kernel) HasCloseSignal() bool {
+	return false
+}
+
+func (o *Kernel) ServeEventLoop() error {
+	// Der Mutex wird verwendet
+	o.eventLoopLockCond.L.Lock()
+
+	// Es wird geprüft ob ein Eintrag vorhanden ist, wenn nicht wird gewartet
+	if len(o.eventLoopStack) == 0 {
+		o.eventLoopLockCond.Wait()
+	}
+
+	// Die Funktion wird aus dem Stack entfertn
+	resolvedFunction := o.eventLoopStack[0]
+	o.eventLoopStack = o.eventLoopStack[1:]
+
+	// Der Mutex wird freigegeben
+	o.eventLoopLockCond.L.Unlock()
+
+	// Die Funktion wird aufgerufen
+	o.LogPrint("", "Eventloop processes operation")
+
+	// Die Funktion wird aufgerufen
+	if err := resolvedFunction(o.Context); err != nil {
+		return fmt.Errorf("ServeEventLoop: " + err.Error())
+	}
+
+	// Es ist kein Fehler aufgetreten
+	return nil
+}
+
+func (o *Kernel) AddFunctionCallToEventLoop(funcv func(*v8.Context) error) error {
+	// Der Mutex wird verwendet
+	o.eventLoopLockCond.L.Lock()
+
+	// Die Eventfunktion wird hinzugefügt
+	o.eventLoopStack = append(o.eventLoopStack, funcv)
+
+	// Es wird Signalisiert, dass ein neuer Eintrag vorhanden ist
+	o.eventLoopLockCond.Broadcast()
+
+	// Der Cond wird freigegeben
+	o.eventLoopLockCond.L.Unlock()
+
+	// Rückgabe
+	return nil
+}
+
 func makeIsolationAndContext(kernel *Kernel, isMain bool) (*v8.Isolate, *v8.Context, error) {
 	// Die Isolation wird erezrugt
 	iso := v8.NewIsolate()
@@ -176,17 +225,22 @@ func NewKernel(consoleCache *consolecache.ConsoleOutputCache, kernelConfig *Kern
 		return nil, fmt.Errorf("Kernel->NewKernel:" + err.Error())
 	}
 
+	// Der Mutex wird erzeugt
+	mutex := &sync.Mutex{}
+
 	// Das Kernelobjekt wird erzeugt
 	kernelObj := &Kernel{
-		Context:   nil,
-		id:        types.KernelID(kid),
-		register:  make(map[string]interface{}),
-		mutex:     &sync.Mutex{},
-		console:   consoleCache,
-		config:    kernelConfig,
-		core:      coreIface,
-		vmImports: make(map[string]*v8.Value),
-		dbEntry:   dbEntry,
+		Context:           nil,
+		id:                types.KernelID(kid),
+		register:          make(map[string]interface{}),
+		mutex:             mutex,
+		console:           consoleCache,
+		config:            kernelConfig,
+		core:              coreIface,
+		vmImports:         make(map[string]*v8.Value),
+		dbEntry:           dbEntry,
+		eventLoopStack:    make([]func(*v8.Context) error, 0),
+		eventLoopLockCond: sync.NewCond(mutex),
 	}
 
 	// Der Context wird im Kernel Objekt gespeichert

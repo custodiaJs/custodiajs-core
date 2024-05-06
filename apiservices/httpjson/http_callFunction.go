@@ -290,6 +290,8 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 		responseData = &ResponseCapsle{Data: dt}
 	} else if result.State == "failed" {
 		responseData = &ResponseCapsle{Error: result.Error}
+	} else if result.State == "exception" {
+		responseData = &ResponseCapsle{Error: result.Error}
 	} else {
 		responseData = &ResponseCapsle{Error: "unkown return state"}
 	}

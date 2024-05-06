@@ -1,7 +1,23 @@
+// Author: fluffelpuff
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 package kmodulerpc
 
 import (
 	"fmt"
+	"sync"
 	"vnh1/static"
 	"vnh1/types"
 	"vnh1/utils"
@@ -74,13 +90,37 @@ func __determineRPCFunction(kernel types.KernelInterface, funcsig *types.Functio
 	return nil, false, fmt.Errorf("unkown vm")
 }
 
+// Erzeugt das V8 Engine Objekt für eine geteilte funktion
+func __makeSharedFunctionV8EngineObject(_ types.KernelInterface, iso *v8.Isolate, c *v8.Context, funcSig *types.FunctionSignature) (*v8.Value, error) {
+	// Das Objekt Template wird erzeugt
+	newFuncShareObject := v8.NewObjectTemplate(iso)
+
+	// Die Funktionssignatur wird hinzugefügt
+	newFuncShareObject.Set("siganture", utils.FunctionOnlySignatureString(funcSig))
+
+	// Der Typ wird erzeugt
+	rtype, _ := v8.NewValue(iso, "single_threaded")
+
+	// Der Type wird hinzugefügt
+	newFuncShareObject.Set("type", rtype)
+
+	// Es wird eine neue Objekt Instanz erzeugt
+	obj, err := newFuncShareObject.NewInstance(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Das Objekt wird als v8 Wert zurückgegeben
+	return obj.Value, nil
+}
+
 // Registriert eine neue Javascript Funktion als geteilt
-func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInterface, iso *v8.Isolate, _ *v8.Context) *v8.FunctionTemplate {
+func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInterface, iso *v8.Isolate) *v8.FunctionTemplate {
 	return v8.NewFunctionTemplate(iso, func(info *v8.FunctionCallbackInfo) *v8.Value {
 		// Es wird geprüft ob 2 Argumente vorhanden sind
 		if len(info.Args()) != 2 {
 			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			utils.V8ContextThrow(info.Context(), "length of prameters invalid")
+			utils.V8ContextThrow(info.Context(), "You have to explicitly specify 2 parameters")
 
 			// Der Vorgang wird beendet
 			return v8.Undefined(info.Context().Isolate())
@@ -89,7 +129,7 @@ func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInt
 		// Es wird geprüft ob das Erste Argument ein String ist
 		if !info.Args()[0].IsString() {
 			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			utils.V8ContextThrow(info.Context(), "the first argument isn't a string")
+			utils.V8ContextThrow(info.Context(), "The first argument must be a string")
 
 			// Der Vorgang wird beendet
 			return v8.Undefined(info.Context().Isolate())
@@ -98,7 +138,7 @@ func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInt
 		// Es wird geprüft ob das Zweite Argument eine Funktion ist
 		if !info.Args()[1].IsAsyncFunction() {
 			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			utils.V8ContextThrow(info.Context(), "the thir parameter isn't async function")
+			utils.V8ContextThrow(info.Context(), "The second argument must be an asynchronous function")
 
 			// Der Vorgang wird beendet
 			return v8.Undefined(info.Context().Isolate())
@@ -108,7 +148,7 @@ func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInt
 		funcSig, err := utils.ParseFunctionSignature(info.Args()[0].String())
 		if err != nil {
 			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			utils.V8ContextThrow(info.Context(), "invalid function signature")
+			utils.V8ContextThrow(info.Context(), "Error creating the function signature")
 
 			// Der Vorgang wird beendet
 			return v8.Undefined(info.Context().Isolate())
@@ -118,19 +158,16 @@ func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInt
 		rpcFunc, err := info.Args()[1].AsFunction()
 		if err != nil {
 			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			utils.V8ContextThrow(info.Context(), "internal engine error")
+			utils.V8ContextThrow(info.Context(), "Error reading shared function, it is a JS Engine error")
 
 			// Der Vorgang wird beendet
 			return v8.Undefined(info.Context().Isolate())
 		}
 
-		// Der Quellcode der Funktion wird extrahiert
-		functionSourceCode := rpcFunc.String()
-
 		// Es wird geprüft ob es sich um einen Zulässigen Funktionsnamen handelt
 		if !utils.ValidateFunctionName(funcSig.FunctionName) {
 			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			utils.V8ContextThrow(info.Context(), "invalid function name")
+			utils.V8ContextThrow(info.Context(), fmt.Sprintf("'%s' is not a legal function name, the syntax is not allowed", funcSig.FunctionName))
 
 			// Der Vorgang wird beendet
 			return v8.Undefined(info.Context().Isolate())
@@ -139,7 +176,7 @@ func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInt
 		// Der Rückgabetype wird geprüft
 		if !utils.ValidateDatatypeString(funcSig.ReturnType) && funcSig.ReturnType != "" {
 			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			utils.V8ContextThrow(info.Context(), fmt.Sprintf("invalid return type '%s'", funcSig.ReturnType))
+			utils.V8ContextThrow(info.Context(), fmt.Sprintf("The return data type '%s' is not a valid data type", funcSig.ReturnType))
 
 			// Der Vorgang wird beendet
 			return v8.Undefined(info.Context().Isolate())
@@ -150,8 +187,7 @@ func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInt
 			// Der Einzelne Parameter wird geprüft
 			if !utils.ValidateDatatypeString(item) {
 				// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-				fmt.Println(item)
-				utils.V8ContextThrow(info.Context(), fmt.Sprintf("Failed to get element at index %d: %v", index, "invalid return datatype"))
+				utils.V8ContextThrow(info.Context(), fmt.Sprintf("At the %d. Argument is not a valid data type", index))
 
 				// Der Vorgang wird beendet
 				return v8.Undefined(info.Context().Isolate())
@@ -165,7 +201,7 @@ func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInt
 		resolveData, isOk := rpcTable.(map[string]types.SharedFunctionInterface)
 		if !isOk {
 			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			utils.V8ContextThrow(info.Context(), "some type error 1")
+			utils.V8ContextThrow(info.Context(), "An internal error occurred; the RPC sharing table could not be read")
 
 			// Der Vorgang wird beendet
 			return v8.Undefined(info.Context().Isolate())
@@ -174,19 +210,40 @@ func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInt
 		// Es wird geprüft ob diese Funktion bereits registriert wurde
 		if _, found := resolveData[utils.FunctionOnlySignatureString(funcSig)]; found {
 			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			utils.V8ContextThrow(info.Context(), "some type error")
+			utils.V8ContextThrow(info.Context(), fmt.Sprintf("The function '%s' has already been shared", funcSig.FunctionName))
 
 			// Der Vorgang wird beendet
 			return v8.Undefined(info.Context().Isolate())
 		}
 
+		// Der Funktionsmutex wird erzeugt
+		fMutex := new(sync.Mutex)
+		fCond := sync.NewCond(fMutex)
+
 		// Das Objekt wird erzeugt
 		newSharedFunction := &SharedFunction{
 			kernel:             kernel,
 			name:               info.Args()[0].String(),
+			mutex:              fMutex,
+			cond:               fCond,
 			parmTypes:          funcSig.Params,
 			returnType:         funcSig.ReturnType,
-			functionSourceCode: functionSourceCode,
+			v8Function:         rpcFunc,
+			eventOnRequest:     make([]*v8.Function, 0),
+			eventOnRequestFail: make([]*v8.Function, 0),
+		}
+
+		// Das Function Share Object für die V8 Engine wird erzeugt
+		funcShareObject, err := __makeSharedFunctionV8EngineObject(kernel, info.Context().Isolate(), info.Context(), funcSig)
+		if err != nil {
+			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
+			utils.V8ContextThrow(info.Context(), "An internal error occured")
+
+			// Log
+			kernel.LogPrint("rpc", "Add sharing function, failed: %s", err.Error())
+
+			// Der Vorgang wird beendet
+			return v8.Undefined(info.Context().Isolate())
 		}
 
 		// Die Geteilte Funktion wird erzeugt und abgespeichert
@@ -195,7 +252,7 @@ func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInt
 		// Der Eintrag in der Datenbank wird geupdated
 		if err := kernel.GloablRegisterWrite("rpc", resolveData); err != nil {
 			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			utils.V8ContextThrow(info.Context(), "register writing error")
+			utils.V8ContextThrow(info.Context(), "An error occurred while attempting to write to the RPC table")
 
 			// Der Vorgang wird beendet
 			return v8.Undefined(info.Context().Isolate())
@@ -210,7 +267,7 @@ func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInt
 			resolvedPublicData, isOk := rpcTable.(map[string]types.SharedFunctionInterface)
 			if !isOk {
 				// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-				utils.V8ContextThrow(info.Context(), "some type error 2")
+				utils.V8ContextThrow(info.Context(), "An internal error occurred; the public RPC sharing table could not be read")
 
 				// Der Vorgang wird beendet
 				return v8.Undefined(info.Context().Isolate())
@@ -219,7 +276,7 @@ func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInt
 			// Es wird geprüft ob diese Funktion bereits registriert wurde
 			if _, found := resolvedPublicData[utils.FunctionOnlySignatureString(funcSig)]; found {
 				// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-				utils.V8ContextThrow(info.Context(), "some type error 3")
+				utils.V8ContextThrow(info.Context(), fmt.Sprintf("The '%s' function has already been shared publicly", funcSig.FunctionName))
 
 				// Der Vorgang wird beendet
 				return v8.Undefined(info.Context().Isolate())
@@ -231,7 +288,7 @@ func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInt
 			// Der Eintrag in der Datenbank wird geupdated
 			if err := kernel.GloablRegisterWrite("rpc_public", resolvedPublicData); err != nil {
 				// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-				utils.V8ContextThrow(info.Context(), "register writing error")
+				utils.V8ContextThrow(info.Context(), "An error occurred while attempting to write to the public RPC table")
 
 				// Der Vorgang wird beendet
 				return v8.Undefined(info.Context().Isolate())
@@ -242,28 +299,28 @@ func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInt
 		kernel.LogPrint("rpc", "Add sharing function '%s'\n", funcSig.FunctionName)
 
 		// Der Vorgang wurde ohne Fehler durchgeführt
-		return v8.Undefined(info.Context().Isolate())
+		return funcShareObject
 	})
 }
 
 // Registriert eine neue Javascript Funktion als Loakl geteilte Funktion
-func (o *RPCModule) rpcNewShareLocal(kernel types.KernelInterface, iso *v8.Isolate, context *v8.Context) *v8.FunctionTemplate {
-	return o.__rpcNewShareFunction(false, kernel, iso, context)
+func (o *RPCModule) rpcNewShareLocal(kernel types.KernelInterface, iso *v8.Isolate) *v8.FunctionTemplate {
+	return o.__rpcNewShareFunction(false, kernel, iso)
 }
 
 // Registriert eine neue Javascript Funktion als öffentlich geteilte Funktion
-func (o *RPCModule) rpcNewSharePublic(kernel types.KernelInterface, iso *v8.Isolate, context *v8.Context) *v8.FunctionTemplate {
-	return o.__rpcNewShareFunction(true, kernel, iso, context)
+func (o *RPCModule) rpcNewSharePublic(kernel types.KernelInterface, iso *v8.Isolate) *v8.FunctionTemplate {
+	return o.__rpcNewShareFunction(true, kernel, iso)
 }
 
 // Ermöglicht es eine Lokale Javascript Funktion aufzurufen
-func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate, _ *v8.Context) *v8.FunctionTemplate {
+func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate) *v8.FunctionTemplate {
 	return v8.NewFunctionTemplate(iso, func(info *v8.FunctionCallbackInfo) *v8.Value {
 		// Erstelle einen Promise Resolver
 		resolver, err := v8.NewPromiseResolver(info.Context())
 		if err != nil {
 			// Es wird Javascript Fehler ausgelöst
-			utils.V8ContextThrow(info.Context(), "internal error, promise creating error")
+			utils.V8ContextThrow(info.Context(), "Error attempting to create a promise 'rpcCall'")
 
 			// Rückgabe
 			return v8.Undefined(info.Context().Isolate())
@@ -275,7 +332,7 @@ func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate, _ *v8
 		// Es wird geprüft ob mindestens 3 Parameter vorhanden sind
 		if len(info.Args()) < 3 {
 			// Es wird Javascript Fehler ausgelöst
-			utils.V8ContextThrow(info.Context(), "invalid parameters, first must be the url of host and container, second must be a configuration and thrid must be a function name")
+			utils.V8ContextThrow(info.Context(), "You must provide at least 3 arguments. Argument 1 must be the function signature and possibly the target, argument 2 must be either a Config object or null, argument 3 must be an array, this array must contain the data to be transferred")
 
 			// Rückgabe
 			return v8.Undefined(info.Context().Isolate())
@@ -284,21 +341,21 @@ func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate, _ *v8
 		// Die Parameterreihenfolge wird geprüft
 		if !info.Args()[0].IsString() {
 			// Es wird Javascript Fehler ausgelöst
-			utils.V8ContextThrow(info.Context(), "invalid parameters, first must be the url of host and container, second must be a configuration and thrid must be a function name")
+			utils.V8ContextThrow(info.Context(), "The first argument is not a string")
 
 			// Rückgabe
 			return v8.Undefined(info.Context().Isolate())
 		}
 		if !info.Args()[1].IsObject() {
 			// Es wird Javascript Fehler ausgelöst
-			utils.V8ContextThrow(info.Context(), "invalid parameters, first must be the url of host and container, second must be a configuration and thrid must be a function name")
+			utils.V8ContextThrow(info.Context(), "The second argument is not an object")
 
 			// Rückgabe
 			return v8.Undefined(info.Context().Isolate())
 		}
 		if !info.Args()[2].IsArray() {
 			// Es wird Javascript Fehler ausgelöst
-			utils.V8ContextThrow(info.Context(), "invalid parameters, first must be the url of host and container, second must be a configuration and thrid must be a function name")
+			utils.V8ContextThrow(info.Context(), "The third argument is not an array")
 
 			// Rückgabe
 			return v8.Undefined(info.Context().Isolate())
@@ -311,7 +368,7 @@ func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate, _ *v8
 		funcSig, err := utils.ParseFunctionSignatureOptionalFunction(rpcSignatureStr)
 		if err != nil {
 			// Es wird Javascript Fehler ausgelöst
-			utils.V8ContextThrow(info.Context(), "invalid function signature")
+			utils.V8ContextThrow(info.Context(), fmt.Sprintf("'%s' is not a valid function signature", rpcSignatureStr))
 
 			// Rückgabe
 			return v8.Undefined(info.Context().Isolate())
@@ -321,7 +378,7 @@ func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate, _ *v8
 		configObj, err := utils.V8ObjectToGoObject(info.Context(), info.Args()[1])
 		if err != nil {
 			// Es wird Javascript Fehler ausgelöst
-			utils.V8ContextThrow(info.Context(), "invalid function share owner container id")
+			utils.V8ContextThrow(info.Context(), "An engine error occurred and the object could not be converted")
 
 			// Rückgabe
 			return v8.Undefined(info.Context().Isolate())
@@ -330,12 +387,12 @@ func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate, _ *v8
 
 		// Alle weiteren Werte werden ausgegegebn
 		exportedParameters := make([]*types.FunctionParameterCapsle, 0)
-		for _, item := range info.Args()[3:] {
+		for place, item := range info.Args()[3:] {
 			// Es wird versucht den Wert in einen Zulässigen Golang Wert umzuwandeln
 			convertedFunctionParameterGoValue, err := utils.V8ValueToGoValue(info.Context(), item)
 			if err != nil {
 				// Es wird Javascript Fehler ausgelöst
-				utils.V8ContextThrow(info.Context(), "invalid parameters, first must be the url of host and container, second must be a configuration and thrid must be a function name")
+				utils.V8ContextThrow(info.Context(), fmt.Sprintf("The %d entry in the array is not a permissible value that can be transferred using RPC", place))
 
 				// Rückgabe
 				return v8.Undefined(info.Context().Isolate())
@@ -358,7 +415,7 @@ func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate, _ *v8
 		// Es wird geprüft ob die Funktion gefunden wurde
 		if !foundFunction {
 			// Es wird Javascript Fehler ausgelöst
-			utils.V8ContextThrow(info.Context(), fmt.Sprintf("unkwon function %s", funcSig.FunctionName))
+			utils.V8ContextThrow(info.Context(), fmt.Sprintf("The function '%s' could not be determined", funcSig.FunctionName))
 
 			// Rückgabe
 			return v8.Undefined(info.Context().Isolate())
@@ -369,15 +426,25 @@ func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate, _ *v8
 			// Die Funktion wird aufgerufen
 			resultState, err := function.EnterFunctionCall(&types.RpcRequest{Parms: exportedParameters})
 			if err != nil {
+				// Der V8 Throw wird erzeugt
 				val, _ := v8.NewValue(info.Context().Isolate(), fmt.Sprintf("function call throw:= %s", err.Error()))
+
+				// Der Fehler wird zurückgegeben
 				resolver.Reject(val)
+
+				// Rückgabe, Routine wird beendet
 				return
 			}
 
 			// Es wird geprüft ob ein Fehler aufgetreten ist
 			if resultState.Error != "" {
+				// Der V8 Throw wird erzeugt
 				val, _ := v8.NewValue(info.Context().Isolate(), resultState.Error)
+
+				// Der Fehler wird zurückgegeben
 				resolver.Reject(val)
+
+				// Rückgabe, Routine wird beendet
 				return
 			}
 
@@ -391,19 +458,19 @@ func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate, _ *v8
 }
 
 // Gibt Details über eine Lokal geteilte Funktion in Javascript zurück
-func (o *RPCModule) rpcGetDetails(_ types.KernelInterface, iso *v8.Isolate, _ *v8.Context) *v8.FunctionTemplate {
+func (o *RPCModule) rpcGetDetails(_ types.KernelInterface, iso *v8.Isolate) *v8.FunctionTemplate {
 	return v8.NewFunctionTemplate(iso, func(info *v8.FunctionCallbackInfo) *v8.Value {
 		return nil
 	})
 }
 
 // Gibt an ob es sich um eine geteilte Lokale Funktion handelt
-func (o *RPCModule) rpcIsShar(kernel types.KernelInterface, iso *v8.Isolate, _ *v8.Context) *v8.FunctionTemplate {
+func (o *RPCModule) rpcIsShar(kernel types.KernelInterface, iso *v8.Isolate) *v8.FunctionTemplate {
 	return v8.NewFunctionTemplate(iso, func(info *v8.FunctionCallbackInfo) *v8.Value {
 		// Es wird geprüft ob mindestens 1 Argument angegeben wurde
 		if len(info.Args()) < 1 {
 			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			utils.V8ContextThrow(info.Context(), "some type erro 1r")
+			utils.V8ContextThrow(info.Context(), "The 'rpcIsShare' function requires at least 1 argument")
 
 			// Der Vorgang wird beendet
 			return nil
@@ -412,7 +479,7 @@ func (o *RPCModule) rpcIsShar(kernel types.KernelInterface, iso *v8.Isolate, _ *
 		// Es wird geprüft das nicht mehr als 999.999.999 Einträge auf dem Stack liegen
 		if len(info.Args()) >= 999999999 {
 			// Die Fehlermeldung wird erstellt und an JS zurückgegeben
-			utils.V8ContextThrow(info.Context(), "to many arguments")
+			utils.V8ContextThrow(info.Context(), "You cannot specify more than 999999999 arguments")
 
 			// Der Vorgang wird beendet
 			return nil
