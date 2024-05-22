@@ -58,6 +58,7 @@ func V8ObjectToGoObject(ctx *v8.Context, val v8.Valuer) (map[string]interface{},
 	var goObject map[string]interface{}
 	err = json.Unmarshal([]byte(strvalue), &goObject)
 	if err != nil {
+		fmt.Println(strvalue, val)
 		log.Fatalf("Error parsing JSON: %s", err)
 	}
 

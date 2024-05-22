@@ -16,7 +16,7 @@
 package types
 
 import (
-	"vnh1/core/consolecache"
+	"vnh1/consolecache"
 
 	v8 "rogchap.com/v8go"
 )
@@ -53,8 +53,8 @@ type APISocketInterface interface {
 type SharedFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
-	GetReturnDType() string
-	EnterFunctionCall(*RpcRequest) (*FunctionCallState, error)
+	GetReturnDatatype() string
+	EnterFunctionCall(*RpcRequest) (*FunctionCallReturn, error)
 }
 
 type WatcherInterface interface {
@@ -90,4 +90,11 @@ type KernelModuleInterface interface {
 	GetName() string
 	Init(KernelInterface, *v8.Isolate, *v8.Context) error
 	OnlyForMain() bool
+}
+
+type ProcessLogSessionInterface interface {
+	LogPrint(string, string, ...interface{})
+	LogPrintSuccs(string, ...interface{})
+	LogPrintError(string, ...interface{})
+	GetID() string
 }

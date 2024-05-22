@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"vnh1/core/databaseservices"
-	"vnh1/core/identkeydatabase"
-	"vnh1/core/vmdb"
+	"vnh1/databaseservices"
 	extmodules "vnh1/extmodules"
+	"vnh1/identkeydatabase"
 	"vnh1/static"
 	"vnh1/types"
 	"vnh1/utils"
+	"vnh1/vmdb"
 )
 
 // Fügt eine Externe Modul Lib dem Core hinzu

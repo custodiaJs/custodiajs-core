@@ -5,14 +5,14 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"vnh1/core/consolecache"
-	"vnh1/core/databaseservices/services"
-	"vnh1/core/kernel"
-	"vnh1/core/vmdb"
+	"vnh1/consolecache"
+	"vnh1/databaseservices/services"
 	extmodules "vnh1/extmodules"
+	"vnh1/kernel"
 	"vnh1/static"
 	"vnh1/types"
 	"vnh1/utils"
+	"vnh1/vmdb"
 )
 
 func (o *CoreVM) GetVMName() string {
@@ -36,6 +36,9 @@ func (o *CoreVM) GetMode() string {
 }
 
 func (o *CoreVM) _routine(scriptContent []byte, syncWaitGroup *sync.WaitGroup) {
+	// Es wird Signalisiert das die VM nicht mehr ausgeführt wird
+	defer syncWaitGroup.Done()
+
 	// Der Mutex wird verwendet
 	o.objectMutex.Lock()
 
@@ -93,9 +96,6 @@ func (o *CoreVM) _routine(scriptContent []byte, syncWaitGroup *sync.WaitGroup) {
 
 	// Log
 	o.LogPrint("", "Eventloop stoped")
-
-	// Es wird Signalisiert das die VM nicht mehr ausgeführt wird
-	syncWaitGroup.Done()
 }
 
 func (o *CoreVM) serveGorutine(syncWaitGroup *sync.WaitGroup) error {

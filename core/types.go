@@ -3,13 +3,13 @@ package core
 import (
 	"crypto/tls"
 	"sync"
-	"vnh1/core/databaseservices"
-	"vnh1/core/databaseservices/services"
-	"vnh1/core/identkeydatabase"
-	"vnh1/core/kernel"
-	"vnh1/core/vmdb"
+	"vnh1/databaseservices"
+	"vnh1/databaseservices/services"
 	"vnh1/extmodules"
+	"vnh1/identkeydatabase"
+	"vnh1/kernel"
 	"vnh1/types"
+	"vnh1/vmdb"
 )
 
 type Core struct {

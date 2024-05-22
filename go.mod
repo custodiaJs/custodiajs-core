@@ -18,6 +18,8 @@ require (
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
+	github.com/tdewolff/parse v2.3.4+incompatible // indirect
+	github.com/tdewolff/parse/v2 v2.7.14 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
@@ -34,6 +36,7 @@ require (
 	github.com/fxamacker/cbor/v2 v2.6.0
 	github.com/gofrs/flock v0.8.1
 	github.com/sirupsen/logrus v1.9.3
+	github.com/tdewolff/minify v2.3.6+incompatible
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/grpc v1.63.2

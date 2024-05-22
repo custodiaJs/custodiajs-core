@@ -45,4 +45,9 @@ const (
 	// Gibt die Verfügabren Quellen eines Funktionsaufrufes an
 	LOCAL  types.RPCCallSource = 0
 	REMOTE types.RPCCallSource = 1
+
+	// Gibt die Verfügabren Typen für einen RPC Request an
+	HTTP_REQUEST      types.RpcRequestMethode = 0
+	IPC_REQUEST       types.RpcRequestMethode = 1
+	WEBSOCKET_REQUEST types.RpcRequestMethode = 2
 )

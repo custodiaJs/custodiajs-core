@@ -15,6 +15,13 @@
 
 package types
 
+import (
+	"crypto/tls"
+	"net/http"
+	"net/url"
+	"vnh1/utils/grsbool"
+)
+
 // VM und Core Status Typen sowie Repo Datentypen
 type ALTERNATIVE_SERVICE_PATH string // Alternativer Socket Path
 type VmState uint8                   // VM Status
@@ -34,6 +41,9 @@ type KernelID string                     // Gibt die ID eines Kernels an
 type KernelFingerprint string            // Gibt die Kernel VM-ID an
 type CoreVMFingerprint KernelFingerprint // Gibt die ID einer CoreVM zurück
 type RPCCallSource uint8                 // Gibt an ob es sich um eine Lokale Anfrage oder eine Remote Anfrage handelt
+
+// RPC Request Methode
+type RpcRequestMethode uint8 // Gibt an, über welche Methode der RPC Request Empfangen wurde
 
 type TransportWhitelistVmEntryData struct {
 	WildCardDomains []string
@@ -70,6 +80,12 @@ type FunctionCallState struct {
 	Return []*FunctionCallReturnData
 }
 
+type FunctionCallReturn struct {
+	*FunctionCallState
+	Resolve func()
+	Reject  func()
+}
+
 type ExportedV8Value struct {
 	Type  string
 	Value interface{}
@@ -88,7 +104,33 @@ type FunctionParameterCapsle struct {
 	CType string
 }
 
+type HttpRpcRequestUserData struct {
+	Username string
+	Password string
+}
+
+type HttpRpcRequest struct {
+	IsConnected      *grsbool.Grsbool
+	ContentLength    int64
+	PostForm         url.Values
+	Header           http.Header
+	Host             string
+	Form             url.Values
+	Proto            string
+	RemoteAddr       string
+	RequestURI       string
+	TLS              *tls.ConnectionState
+	TransferEncoding []string
+	URL              *url.URL
+	Cookies          []*http.Cookie
+	BasicAuth        *HttpRpcRequestUserData
+	UserAgent        string
+}
+
 type RpcRequest struct {
-	Parms      []*FunctionParameterCapsle
-	RpcRequest HttpJsonRequestData
+	RequestType RpcRequestMethode
+	HttpRequest *HttpRpcRequest
+	ProcessLog  ProcessLogSessionInterface
+	Parms       []*FunctionParameterCapsle
+	RpcRequest  HttpJsonRequestData
 }
