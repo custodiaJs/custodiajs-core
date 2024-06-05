@@ -1,6 +1,6 @@
 # vnh1
 
-( EN | [DE](README_DE) )
+( EN | [DE](../blob/main/README_DE) )
 
 ## Description
 
