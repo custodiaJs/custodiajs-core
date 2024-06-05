@@ -304,7 +304,7 @@ func (o *SharedFunction) _callInKernelEventLoop(_ *v8.Context, request *SharedFu
 	lopr.SetResult(nil)
 }
 
-// Ruft die Geteilte Funktion auf
+// Ruft die Geteilte Funktion auf,s
 func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) error {
 	// Es wird geprüft ob die Aktuelle SharedFunction "o" NULL ist
 	if o == nil {
