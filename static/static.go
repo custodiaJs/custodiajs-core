@@ -50,4 +50,8 @@ const (
 	HTTP_REQUEST      types.RpcRequestMethode = 0
 	IPC_REQUEST       types.RpcRequestMethode = 1
 	WEBSOCKET_REQUEST types.RpcRequestMethode = 2
+
+	// Gibt die Verfügabren EventLoop Methoden an
+	KERNEL_EVENT_LOOP_FUNCTION    types.KernelEventLoopOperationMethode = 0
+	KERNEL_EVENT_LOOP_SOURCE_CODE types.KernelEventLoopOperationMethode = 1
 )

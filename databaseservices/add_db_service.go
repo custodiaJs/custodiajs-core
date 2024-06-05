@@ -12,7 +12,7 @@ import (
 )
 
 // Es wird ein neuer Datenbankdienst hinzugefügt
-func (o *DbService) AddDatabaseService(dmdb *vmdb.VMDatabaseData) error {
+func (o *DbService) AddDatabaseService(dmdb *vmdb.VMEntryBaseData) error {
 	// Der Mutex wird verwendet
 	o.mutex.Lock()
 	defer o.mutex.Unlock()

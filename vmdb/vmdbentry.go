@@ -65,10 +65,10 @@ func (o *VmDBEntry) GetAllowedHttpSources() map[string]bool {
 	return a
 }
 
-func (o *VmDBEntry) GetAllDatabaseServices() []*VMDatabaseData {
-	vmdlist := make([]*VMDatabaseData, 0)
+func (o *VmDBEntry) GetAllDatabaseServices() []*VMEntryBaseData {
+	vmdlist := make([]*VMEntryBaseData, 0)
 	for _, item := range o.manifestFile.GetAllDatabaseServices() {
-		vmdlist = append(vmdlist, &VMDatabaseData{
+		vmdlist = append(vmdlist, &VMEntryBaseData{
 			Type:     item.Type,
 			Host:     item.Host,
 			Port:     item.Port,

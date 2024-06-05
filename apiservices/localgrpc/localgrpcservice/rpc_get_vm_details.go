@@ -12,7 +12,7 @@ import (
 
 func (s *CliGrpcServer) GetVMDetails(ctx context.Context, vmDetailParms *localgrpcproto.VmDetailsParms) (*localgrpcproto.VmDetailsResponse, error) {
 	// Die VM wird ermittelt
-	var foundedVM types.CoreVMInterface
+	var foundedVM types.VmInterface
 	var foundVM bool
 	var err error
 	switch vmDetailParms.Value.(type) {

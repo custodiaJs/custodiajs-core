@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"time"
 	"vnh1/types"
+	"vnh1/utils/eventloop"
 	rpcrequest "vnh1/utils/rpc_request"
 
 	v8 "rogchap.com/v8go"
@@ -88,144 +89,242 @@ func (o *SharedFunction) _callInKernelEventLoopCheck(ctx *v8.Context, prom *v8.P
 		// Planen Sie die nächste Überprüfung, ohne aktives Warten zu verwenden
 		go func() {
 			time.Sleep(1 * time.Millisecond)
-			o.kernel.AddFunctionCallToEventLoop(func(ctx *v8.Context) error {
-				return o._callInKernelEventLoopCheck(ctx, prom, request)
-			})
+			o.kernel.AddToEventLoop(eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+				o._callInKernelEventLoopCheck(ctx, prom, request)
+			}))
 		}()
-	case v8.Fulfilled:
-		ctx.PerformMicrotaskCheckpoint()
 	case v8.Rejected:
 		ctx.PerformMicrotaskCheckpoint()
 	}
 	return nil
 }
 
-// Wird verwendet um die Funktion innerhalb des Kernels aufzurufen
-func (o *SharedFunction) _callInKernelEventLoop(ctx *v8.Context, request *SharedFunctionRequest, req *types.RpcRequest) error {
-	// Die Parameter werden umgewandelt
-	convertedValues, err := convertRequestParametersToV8Parameters(ctx.Isolate(), o.signature.Params, req.Parms)
-	if err != nil {
-		return fmt.Errorf("EnterFunctionCall: " + err.Error())
-	}
-
-	// Das Request Objekt wird erstellt
-	requestObj, err := makeSharedFunctionObject(ctx, request, req)
-	if err != nil {
-		return fmt.Errorf("EnterFunctionCall: " + err.Error())
-	}
-
-	// Die Finalen Argumente werden erstellt
-	finalArguments := make([]v8.Valuer, 0)
-	finalArguments = append(finalArguments, requestObj)
-	finalArguments = append(finalArguments, convertedValues...)
-
-	// Legt den JS Code fest, dieser wird als Wrapper ausgeführt
-	code := `
-	(funct, proxyobject, ...parms) => {
-		console = { log: proxyobject.proxyShieldConsoleLog, error: proxyobject.proxyShieldErrorLog };
-		clearInterval = () => proxyobject.clearInterval();
-		clearTimeout = () => proxyobject.clearTimeout();
-		setInterval = () => proxyobject.setInterval();
-		setTimeout = () => proxyobject.setTimeout();
-		Resolve = (...parms) =>  proxyobject.resolve(...parms);
-		Promise = class vnh1Promise extends Promise {
-			constructor(executor) {
-				const {resolveProxy, rejectProxy} = proxyobject.newPromise();
-				const wrappedExecutor = (resolve, reject) => {
-					executor(
-						(value) => {
-							resolveProxy();
-							resolve(value);
-						},
-						(reason) => {
-							rejectProxy();
-							reject(reason);
-						}
-					);
-				};
-				super(wrappedExecutor);
-			}
-		}
-		return funct(...parms);
-	}`
-
-	// Der Code für die Proxy Shield Funktion wird ersteltl
-	procxyFunction, err := ctx.RunScript(code, "rpc_function_call_proxy_shield.js")
-	if err != nil {
-		return fmt.Errorf("EnterFunctionCall: " + err.Error())
-	}
-
-	// Es wird geprüft ob es sich um eine Funktion handelt,
-	// wenn ja wird die Funktion extrahiert
-	proxFunction, err := procxyFunction.AsFunction()
-	if err != nil {
-		return fmt.Errorf("EnterFunctionCall: " + err.Error())
-	}
-
-	// Das Proxy Objekt wird erzeugt
-	proxyObject, err := makeProxyForRPCCall(ctx, request)
-	if err != nil {
-		return fmt.Errorf("EnterFunctionCall: " + err.Error())
-	}
-
-	// Die Argumente für den Proxy werden erstellt
-	proxArguments := []v8.Valuer{o.v8Function, proxyObject}
-	proxArguments = append(proxArguments, finalArguments...)
-
-	// Die Funktion wird ausgdeneführt
-	result, err := proxFunction.Call(v8.Undefined(ctx.Isolate()), proxArguments...)
-	if err != nil {
-		panic(err)
-	}
-
-	// Es wird geprüft ob es sich um ein Promises handelt
-	if !result.IsPromise() {
-		panic("isnr promise")
-	}
-
-	// Das Promises Objekt wird erzeugt
-	prom, err := result.AsPromise()
-	if err != nil {
-		panic(err)
-	}
-
-	// Wird ausgeführt wenn die Funktion erfolgreich aufgerufen wurde
-	prom.Then(func(info *v8.FunctionCallbackInfo) *v8.Value {
-		request.functionCallFinal()
-		return v8.Undefined(info.Context().Isolate())
-	}, func(info *v8.FunctionCallbackInfo) *v8.Value {
-		request.functionCallException(info.Args()[0].String())
-		return v8.Undefined(info.Context().Isolate())
-	})
-
+// Wird verwendet um die Funktion innerhalb des Kernels aufzurufen (Schritt 5)
+func (o *SharedFunction) _callInKernelEventLoopStep5(request *SharedFunctionRequest, _ *types.RpcRequest, _ *v8.Value, prom *v8.Promise) error {
 	// Es wird ein neuer Eintrag zu der Event Schleife hinzugefügt
-	o.kernel.AddFunctionCallToEventLoop(func(ctx *v8.Context) error { return o._callInKernelEventLoopCheck(ctx, prom, request) })
+	return o.kernel.AddToEventLoop(eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+		err := o._callInKernelEventLoopCheck(ctx, prom, request)
+		if err != nil {
+			// Der Fehler wird zurückgegeben
+			klopr.SetError(err)
+		}
 
-	// Es ist kein Fehler aufgetreten
-	return nil
+		// Signalisiert dass der Vorgang erfolgreich war
+		klopr.SetResult(nil)
+	}))
+}
+
+// Wird verwendet um die Funktion innerhalb des Kernels aufzurufen (Schritt 4)
+func (o *SharedFunction) _callInKernelEventLoopStep4(request *SharedFunctionRequest, req *types.RpcRequest, result *v8.Value) error {
+	// Diese Funktion wird verwendet um die Antwort zurückzusenden
+	return o.kernel.AddToEventLoop(eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+		// Es wird ermittelt ob die Verbindung getrennt wurde
+		if !req.HttpRequest.IsConnected.Bool() {
+			klopr.SetError(fmt.Errorf("connection closed"))
+			return
+		}
+
+		// Es wird geprüft ob es sich um ein Promises handelt
+		if !result.IsPromise() {
+			panic("isnr promise")
+		}
+
+		// Das Promises Objekt wird erzeugt
+		prom, err := result.AsPromise()
+		if err != nil {
+			panic(err)
+		}
+
+		// Wird ausgeführt wenn die Funktion erfolgreich aufgerufen wurde
+		prom.Then(func(info *v8.FunctionCallbackInfo) *v8.Value {
+			request.functionCallFinal()
+			return v8.Undefined(info.Context().Isolate())
+		}, func(info *v8.FunctionCallbackInfo) *v8.Value {
+			request.functionCallException(info.Args()[0].String())
+			return v8.Undefined(info.Context().Isolate())
+		})
+
+		// Der 5. Schritt des Funktionsaufrufes wird durchgeführt
+		if err := o._callInKernelEventLoopStep5(request, req, result, prom); err != nil {
+			return
+		}
+
+		// Signalisiert dass der Vorgang erfolgreich war
+		klopr.SetResult(nil)
+	}))
+}
+
+// Wird verwendet um die Funktion innerhalb des Kernels aufzurufen (Schritt 3)
+func (o *SharedFunction) _callInKernelEventLoopStep3(request *SharedFunctionRequest, req *types.RpcRequest, proxFunction *v8.Function, proxArguments []v8.Valuer) error {
+	// Der Finale Funktionsaufruf wird vorbereitet
+	return o.kernel.AddToEventLoop(eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+		// Es wird ermittelt ob die Verbindung getrennt wurde
+		if !req.HttpRequest.IsConnected.Bool() {
+			klopr.SetError(fmt.Errorf("connection closed"))
+			return
+		}
+
+		// Die Funktion wird ausgeführt
+		result, err := proxFunction.Call(v8.Undefined(ctx.Isolate()), proxArguments...)
+		if err != nil {
+			panic(err)
+		}
+
+		// Der 4. Schritt des Funktionsaufrufes wird durchgeführt
+		if err := o._callInKernelEventLoopStep4(request, req, result); err != nil {
+			return
+		}
+
+		// Signalisiert dass der Vorgang erfolgreich war
+		klopr.SetResult(nil)
+	}))
+}
+
+// Wird verwendet um die Funktion innerhalb des Kernels aufzurufen (Schritt 2)
+func (o *SharedFunction) _callInKernelEventLoopStep2(request *SharedFunctionRequest, req *types.RpcRequest, requestObj *v8.Object, convertedValues []v8.Valuer) error {
+	return o.kernel.AddToEventLoop(eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+		// Die Finalen Argumente werden erstellt
+		finalArguments := make([]v8.Valuer, 0)
+		finalArguments = append(finalArguments, requestObj)
+		finalArguments = append(finalArguments, convertedValues...)
+
+		// Legt den JS Code fest, dieser wird als Wrapper ausgeführt
+		code := `
+		(funct, proxyobject, ...parms) => {
+			console = { log: proxyobject.proxyShieldConsoleLog, error: proxyobject.proxyShieldErrorLog };
+			clearInterval = () => proxyobject.clearInterval();
+			clearTimeout = () => proxyobject.clearTimeout();
+			setInterval = () => proxyobject.setInterval();
+			setTimeout = () => proxyobject.setTimeout();
+			Resolve = (...parms) =>  proxyobject.resolve(...parms);
+			Promise = class vnh1Promise extends Promise {
+				constructor(executor) {
+					const {resolveProxy, rejectProxy} = proxyobject.newPromise();
+					const wrappedExecutor = (resolve, reject) => {
+						executor(
+							(value) => {
+								resolveProxy();
+								resolve(value);
+							},
+							(reason) => {
+								rejectProxy();
+								reject(reason);
+							}
+						);
+					};
+					super(wrappedExecutor);
+				}
+			}
+			return funct(...parms);
+		}`
+
+		// Der Code für die Proxy Shield Funktion wird ersteltl
+		procxyFunction, err := ctx.RunScript(code, "rpc_function_call_proxy_shield.js")
+		if err != nil {
+			return
+		}
+
+		// Es wird geprüft ob es sich um eine Funktion handelt,
+		// wenn ja wird die Funktion extrahiert
+		proxFunction, err := procxyFunction.AsFunction()
+		if err != nil {
+			return
+		}
+
+		// Das Proxy Objekt wird erzeugt
+		proxyObject, err := makeProxyForRPCCall(ctx, request)
+		if err != nil {
+			return
+		}
+
+		// Die Argumente für den Proxy werden erstellt
+		proxArguments := []v8.Valuer{o.v8Function, proxyObject}
+		proxArguments = append(proxArguments, finalArguments...)
+
+		// Es wird ermittelt ob die Verbindung getrennt wurde
+		if !req.HttpRequest.IsConnected.Bool() {
+			klopr.SetError(fmt.Errorf("connection closed"))
+			return
+		}
+
+		// Der 3. Schritt des Funktionsaufrufes wird durchgeführt
+		if err := o._callInKernelEventLoopStep3(request, req, proxFunction, proxArguments); err != nil {
+			return
+		}
+
+		// Signalisiert dass der Vorgang erfolgreich war
+		klopr.SetResult(nil)
+	}))
+}
+
+// Wird verwendet um die Funktion innerhalb des Kernels aufzurufen (Schritt 1)
+func (o *SharedFunction) _callInKernelEventLoop(_ *v8.Context, request *SharedFunctionRequest, req *types.RpcRequest, lopr *types.KernelLoopOperation) {
+	// Es wird ermittelt ob die Verbindung getrennt wurde
+	if !req.HttpRequest.IsConnected.Bool() {
+		lopr.SetError(fmt.Errorf("connection closed"))
+		return
+	}
+
+	// Fügt ein Event zur Loop hinzu
+	addErr := o.kernel.AddToEventLoop(eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+		// Die Parameter werden umgewandelt
+		convertedValues, err := convertRequestParametersToV8Parameters(ctx.Isolate(), o.signature.Params, req.Parms)
+		if err != nil {
+			return
+		}
+
+		// Das Request Objekt wird erstellt
+		requestObj, err := makeSharedFunctionObject(ctx, request, req)
+		if err != nil {
+			return
+		}
+
+		// Es wird ermittelt ob die Verbindung getrennt wurde
+		if !req.HttpRequest.IsConnected.Bool() {
+			klopr.SetError(fmt.Errorf("connection closed"))
+			return
+		}
+
+		// Der 2. Schritt des Funktionsaufrufes wird durchgeführt
+		if err := o._callInKernelEventLoopStep2(request, req, requestObj, convertedValues); err != nil {
+			return
+		}
+
+		// Signalisiert dass der Vorgang erfolgreich war
+		klopr.SetResult(nil)
+	}))
+
+	// Es wird geprüft ob ein Fehler aufgetreten ist
+	if addErr != nil {
+		lopr.SetError(addErr)
+		return
+	}
+
+	// Es wird Signalisiert dass der Vorgang erflgreich war
+	lopr.SetResult(nil)
 }
 
 // Ruft die Geteilte Funktion auf
-func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) (*types.FunctionCallReturn, error) {
+func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) error {
 	// Es wird geprüft ob die Aktuelle SharedFunction "o" NULL ist
 	if o == nil {
-		return nil, &types.MultiError{ErrorValue: fmt.Errorf("EnterFunctionCall: o is null"), VmErrorValue: fmt.Errorf("internal error")}
+		return &types.MultiError{ErrorValue: fmt.Errorf("EnterFunctionCall: o is null"), VmErrorValue: fmt.Errorf("internal error")}
 	}
 
 	// Es wird geprüft ob der RPC Request "req" NULL ist
 	if req == nil {
-		return nil, &types.MultiError{ErrorValue: fmt.Errorf("EnterFunctionCall: req is null"), VmErrorValue: fmt.Errorf("request error")}
+		return &types.MultiError{ErrorValue: fmt.Errorf("EnterFunctionCall: req is null"), VmErrorValue: fmt.Errorf("request error")}
 	}
 
 	// Es wird geprüft ob das Req Objekt eine Verbindung besitzt
 	if !rpcrequest.ConnectionIsOpen(req) {
 		o.kernel.LogPrint("RPC", "Process aborted, connection closed")
-		return nil, nil
+		return nil
 	}
 
 	// Es wird geprüft ob die Angeforderte Anzahl an Parametern vorhanden ist
 	if len(req.Parms) != len(o.signature.Params) {
-		return nil, fmt.Errorf("EnterFunctionCall: invalid parameters")
+		return fmt.Errorf("EnterFunctionCall: invalid parameters")
 	}
 
 	// Es wird ein neues Request Objekt
@@ -234,64 +333,77 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) (*types.Functi
 	// Es wird geprüft ob das Req Objekt eine Verbindung besitzt
 	if !rpcrequest.ConnectionIsOpen(req) {
 		o.kernel.LogPrint("RPC", "Process aborted, connection closed")
-		return nil, nil
+		return nil
 	}
+
+	// Die Loop Aufgabe wird erzeugt
+	kernelLoopOperation := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, lopr *types.KernelLoopOperation) {
+		o._callInKernelEventLoop(ctx, request, req, lopr)
+	})
 
 	// Die Funktion wird an den Eventloop des Kernels übergeben
-	err := o.kernel.AddFunctionCallToEventLoop(func(ctx *v8.Context) error {
-		return o._callInKernelEventLoop(ctx, request, req)
-	})
-	if err != nil {
-		return nil, err
+	if err := o.kernel.AddToEventLoop(kernelLoopOperation); err != nil {
+		return fmt.Errorf("EnterFunctionCall: " + err.Error())
 	}
 
-	// Die Daten werden aus dem Request ausgelesen
-	returnData, err := request.waitOfResponse()
-	if err != nil {
-		// Es wird geprüft ob die Verbindung getrennt wurde, wenn ja, wird der Vorgang abgebrochen
-		if !rpcrequest.ConnectionIsOpen(req) {
-			o.kernel.LogPrint("RPC", "Process aborted, connection closed")
-			return nil, nil
+	// Der Vorgang wird in einer neuen Goroutine durchgeführt
+	go func() {
+		// Es wird darauf gewartet das die Loop Operation erfolgreich abgeschlossen wurde
+		_, err := kernelLoopOperation.WaitOfResponse()
+		if err != nil {
+			panic(err)
 		}
 
-		// Es handelt sich um einen Mysteriösen Fehler
-		return nil, &types.MultiError{ErrorValue: fmt.Errorf("EnterFunctionCall: " + err.Error()), VmErrorValue: fmt.Errorf("internal error")}
-	}
+		// Die Daten werden aus dem Request ausgelesen
+		returnData, err := request.waitOfResponse()
+		if err != nil {
+			// Es wird geprüft ob die Verbindung getrennt wurde, wenn ja, wird der Vorgang abgebrochen
+			if !rpcrequest.ConnectionIsOpen(req) {
+				o.kernel.LogPrint("RPC", "Process aborted, connection closed")
+				return
+			}
 
-	// Es wird geprüft ob daten zurückgelifert wurden
-	if returnData == nil {
-		// Es wird geprüft ob die Verbindung getrennt wurde, wenn ja, wird der Vorgang abgebrochen
-		if !rpcrequest.ConnectionIsOpen(req) {
-			o.kernel.LogPrint("RPC", "Process aborted, connection closed")
-			return nil, nil
+			// Es handelt sich um einen Mysteriösen Fehler
+			return //&types.MultiError{ErrorValue: fmt.Errorf("EnterFunctionCall: " + err.Error()), VmErrorValue: fmt.Errorf("internal error")}
 		}
 
-		// Es handelt sich um einen Mysteriösen Fehler
-		return nil, &types.MultiError{ErrorValue: fmt.Errorf("EnterFunctionCall: invalid returned data"), VmErrorValue: fmt.Errorf("internal error")}
-	}
+		// Es wird geprüft ob daten zurückgelifert wurden
+		if returnData == nil {
+			// Es wird geprüft ob die Verbindung getrennt wurde, wenn ja, wird der Vorgang abgebrochen
+			if !rpcrequest.ConnectionIsOpen(req) {
+				o.kernel.LogPrint("RPC", "Process aborted, connection closed")
+				return
+			}
 
-	// Diese Funktion wird aufgerufen, sobald die Antwort Übermittelt wurde
-	resolveTransmittedData := func() {
-		request.clearAndDestroy()
-	}
+			// Es handelt sich um einen Mysteriösen Fehler
+			return //&types.MultiError{ErrorValue: fmt.Errorf("EnterFunctionCall: invalid returned data"), VmErrorValue: fmt.Errorf("internal error")}
+		}
 
-	// Diese Funktion wird aufgerufen, wenn das übermitteln der Daten fehlgeschlagen ist
-	rejectTransmittedData := func() {
+		// Diese Funktion wird aufgerufen, sobald die Antwort Übermittelt wurde
+		resolveTransmittedData := func() {
+			request.clearAndDestroy()
+		}
 
-	}
+		// Diese Funktion wird aufgerufen, wenn das übermitteln der Daten fehlgeschlagen ist
+		rejectTransmittedData := func() {
+		}
 
-	// Das Rückgabe Objekt wird erstellt
-	returnObject := &types.FunctionCallReturn{
-		FunctionCallState: returnData,
-		Resolve:           resolveTransmittedData,
-		Reject:            rejectTransmittedData,
-	}
+		// Das Rückgabe Objekt wird erstellt
+		returnObject := &types.FunctionCallReturn{
+			FunctionCallState: returnData,
+			Resolve:           resolveTransmittedData,
+			Reject:            rejectTransmittedData,
+		}
 
-	// Log
-	o.kernel.LogPrint(fmt.Sprintf("RPC(%s)", req.ProcessLog.GetID()), "'%s' has return", o.name)
+		// Das Rückgabe Objekt wird zurückgegeben
+		req.Resolve <- returnObject
+
+		// Log
+		o.kernel.LogPrint(fmt.Sprintf("RPC(%s)", req.ProcessLog.GetID()), "'%s' has return", o.name)
+	}()
 
 	// Das Ergebniss wird zurückgegeben
-	return returnObject, nil
+	return nil
 }
 
 // Wandelt die RPC Argumente in V8 Argumente für den Aktuellen Context um

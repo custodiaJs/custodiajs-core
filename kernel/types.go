@@ -20,10 +20,11 @@ type Kernel struct {
 	mutex             *sync.Mutex
 	core              types.CoreInterface
 	console           *consolecache.ConsoleOutputCache
-	vmLink            types.CoreVMInterface
+	vmLink            types.VmInterface
 	register          map[string]interface{}
 	vmImports         map[string]*v8.Value
 	dbEntry           *vmdb.VmDBEntry
-	eventLoopStack    []func(*v8.Context) error
+	eventLoopStack    []types.KernelEventLoopOperationInterface
 	eventLoopLockCond *sync.Cond
+	hasCloseSignal    bool
 }

@@ -51,7 +51,10 @@ func (o *SharedFunctionRequest) resolveFunctionCall(info *v8.FunctionCallbackInf
 	}
 
 	// Speichert alle FunktionsStates ab
-	resolves := &types.FunctionCallState{State: "ok", Return: make([]*types.FunctionCallReturnData, 0)}
+	resolves := &types.FunctionCallState{
+		Return: make([]*types.FunctionCallReturnData, 0),
+		State:  "ok",
+	}
 
 	// Die Einzelnen Parameter werden abgearbeitet
 	for _, item := range info.Args() {
@@ -312,7 +315,17 @@ func (o *SharedFunctionRequest) startTimeoutTimer() {
 
 // Erstellt einen neuen SharedFunctionRequest
 func newSharedFunctionRequest(kernel types.KernelInterface, returnDatatype string, rpcRequest *types.RpcRequest) *SharedFunctionRequest {
-	return &SharedFunctionRequest{resolveChan: make(chan *types.FunctionCallState), kernel: kernel, _wasResponded: false, _returnDataType: returnDatatype, _rprequest: rpcRequest}
+	// Das Rückgabeobjekt wird erstellt
+	returnObject := &SharedFunctionRequest{
+		resolveChan:     make(chan *types.FunctionCallState),
+		_returnDataType: returnDatatype,
+		_wasResponded:   false,
+		_rprequest:      rpcRequest,
+		kernel:          kernel,
+	}
+
+	// Das Objekt wird zurückgegeben
+	return returnObject
 }
 
 // Überprüft ob ein SharedFunctionRequest korrekt aufgebaut ist
@@ -383,15 +396,21 @@ func convertArguments(info *v8.FunctionCallbackInfo) []string {
 // Die Funktion wird erstellt
 func makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequest, rrpcrequest *types.RpcRequest) (*v8.Object, error) {
 	// Das Requestobjekt wird ersellt
-	obj := v8.NewObjectTemplate(context.Isolate())
+	objTemplate := v8.NewObjectTemplate(context.Isolate())
 
 	// Die Resolve Funktion wird festgelegt
-	if err := obj.Set("Resolve", v8.NewFunctionTemplate(context.Isolate(), request.resolveFunctionCall)); err != nil {
+	if err := objTemplate.Set("Resolve", v8.NewFunctionTemplate(context.Isolate(), request.resolveFunctionCall)); err != nil {
 		return nil, fmt.Errorf("makeSharedFunctionObject: " + err.Error())
 	}
 
 	// Die Reject Funktion wird festgelegt
-	if err := obj.Set("Reject", v8.NewFunctionTemplate(context.Isolate(), request.rejectFunctionCall)); err != nil {
+	if err := objTemplate.Set("Reject", v8.NewFunctionTemplate(context.Isolate(), request.rejectFunctionCall)); err != nil {
+		return nil, fmt.Errorf("makeSharedFunctionObject: " + err.Error())
+	}
+
+	// Das Objekt wird erzeugt
+	obj, err := objTemplate.NewInstance(context)
+	if err != nil {
 		return nil, fmt.Errorf("makeSharedFunctionObject: " + err.Error())
 	}
 
@@ -428,6 +447,48 @@ func makeSharedFunctionObject(context *v8.Context, request *SharedFunctionReques
 
 			// Der Eintrag wird hinzugefügt
 			if err := cookies.Set(item.Name, cookieObject); err != nil {
+				panic(err)
+				return nil, fmt.Errorf("SharedLocalFunction->EnterFunctionCall: " + err.Error())
+			}
+		}
+
+		// Der Header wird vorbereitet
+		headersTemplate := v8.NewObjectTemplate(context.Isolate())
+		headers, err := headersTemplate.NewInstance(context)
+		if err != nil {
+			return nil, fmt.Errorf("SharedLocalFunction->EnterFunctionCall: " + err.Error())
+		}
+
+		// Die Header werden extrahiert
+		for k, v := range rrpcrequest.HttpRequest.Header {
+			// Es wird ein neues Slices erzeugt
+			sliceV8, err := context.RunScript("(function() { return []; })();", "slice.js")
+			if err != nil {
+				fmt.Println(err)
+				return nil, fmt.Errorf("SharedLocalFunction->EnterFunctionCall: " + err.Error())
+			}
+
+			// Das Objekt wird ausgelesen
+			sliceObject, err := sliceV8.AsObject()
+			if err != nil {
+				panic(err)
+			}
+
+			// Die Einzelnen Werte werden umgewandelt
+			for _, value := range v {
+				// Der Wert wird umgewandelt
+				v8Value, err := v8.NewValue(context.Isolate(), value)
+				if err != nil {
+					panic(err)
+				}
+
+				// Der Wert wird hinzugefügt
+				sliceObject.Object().MethodCall("push", v8Value)
+			}
+
+			// Der Eintrag wird hinzugefügt
+			if err := headers.Set(k, sliceObject); err != nil {
+				panic(err)
 				return nil, fmt.Errorf("SharedLocalFunction->EnterFunctionCall: " + err.Error())
 			}
 		}
@@ -437,6 +498,7 @@ func makeSharedFunctionObject(context *v8.Context, request *SharedFunctionReques
 
 		// Die Werte werden hinzugefügt
 		if err := httpObj.Set("IsConnected", v8.NewFunctionTemplate(context.Isolate(), isConnected)); err != nil {
+			panic(err)
 			return nil, fmt.Errorf("SharedLocalFunction->EnterFunctionCall: " + err.Error())
 		}
 		if err := httpObj.Set("ContentLength", float64(rrpcrequest.HttpRequest.ContentLength)); err != nil {
@@ -458,8 +520,19 @@ func makeSharedFunctionObject(context *v8.Context, request *SharedFunctionReques
 			return nil, fmt.Errorf("SharedLocalFunction->EnterFunctionCall: " + err.Error())
 		}
 
+		// Das Finale Objekt wird erzeugt
+		http, err := httpObj.NewInstance(context)
+		if err != nil {
+			return nil, fmt.Errorf("SharedLocalFunction->EnterFunctionCall: " + err.Error())
+		}
+
+		// Die Header werden hinzugefügt
+		if err := http.Set("Headers", headers); err != nil {
+			return nil, fmt.Errorf("SharedLocalFunction->EnterFunctionCall: " + err.Error())
+		}
+
 		// Das Objekt wird abgespeichert
-		if err := obj.Set("http", httpObj); err != nil {
+		if err := obj.Set("http", http); err != nil {
 			return nil, fmt.Errorf("SharedLocalFunction->EnterFunctionCall: " + err.Error())
 		}
 	case static.WEBSOCKET_REQUEST:
@@ -483,14 +556,8 @@ func makeSharedFunctionObject(context *v8.Context, request *SharedFunctionReques
 		return nil, fmt.Errorf("makeSharedFunctionObject: " + err.Error())
 	}
 
-	// Das Finale Objekt wird erstellt
-	fobj, err := obj.NewInstance(context)
-	if err != nil {
-		return nil, fmt.Errorf("makeSharedFunctionObject: " + err.Error())
-	}
-
 	// Rückgabe ohne Fehler
-	return fobj, nil
+	return obj, nil
 }
 
 // Das This Objekt wird erstellt

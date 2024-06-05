@@ -16,29 +16,35 @@
 package types
 
 import (
+	"sync"
 	"vnh1/consolecache"
+	"vnh1/databaseservices/services"
 
 	v8 "rogchap.com/v8go"
 )
 
 type CoreInterface interface {
-	GetAllVMs() []CoreVMInterface
+	GetAllVMs() []VmInterface
 	GetAllActiveScriptContainerIDs() []string
-	GetScriptContainerVMByID(vmid string) (CoreVMInterface, bool, error)
-	GetScriptContainerByVMName(string) (CoreVMInterface, error)
+	GetScriptContainerVMByID(vmid string) (VmInterface, bool, error)
+	GetScriptContainerByVMName(string) (VmInterface, error)
 }
 
-type CoreVMInterface interface {
+type VmInterface interface {
 	GetVMName() string
 	GetFingerprint() CoreVMFingerprint
 	GetConsoleOutputWatcher() WatcherInterface
 	GetAllSharedFunctions() []SharedFunctionInterface
-	GetSharedFunctionBySignature(sourceType RPCCallSource, funcSignature *FunctionSignature) (SharedFunctionInterface, bool, error)
+	Serve(*sync.WaitGroup) error
+	GetSharedFunctionBySignature(RPCCallSource, *FunctionSignature) (SharedFunctionInterface, bool, error)
 	GetWhitelist() []*TransportWhitelistVmEntryData
 	ValidateRPCRequestSource(soruce string) bool
-	GetDatabaseServices() []*VMDatabaseData
+	GetDatabaseServices() []*VMEntryBaseData
+	AddDatabaseServiceLink(dbserviceLink services.DbServiceLinkinterface) error
 	GetRootMemberIDS() []*CAMemberData
 	GetStartingTimestamp() uint64
+	GetKId() KernelID
+	SignalShutdown()
 	GetState() VmState
 	GetOwner() string
 	GetRepoURL() string
@@ -54,7 +60,7 @@ type SharedFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
 	GetReturnDatatype() string
-	EnterFunctionCall(*RpcRequest) (*FunctionCallReturn, error)
+	EnterFunctionCall(*RpcRequest) error
 }
 
 type WatcherInterface interface {
@@ -78,9 +84,9 @@ type KernelInterface interface {
 	GloablRegisterRead(string) interface{}
 	GetNewIsolateContext() (*v8.Isolate, *v8.Context, error)
 	GetCAMembershipCerts() []VmCaMembershipCertInterface
-	AddFunctionCallToEventLoop(func(*v8.Context) error) error
+	AddToEventLoop(KernelEventLoopOperationInterface) error
 	GetFingerprint() KernelFingerprint
-	AsCoreVM() CoreVMInterface
+	AsCoreVM() VmInterface
 	GetCAMembershipIDs() []string
 	GetCore() CoreInterface
 	GetKId() KernelID
@@ -97,4 +103,14 @@ type ProcessLogSessionInterface interface {
 	LogPrintSuccs(string, ...interface{})
 	LogPrintError(string, ...interface{})
 	GetID() string
+}
+
+type KernelEventLoopOperationInterface interface {
+	GetType() KernelEventLoopOperationMethode
+	GetFunction() KernelLoopV8Function
+	WaitOfResponse() (*v8.Value, error)
+	GetOperation() *KernelLoopOperation
+	GetSourceCode() string
+	SetResult(*v8.Value)
+	SetError(error)
 }

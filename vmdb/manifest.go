@@ -19,10 +19,10 @@ func (o *ManifestFile) GetFileHash() string {
 	return strings.ToLower(o.fileHash)
 }
 
-func (o *ManifestFile) GetAllDatabaseServices() []*VMDatabaseData {
-	vmdlist := make([]*VMDatabaseData, 0)
+func (o *ManifestFile) GetAllDatabaseServices() []*VMEntryBaseData {
+	vmdlist := make([]*VMEntryBaseData, 0)
 	for _, item := range o.manifest.Databases {
-		vmdlist = append(vmdlist, &VMDatabaseData{
+		vmdlist = append(vmdlist, &VMEntryBaseData{
 			Type:     item.Type,
 			Host:     item.Host,
 			Port:     item.Port,

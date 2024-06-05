@@ -20,6 +20,8 @@ import (
 	"net/http"
 	"net/url"
 	"vnh1/utils/grsbool"
+
+	v8 "rogchap.com/v8go"
 )
 
 // VM und Core Status Typen sowie Repo Datentypen
@@ -45,6 +47,12 @@ type RPCCallSource uint8                 // Gibt an ob es sich um eine Lokale An
 // RPC Request Methode
 type RpcRequestMethode uint8 // Gibt an, über welche Methode der RPC Request Empfangen wurde
 
+// Kernel Loop Operation Methode
+type KernelEventLoopOperationMethode uint8
+
+// Gibt die Funktion an, welche aufgerufen werden soll
+type KernelLoopV8Function func(*v8.Context, *KernelLoopOperation)
+
 type TransportWhitelistVmEntryData struct {
 	WildCardDomains []string
 	ExactDomains    []string
@@ -59,7 +67,7 @@ type CAMemberData struct {
 	ID          string
 }
 
-type VMDatabaseData struct {
+type VMEntryBaseData struct {
 	Type     string
 	Host     string
 	Port     int
@@ -133,4 +141,10 @@ type RpcRequest struct {
 	ProcessLog  ProcessLogSessionInterface
 	Parms       []*FunctionParameterCapsle
 	RpcRequest  HttpJsonRequestData
+	Resolve     chan *FunctionCallReturn
+}
+
+type KernelLoopOperation struct {
+	SetError  func(error)
+	SetResult func(*v8.Value)
 }

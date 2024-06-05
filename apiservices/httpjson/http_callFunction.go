@@ -289,37 +289,47 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 		}
 	}
 
+	// Das HTTP Request Objekt wird erstellt
+	requestHttpObject := &types.HttpRpcRequest{
+		IsConnected:      isConnected,
+		ContentLength:    r.ContentLength,
+		PostForm:         r.PostForm,
+		Header:           r.Header,
+		Host:             r.Host,
+		Form:             r.Form,
+		Proto:            r.Proto,
+		RemoteAddr:       r.RemoteAddr,
+		RequestURI:       r.RequestURI,
+		TLS:              r.TLS,
+		TransferEncoding: r.TransferEncoding,
+		URL:              r.URL,
+		Cookies:          r.Cookies(),
+		UserAgent:        r.UserAgent(),
+	}
+
+	// Der ResultChan wird erezugt
+	resultChan := make(chan *types.FunctionCallReturn)
+
 	// Das Request Objekt wird erzeugt
 	requestObject := &types.RpcRequest{
 		Parms:       extractedValues,
 		RpcRequest:  request,
 		ProcessLog:  proc,
 		RequestType: static.HTTP_REQUEST,
-		HttpRequest: &types.HttpRpcRequest{
-			IsConnected:      isConnected,
-			ContentLength:    r.ContentLength,
-			PostForm:         r.PostForm,
-			Header:           r.Header,
-			Host:             r.Host,
-			Form:             r.Form,
-			Proto:            r.Proto,
-			RemoteAddr:       r.RemoteAddr,
-			RequestURI:       r.RequestURI,
-			TLS:              r.TLS,
-			TransferEncoding: r.TransferEncoding,
-			URL:              r.URL,
-			Cookies:          r.Cookies(),
-			UserAgent:        r.UserAgent(),
-		},
+		HttpRequest: requestHttpObject,
+		Resolve:     resultChan,
 	}
 
 	// Die Funktion wird aufgerufen
-	result, err := foundFunction.EnterFunctionCall(requestObject)
+	err = foundFunction.EnterFunctionCall(requestObject)
 	if err != nil {
 		proc.LogPrint("HTTP-RPC: &[%s]: call function '%s' error\n\t%s\n", foundedVM.GetVMName(), foundFunction.GetName(), err)
 		errorResponse(request.ContentType, w, "an error occurred when calling the function, error: "+err.Error())
 		return
 	}
+
+	// Es wird auf das Ergebniss gewartet
+	result := <-resultChan
 
 	// Es wird geprüft ob Daten zurückgegen wurden
 	if result == nil {

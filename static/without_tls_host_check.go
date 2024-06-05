@@ -1,5 +1,5 @@
 //go:build !NoLocalhostSSLCheck
 
-package utils
+package static
 
 var CHECK_SSL_LOCALHOST_ENABLE = true

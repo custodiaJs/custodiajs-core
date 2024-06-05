@@ -47,7 +47,7 @@ func __determineRPCFunction(kernel types.KernelInterface, funcsig *types.Functio
 	}
 
 	// Sollte eine VM ID angegeben wurden sein, wird versucht die VM anhand ihrer ID zu ermitteln
-	var vmiface types.CoreVMInterface
+	var vmiface types.VmInterface
 	var vmFound bool
 	var terr error
 	switch {
@@ -379,7 +379,8 @@ func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate) *v8.F
 		// Die Funktion wird ausgeführt
 		go func() {
 			// Die Funktion wird aufgerufen
-			resultState, err := function.EnterFunctionCall(&types.RpcRequest{Parms: exportedParameters})
+			resultChan := make(chan *types.FunctionCallReturn)
+			err := function.EnterFunctionCall(&types.RpcRequest{Parms: exportedParameters, Resolve: resultChan})
 			if err != nil {
 				// Der V8 Throw wird erzeugt
 				val, _ := v8.NewValue(info.Context().Isolate(), fmt.Sprintf("function call throw:= %s", err.Error()))
@@ -390,6 +391,9 @@ func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate) *v8.F
 				// Rückgabe, Routine wird beendet
 				return
 			}
+
+			// Es wird auf das Ergebniss gewartet
+			resultState := <-resultChan
 
 			// Es wird geprüft ob ein Fehler aufgetreten ist
 			if resultState.Error != "" {

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"vnh1/consolecache"
+	"vnh1/static"
 	"vnh1/types"
 	"vnh1/utils"
 	"vnh1/vmdb"
@@ -122,7 +123,7 @@ func (o *Kernel) GetCore() types.CoreInterface {
 	return o.core
 }
 
-func (o *Kernel) LinkKernelWithCoreVM(coreObj types.CoreVMInterface) error {
+func (o *Kernel) LinkKernelWithCoreVM(coreObj types.VmInterface) error {
 	// Der Mutex wird verwendet
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
@@ -139,12 +140,15 @@ func (o *Kernel) LinkKernelWithCoreVM(coreObj types.CoreVMInterface) error {
 	return nil
 }
 
-func (o *Kernel) AsCoreVM() types.CoreVMInterface {
+func (o *Kernel) AsCoreVM() types.VmInterface {
 	return o.vmLink
 }
 
-func (o *Kernel) HasCloseSignal() bool {
-	return false
+func (o *Kernel) IsClosed() bool {
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	cstate := bool(o.hasCloseSignal)
+	return cstate
 }
 
 func (o *Kernel) ServeEventLoop() error {
@@ -156,40 +160,91 @@ func (o *Kernel) ServeEventLoop() error {
 		o.eventLoopLockCond.Wait()
 	}
 
+	// Es wird ermittelt ob der Kernel beendet werden soll
+	if o.hasCloseSignal {
+		o.eventLoopLockCond.L.Unlock()
+		return nil
+	}
+
 	// Die Funktion wird aus dem Stack entfertn
-	resolvedFunction := o.eventLoopStack[0]
+	eventLoopOperation := o.eventLoopStack[0]
 	o.eventLoopStack = o.eventLoopStack[1:]
 
 	// Der Mutex wird freigegeben
 	o.eventLoopLockCond.L.Unlock()
 
-	// Die Funktion wird aufgerufen
-	o.LogPrint("", "Eventloop processes operation")
+	// Es wird geprüft ob es sich um eine Funktion oder einen Sourcecode Call handelt
+	switch eventLoopOperation.GetType() {
+	case static.KERNEL_EVENT_LOOP_FUNCTION:
+		// Die Funktion wird abgerufen
+		funct := eventLoopOperation.GetFunction()
 
-	// Die Funktion wird aufgerufen
-	if err := resolvedFunction(o.Context); err != nil {
-		return fmt.Errorf("ServeEventLoop: " + err.Error())
+		// Die Funktion wird ausgeführt
+		funct(o.Context, eventLoopOperation.GetOperation())
+
+		// Es ist kein Fehler aufgetreten
+		return nil
+	case static.KERNEL_EVENT_LOOP_SOURCE_CODE:
+		// Der Code wird ausgeführt
+		result, err := o.Context.RunScript(eventLoopOperation.GetSourceCode(), "eventloop.js")
+		if err != nil {
+			// Der Fehler wird zurückgegeben
+			eventLoopOperation.SetError(err)
+
+			// Der Fehler wird zurückgegeben
+			return fmt.Errorf("Kernel->call_eventloop_function: " + err.Error())
+		}
+
+		// Die Rückgabe wird zurückgegeben
+		eventLoopOperation.SetResult(result)
+
+		// Es ist kein Fehler aufgetreten
+		return nil
+	default:
+		return fmt.Errorf("Kernel->ServeEventLoop: unkown operation methode")
 	}
-
-	// Es ist kein Fehler aufgetreten
-	return nil
 }
 
-func (o *Kernel) AddFunctionCallToEventLoop(funcv func(*v8.Context) error) error {
-	// Der Mutex wird verwendet
-	o.eventLoopLockCond.L.Lock()
+func (o *Kernel) AddToEventLoop(operation types.KernelEventLoopOperationInterface) error {
+	go func() {
+		// Der Mutex wird verwendet
+		o.eventLoopLockCond.L.Lock()
 
-	// Die Eventfunktion wird hinzugefügt
-	o.eventLoopStack = append(o.eventLoopStack, funcv)
+		// Die Eventfunktion wird hinzugefügt
+		o.eventLoopStack = append(o.eventLoopStack, operation)
 
-	// Es wird Signalisiert, dass ein neuer Eintrag vorhanden ist
-	o.eventLoopLockCond.Broadcast()
+		// Es wird Signalisiert, dass ein neuer Eintrag vorhanden ist
+		o.eventLoopLockCond.Broadcast()
 
-	// Der Cond wird freigegeben
-	o.eventLoopLockCond.L.Unlock()
+		// Der Cond wird freigegeben
+		o.eventLoopLockCond.L.Unlock()
+	}()
 
 	// Rückgabe
 	return nil
+}
+
+func (o *Kernel) Close() {
+	// Der Mutex wird angewendet
+	o.eventLoopLockCond.L.Lock()
+
+	// Es wird geprüft ob bereits ein Close Signal vorhanden ist
+	if o.hasCloseSignal {
+		o.eventLoopLockCond.L.Unlock()
+		return
+	}
+
+	// Es wird Signalisiert dass die VN beendet werden soll
+	o.hasCloseSignal = true
+
+	// Die Eventloop wird angehalten
+	o.eventLoopLockCond.Broadcast()
+
+	// Der Mutex wird freigegeben
+	o.eventLoopLockCond.L.Unlock()
+
+	// Der V8 Context wird geschlossen
+	o.ContextV8().Close()
 }
 
 func makeIsolationAndContext(kernel *Kernel, isMain bool) (*v8.Isolate, *v8.Context, error) {
@@ -239,8 +294,9 @@ func NewKernel(consoleCache *consolecache.ConsoleOutputCache, kernelConfig *Kern
 		core:              coreIface,
 		vmImports:         make(map[string]*v8.Value),
 		dbEntry:           dbEntry,
-		eventLoopStack:    make([]func(*v8.Context) error, 0),
+		eventLoopStack:    make([]types.KernelEventLoopOperationInterface, 0),
 		eventLoopLockCond: sync.NewCond(mutex),
+		hasCloseSignal:    false,
 	}
 
 	// Der Context wird im Kernel Objekt gespeichert

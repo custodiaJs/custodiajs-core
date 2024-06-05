@@ -1,4 +1,4 @@
-package core
+package vm
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 	"time"
 	"vnh1/consolecache"
 	"vnh1/databaseservices/services"
-	extmodules "vnh1/extmodules"
 	"vnh1/kernel"
+	extmodules "vnh1/kernel/extmodules"
 	"vnh1/static"
 	"vnh1/types"
 	"vnh1/utils"
@@ -35,9 +35,9 @@ func (o *CoreVM) GetMode() string {
 	return o.vmDbEntry.GetMode()
 }
 
-func (o *CoreVM) _routine(scriptContent []byte, syncWaitGroup *sync.WaitGroup) {
-	// Es wird Signalisiert das die VM nicht mehr ausgeführt wird
-	defer syncWaitGroup.Done()
+func (o *CoreVM) _routine(scriptContent []byte) {
+	// Log
+	o.Kernel.LogPrint("", "VM is running")
 
 	// Der Mutex wird verwendet
 	o.objectMutex.Lock()
@@ -83,7 +83,7 @@ func (o *CoreVM) _routine(scriptContent []byte, syncWaitGroup *sync.WaitGroup) {
 
 	// Die Schleife wird solange ausgeführt, solange der Status, running ist.
 	// Die Schleife für den Eventloop des Kernels auf
-	for !o.Kernel.HasCloseSignal() {
+	for o.eventloopForRunner() {
 		if err := o.Kernel.ServeEventLoop(); err != nil {
 			panic(err)
 		}
@@ -98,14 +98,11 @@ func (o *CoreVM) _routine(scriptContent []byte, syncWaitGroup *sync.WaitGroup) {
 	o.LogPrint("", "Eventloop stoped")
 }
 
-func (o *CoreVM) serveGorutine(syncWaitGroup *sync.WaitGroup) error {
+func (o *CoreVM) Serve(syncWaitGroup *sync.WaitGroup) error {
 	// Es wird geprüft ob der Server bereits gestartet wurde
 	if o.GetState() != static.StillWait && o.GetState() != static.Closed {
 		return fmt.Errorf("serveGorutine: vm always running")
 	}
-
-	// Es wird der SyncWaitGroup Signalisiert dass eine weitere Routine ausgeführt wird
-	syncWaitGroup.Add(1)
 
 	// Die VM wird als Startend Markiert
 	o.vmState = static.Starting
@@ -120,7 +117,21 @@ func (o *CoreVM) serveGorutine(syncWaitGroup *sync.WaitGroup) error {
 	}
 
 	// Diese Funktion wird als Goroutine ausgeführt
-	go o._routine([]byte(scriptContent), syncWaitGroup)
+	go func() {
+		// Die VM wird am leben Erhalten
+		o._routine([]byte(scriptContent))
+
+		// Sollte der Kernel nicht geschlossen sein, wird er beendet
+		if !o.Kernel.IsClosed() {
+			o.Kernel.Close()
+		}
+
+		// Log
+		o.Kernel.LogPrint("", "VM is closed")
+
+		// Es wird signalisiert das die VM nicht mehr ausgeführt wird
+		syncWaitGroup.Done()
+	}()
 
 	// Es ist kein Fehler aufgetreten
 	return nil
@@ -156,10 +167,10 @@ func (o *CoreVM) GetRootMemberIDS() []*types.CAMemberData {
 	return ret
 }
 
-func (o *CoreVM) GetDatabaseServices() []*types.VMDatabaseData {
-	vmdlist := make([]*types.VMDatabaseData, 0)
+func (o *CoreVM) GetDatabaseServices() []*types.VMEntryBaseData {
+	vmdlist := make([]*types.VMEntryBaseData, 0)
 	for _, item := range o.vmDbEntry.GetAllDatabaseServices() {
-		vmdlist = append(vmdlist, &types.VMDatabaseData{
+		vmdlist = append(vmdlist, &types.VMEntryBaseData{
 			Type:     item.Type,
 			Host:     item.Host,
 			Port:     item.Port,
@@ -197,7 +208,7 @@ func (o *CoreVM) GetConsoleOutputWatcher() types.WatcherInterface {
 	return o.Kernel.Console().GetOutputStream()
 }
 
-func (o *CoreVM) addDatabaseServiceLink(dbserviceLink services.DbServiceLinkinterface) error {
+func (o *CoreVM) AddDatabaseServiceLink(dbserviceLink services.DbServiceLinkinterface) error {
 	o.dbServiceLinks = append(o.dbServiceLinks, dbserviceLink)
 	return nil
 }
@@ -274,7 +285,41 @@ func (o *CoreVM) GetSharedFunctionBySignature(sourceType types.RPCCallSource, fu
 	return result, true, nil
 }
 
-func newCoreVM(core *Core, vmDb *vmdb.VmDBEntry, extModules []*extmodules.ExternalModule, loggingPath types.LOG_DIR) (*CoreVM, error) {
+func (o *CoreVM) hasCloseSignal() bool {
+	o.objectMutex.Lock()
+	v := bool(o._signal_CLOSE)
+	o.objectMutex.Unlock()
+	return v
+}
+
+func (o *CoreVM) SignalShutdown() {
+	// Der Mutex wird angewendet
+	o.objectMutex.Lock()
+
+	// Es wird geprüft ob bereits ein Shutdown durchgeführt wurde
+	if o._signal_CLOSE || o.vmState == static.Closed {
+		o.objectMutex.Unlock()
+		return
+	}
+
+	// Log
+	o.Kernel.LogPrint("", "Signal shutdown")
+
+	// Es wird Signalisiert das ein Close Signal vorhanden ist
+	o._signal_CLOSE = true
+
+	// Der Mutex wird freigegeben
+	o.objectMutex.Unlock()
+
+	// Der Kernel wird beendet
+	o.Kernel.Close()
+}
+
+func (o *CoreVM) eventloopForRunner() bool {
+	return !o.hasCloseSignal() && !o.Kernel.IsClosed()
+}
+
+func NewCoreVM(core types.CoreInterface, vmDb *vmdb.VmDBEntry, extModules []*extmodules.ExternalModule, loggingPath types.LOG_DIR) (*CoreVM, error) {
 	// Es wird ein neuer Konsolen Stream erzeugt
 	consoleStream, err := consolecache.NewConsoleOutputCache(string(loggingPath))
 	if err != nil {
@@ -317,6 +362,7 @@ func newCoreVM(core *Core, vmDb *vmdb.VmDBEntry, extModules []*extmodules.Extern
 		objectMutex:     &sync.Mutex{},
 		vmState:         static.StillWait,
 		dbServiceLinks:  make([]services.DbServiceLinkinterface, 0),
+		_signal_CLOSE:   false,
 	}
 
 	// Es wird versucht die VM mit dem Kernel zu verlinken

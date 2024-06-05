@@ -48,7 +48,7 @@ type CAMemberData struct {
 	ID          string
 }
 
-type VMDatabaseData struct {
+type VMEntryBaseData struct {
 	Type     string
 	Host     string
 	Port     int
@@ -68,3 +68,4 @@ type VmExperimentalWebservice struct {
 }
 
 type DatabaseFingerprint string
+type ContainerFingerprint string

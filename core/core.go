@@ -4,14 +4,17 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"fmt"
+	"runtime"
 	"strings"
 	"sync"
+	"vnh1/container"
 	"vnh1/databaseservices"
-	extmodules "vnh1/extmodules"
 	"vnh1/identkeydatabase"
+	extmodules "vnh1/kernel/extmodules"
 	"vnh1/static"
 	"vnh1/types"
 	"vnh1/utils"
+	"vnh1/vm"
 	"vnh1/vmdb"
 )
 
@@ -41,11 +44,11 @@ func (o *Core) AddExternalModuleLibrary(modLib *extmodules.ExternalModule) error
 	return nil
 }
 
-// Fügt einen neune Script Container hinzu
-func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
+// Erstellt eine neue VM Instanz
+func (o *Core) AddNewVMInstance(vmDbEntry *vmdb.VmDBEntry) (types.VmInterface, error) {
 	// Die Virtuelle Maschine wird geprüft
 	if !vmDbEntry.ValidateVM() {
-		return nil, fmt.Errorf("AddScriptContainer: Broken Virtual Machine")
+		return nil, fmt.Errorf("AddNewVMInstance: Broken Virtual Machine")
 	}
 
 	// Es werden alle benötigten Host CA Extrahiert
@@ -60,7 +63,7 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 		// wenn nicht wird geprüft ob der Fingerabdruck des CERTS mit dem des Lokalen Certs übereinstimmt
 		if !o.hostIdentKeyDatabase.ValidateRootCAMembershipByFingerprint(item.Fingerprint) {
 			if !strings.EqualFold(hex.EncodeToString(utils.ComputeTlsCertFingerprint(o.hostTlsCert)), item.Fingerprint) {
-				return nil, fmt.Errorf("Core->AddScriptContainer: unkown host ca membership '%s'", strings.ToUpper(item.Fingerprint))
+				return nil, fmt.Errorf("Core->AddNewVMInstance: unkown host ca membership '%s'", strings.ToUpper(item.Fingerprint))
 			}
 		}
 	}
@@ -71,8 +74,15 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 		neededExternalModulesNameSlice = append(neededExternalModulesNameSlice, item.Name)
 	}
 
-	// Es werden alle Module welche benötigt werden abgerufen
-	modList := o._core_util_get_list_of_extmods_by_name(neededExternalModulesNameSlice...)
+	// Es werden alle Externen Module herausgefiltertet
+	modList := make([]*extmodules.ExternalModule, 0)
+	for _, item := range neededExternalModulesNameSlice {
+		for _, mitem := range o.extModules {
+			if item == mitem.GetName() {
+				modList = append(modList, mitem)
+			}
+		}
+	}
 
 	// Es wird geprüft ob die benötigten Module gefunden wurden
 	notFoundExtModules := make([]string, 0)
@@ -95,13 +105,13 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 
 	// Es wird ein Fehler ausgelöst wenn ein benötigtes Modul nicht gefunden wurde
 	if len(notFoundExtModules) != 0 {
-		return nil, fmt.Errorf("Core->AddScriptContainer: external modules '%s' not found", strings.Join(neededExternalModulesNameSlice, ","))
+		return nil, fmt.Errorf("Core->AddNewVMInstance: external modules '%s' not found", strings.Join(neededExternalModulesNameSlice, ","))
 	}
 
 	// Das Logging Verzeichniss wird erstellt
 	logPath, err := utils.MakeLogDirForVM(o.logDIR, vmDbEntry.GetVMName())
 	if err != nil {
-		return nil, fmt.Errorf("Core->AddScriptContainer: " + err.Error())
+		return nil, fmt.Errorf("Core->AddNewVMInstance: " + err.Error())
 	}
 
 	// Der Mutex wird angewendet
@@ -110,20 +120,74 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 	// Es wird geprüft ob bereits eiein VM Link hinzugefügtne VM mit der Selben ID vorhanden ist
 	if _, foundVM := o.vmsByID[strings.ToLower(vmDbEntry.GetVMContainerMerkleHash())]; foundVM {
 		o.objectMutex.Unlock()
-		return nil, fmt.Errorf("Core->AddScriptContainer: You cannot add a VM container '%s' multiple times", vmDbEntry.GetVMContainerMerkleHash())
+		return nil, fmt.Errorf("Core->AddNewVMInstance: You cannot add a VM container '%s' multiple times", vmDbEntry.GetVMContainerMerkleHash())
 	}
 
-	// Das Detailspaket wird erzeugt
-	vmobject, err := newCoreVM(o, vmDbEntry, modList, logPath)
-	if err != nil {
-		return nil, fmt.Errorf("AddScriptContainer: " + err.Error())
+	// WARNUNG!
+	// Handelt es sich um ein Linux-System, werden die vnh1-Container vorbereitet.
+	// Alle Container und ihre Konfigurationen werden aus der Config-Datenbank ausgelesen.
+	// Handelt es sich um ein Windows- oder macOS-System, werden die Container mithilfe von Firewall und Benutzerrechten umgesetzt
+	var vmContainer *container.VmContainer
+	var vmContainerErr error
+	runAsProcess := false
+	switch runtime.GOOS {
+	case "linux":
+		vmContainer, vmContainerErr = container.NewLinuxContainer()
+	case "windows":
+		// Es wird geprüft ob Docker oder WSL auf Windows Installiert ist,
+		// sollte WSL oder Docker Installiert sein, wird der ein neuer Docker/WSL Container erzeugt
+		if container.CheckWindowsHasDockerOrWSL() {
+			vmContainer, vmContainerErr = container.NewWindowsDockerWSLContainer()
+		} else {
+			runAsProcess = true
+		}
+	case "darwin":
+		vmContainer, vmContainerErr = container.NewMacOSContainer()
+	case "freebsd":
+		vmContainer, vmContainerErr = container.NewFreeBSDContainer()
+	case "openbsd":
+		vmContainer, vmContainerErr = container.NewOpenBSDContainer()
+	case "netbsd":
+		vmContainer, vmContainerErr = container.NewNetBSDContainer()
 	}
+
+	// Es wird geprüft ob ein Fehler aufgetreten ist
+	if vmContainerErr != nil {
+		return nil, fmt.Errorf("Core->AddNewVMInstance: " + vmContainerErr.Error())
+	}
+
+	// Der Mutex wird freigegeben
+	o.objectMutex.Unlock()
+
+	// Die VM wird erzeugt, entwender wird eine InProcess VM erzeugt, ein VM Prozess oder eine Container VM Prozess.
+	// Es wird vorher geprüft ob der Tag 'ForceInProcessVM' gesetzt wurde, wenn ja werden ausschlißlich InProcess VM's verwendet.
+	var vmInstance types.VmInterface
+	var vmInstanceErr error
+	if !static.FORCE_INPROCESS_VM {
+		if vmContainer != nil {
+			panic("not implemented")
+		} else if runAsProcess {
+			panic("not implemented")
+		} else {
+			vmInstance, vmInstanceErr = vm.NewCoreVM(o, vmDbEntry, modList, logPath)
+		}
+	} else {
+		vmInstance, vmInstanceErr = vm.NewCoreVM(o, vmDbEntry, modList, logPath)
+	}
+
+	// Es wird geprüft ob ein Fehler beim erstellen der VM aufgetreten ist
+	if vmInstanceErr != nil {
+		return nil, fmt.Errorf("AddNewVMInstance: " + vmInstanceErr.Error())
+	}
+
+	// Der Mutex wird angewendet
+	o.objectMutex.Lock()
 
 	// Das VMObjekt wird zwischengespeichert
-	o.vmsByID[strings.ToLower(vmDbEntry.GetVMContainerMerkleHash())] = vmobject // Merklehash
-	o.vmsByName[strings.ToLower(vmDbEntry.GetVMName())] = vmobject              // VM-Name
-	o.vmKernelPtr[vmobject.GetKId()] = vmobject                                 // Speichert die VM ab, diese wird verwendet um die VM durch den Kernel der VM auffindbar zu machen
-	o.vms = append(o.vms, vmobject)                                             // Die VM wird abgespeichert
+	o.vmsByID[strings.ToLower(vmDbEntry.GetVMContainerMerkleHash())] = vmInstance // Merklehash
+	o.vmsByName[strings.ToLower(vmDbEntry.GetVMName())] = vmInstance              // VM-Name
+	o.vmKernelPtr[vmInstance.GetKId()] = vmInstance                               // Speichert die VM ab, diese wird verwendet um die VM durch den Kernel der VM auffindbar zu machen
+	o.vms = append(o.vms, vmInstance)                                             // Die VM wird abgespeichert
 
 	// Der Mutex wird freigegeben
 	o.objectMutex.Unlock()
@@ -133,17 +197,17 @@ func (o *Core) AddScriptContainer(vmDbEntry *vmdb.VmDBEntry) (*CoreVM, error) {
 		// Es wird ein neuer Link für die VM erzeugt
 		link, err := o.databaseService.GetDBServiceLink(item.GetDatabaseFingerprint())
 		if err != nil {
-			return nil, fmt.Errorf("Core->AddScriptContainer: " + err.Error())
+			return nil, fmt.Errorf("Core->AddNewVMInstance: " + err.Error())
 		}
 
 		// Der Link für den Datenbank Dienst wird abgespeichert
-		if err := vmobject.addDatabaseServiceLink(link); err != nil {
-			return nil, fmt.Errorf("Core->AddScriptContainer: " + err.Error())
+		if err := vmInstance.AddDatabaseServiceLink(link); err != nil {
+			return nil, fmt.Errorf("Core->AddNewVMInstance: " + err.Error())
 		}
 	}
 
 	// Das VM Objekt wird zwischengespeichert
-	return vmobject, nil
+	return vmInstance, nil
 }
 
 // Fügt einen API Socket hinzu
@@ -172,7 +236,7 @@ func (o *Core) AddAPISocket(apiSocket types.APISocketInterface) error {
 }
 
 // Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
-func (o *Core) GetScriptContainerVMByID(vmid string) (types.CoreVMInterface, bool, error) {
+func (o *Core) GetScriptContainerVMByID(vmid string) (types.VmInterface, bool, error) {
 	// Es wird geprüft ob es sich um einen zulässigen vm Namen handelt
 	if !utils.ValidateVMIdString(vmid) {
 		return nil, false, fmt.Errorf("Core->GetScriptContainerVMByID: invalid vm container id")
@@ -197,7 +261,7 @@ func (o *Core) GetScriptContainerVMByID(vmid string) (types.CoreVMInterface, boo
 }
 
 // Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
-func (o *Core) GetScriptContainerByVMName(vmName string) (types.CoreVMInterface, error) {
+func (o *Core) GetScriptContainerByVMName(vmName string) (types.VmInterface, error) {
 	// Es wird geprüft ob es sich um einen zulässigen Namen handelt
 	if !utils.ValidateVMName(vmName) {
 		return nil, fmt.Errorf("Core->GetScriptContainerByVMName: invalid vm container name")
@@ -239,14 +303,14 @@ func (o *Core) GetAllActiveScriptContainerIDs() []string {
 }
 
 // Gibt alle VM-Container zurück
-func (o *Core) GetAllVMs() []types.CoreVMInterface {
+func (o *Core) GetAllVMs() []types.VmInterface {
 	// Der Mutex wird angewendet
 	// und nach beenden der Funktion freigegeben
 	o.objectMutex.Lock()
 	defer o.objectMutex.Unlock()
 
 	// Es wird eine Liste mit allen Verfügbaren VM-Containern erstellt
-	extr := make([]types.CoreVMInterface, 0)
+	extr := make([]types.VmInterface, 0)
 	for _, item := range o.vmsByID {
 		extr = append(extr, item)
 	}
@@ -255,14 +319,52 @@ func (o *Core) GetAllVMs() []types.CoreVMInterface {
 	return extr
 }
 
+// Signalisiert dem Core, dass er beendet werden soll
+func (o *Core) SignalShutdown() {
+	// Der Mutex wird angewendet
+	o.objectMutex.Lock()
+	defer o.objectMutex.Unlock()
+
+	// Die Chan wird geschlossen
+	close(o.holdOpenChan)
+}
+
+// Signalisiert allen VM's dass sie beendet werden
+func (o *Core) signalVmsShutdown(wg *sync.WaitGroup) {
+	for _, item := range o.vms {
+		wg.Add(1)
+		go func(cvm types.VmInterface) {
+			cvm.SignalShutdown()
+			wg.Done()
+		}(item)
+	}
+}
+
+// Legt den Core Status fest
+func setState(core *Core, state types.CoreState, useMutex bool) {
+	// Es wird geprüft ob Mutex verwendet werden sollen
+	if useMutex {
+		core.objectMutex.Lock()
+		defer core.objectMutex.Unlock()
+	}
+
+	// Es wird geprüft ob der neue Status, der Aktuelle ist
+	if core.state == state {
+		return
+	}
+
+	// Der Neue Status wird gesetzt
+	core.state = state
+}
+
 // Erstellt einen neuen vnh1 Core
 func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase.IdenKeyDatabase, dbService *databaseservices.DbService, logDIRPath types.LOG_DIR) (*Core, error) {
 	// Das Coreobjekt wird erstellt
 	coreObj := &Core{
-		vmsByID:         make(map[string]*CoreVM),
-		vmsByName:       make(map[string]*CoreVM),
-		vmKernelPtr:     make(map[types.KernelID]*CoreVM),
-		vms:             make([]*CoreVM, 0),
+		vmsByID:         make(map[string]types.VmInterface),
+		vmsByName:       make(map[string]types.VmInterface),
+		vmKernelPtr:     make(map[types.KernelID]types.VmInterface),
+		vms:             make([]types.VmInterface, 0),
 		apiSockets:      make([]types.APISocketInterface, 0),
 		hostTlsCert:     hostTlsCert,
 		databaseService: dbService,

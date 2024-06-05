@@ -5,7 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net/http"
-	"vnh1/utils"
+	"vnh1/static"
 )
 
 func NewLocalService(family string, localport uint32, localCert *tls.Certificate) (*HttpApiService, error) {
@@ -28,7 +28,7 @@ func NewLocalService(family string, localport uint32, localCert *tls.Certificate
 
 	// Es wird geprüft ob es sich um ein Systembeakanntes Certificate handelt
 	if _, err := x509Cert.Verify(opts); err != nil {
-		if utils.CHECK_SSL_LOCALHOST_ENABLE {
+		if static.CHECK_SSL_LOCALHOST_ENABLE {
 			return nil, fmt.Errorf("NewLocalWebservice: " + err.Error())
 		}
 	}

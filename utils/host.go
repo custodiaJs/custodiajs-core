@@ -74,3 +74,19 @@ func DetectLinuxDist() (string, error) {
 
 	return "Unbekannte Distribution", nil
 }
+
+func VerifyLinuxSystem() error {
+	return nil
+}
+
+func VerifyWindowsSystem() error {
+	return nil
+}
+
+func VerifyAppleMacOSSystem() error {
+	return nil
+}
+
+func VerifyBSDSystem() error {
+	return nil
+}

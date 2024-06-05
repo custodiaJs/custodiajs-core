@@ -6,6 +6,8 @@ import (
 	"vnh1/utils"
 )
 
+// loadAllVirtualMachines lädt alle virtuellen Maschinen aus dem angegebenen Verzeichnis und speichert sie im VmDatabase-Objekt.
+// Falls ein Fehler auftritt, wird eine entsprechende Fehlermeldung zurückgegeben.
 func (o *VmDatabase) loadAllVirtualMachines() error {
 	// Die VM's werden geladen
 	vms, err := utils.ScanVmDir(o.vmRootDir)
@@ -32,6 +34,7 @@ func (o *VmDatabase) loadAllVirtualMachines() error {
 	return nil
 }
 
+// GetAllVirtualMachines gibt alle geladenen virtuellen Maschinen als Slice von VmDBEntry-Objekten zurück.
 func (o *VmDatabase) GetAllVirtualMachines() []*VmDBEntry {
 	v := make([]*VmDBEntry, 0)
 	for _, item := range o.vmMap {
@@ -40,8 +43,9 @@ func (o *VmDatabase) GetAllVirtualMachines() []*VmDBEntry {
 	return v
 }
 
-func (o *VmDatabase) GetAllDatabaseConfigurations() []*VMDatabaseData {
-	v := map[string]*VMDatabaseData{}
+// GetAllDatabaseVMBaseData gibt die Basisdaten aller virtuellen Maschinen zurück, die in der Datenbank gespeichert sind.
+func (o *VmDatabase) GetAllDatabaseVMBaseData() []*VMEntryBaseData {
+	v := map[string]*VMEntryBaseData{}
 	for _, item := range o.vmMap {
 		for _, xtem := range item.GetAllDatabaseServices() {
 			if _, found := v[string(xtem.GetDatabaseFingerprint())]; !found {
@@ -50,7 +54,7 @@ func (o *VmDatabase) GetAllDatabaseConfigurations() []*VMDatabaseData {
 		}
 	}
 
-	r := make([]*VMDatabaseData, 0)
+	r := make([]*VMEntryBaseData, 0)
 	for _, item := range v {
 		r = append(r, item)
 	}
@@ -58,6 +62,9 @@ func (o *VmDatabase) GetAllDatabaseConfigurations() []*VMDatabaseData {
 	return r
 }
 
+// OpenFilebasedVmDatabase öffnet eine Dateibasierte VM-Datenbank und gibt ein VmDatabase-Objekt zurück.
+// Dabei werden alle virtuellen Maschinen geladen und zwischengespeichert.
+// Falls ein Fehler auftritt, wird eine entsprechende Fehlermeldung zurückgegeben.
 func OpenFilebasedVmDatabase() (*VmDatabase, error) {
 	// Das VM Datenbankobjekt wird erstellt
 	resolv := &VmDatabase{
