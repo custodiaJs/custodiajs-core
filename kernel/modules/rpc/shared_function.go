@@ -25,7 +25,8 @@ import (
 	v8 "rogchap.com/v8go"
 )
 
-// Gibt den Namen der Funktion zurück
+// GetName gibt den Namen der aktuellen SharedFunction zurück.
+// Wenn die SharedFunction null ist, wird ein leerer String zurückgegeben.
 func (o *SharedFunction) GetName() string {
 	// Es wird geprüft ob die Aktuelle SharedFunction "o" NULL ist
 	if o == nil {
@@ -36,7 +37,8 @@ func (o *SharedFunction) GetName() string {
 	return o.name
 }
 
-// Gibt die Parameterdatentypen welche die Funktion erwartet zurück
+// GetParmTypes gibt die Parameter-Datentypen der aktuellen SharedFunction zurück.
+// Wenn die SharedFunction null ist, wird ein leerer Slice von Strings zurückgegeben.
 func (o *SharedFunction) GetParmTypes() []string {
 	// Es wird geprüft ob die Aktuelle SharedFunction "o" NULL ist
 	if o == nil {
@@ -47,7 +49,8 @@ func (o *SharedFunction) GetParmTypes() []string {
 	return o.signature.Params
 }
 
-// Gibt den Rückgabedatentypen zurück
+// GetReturnDatatype gibt den Rückgabedatentyp der aktuellen SharedFunction zurück.
+// Wenn die SharedFunction null ist, wird ein leerer String zurückgegeben.
 func (o *SharedFunction) GetReturnDatatype() string {
 	// Es wird geprüft ob die Aktuelle SharedFunction "o" NULL ist
 	if o == nil {
@@ -58,7 +61,8 @@ func (o *SharedFunction) GetReturnDatatype() string {
 	return o.signature.ReturnType
 }
 
-// Fügt ein Event hinzu, dieses Event wird ausgeführt sobald eine neuer Funktionsaufruf angenommen wurde
+// AddOnRequestFunction fügt eine neue Funktion hinzu, die aufgerufen wird, wenn eine Anforderung eingeht.
+// Die hinzugefügte Funktion wird in der eventOnRequest-Liste gespeichert und eine Log-Meldung wird ausgegeben.
 func (o *SharedFunction) AddOnRequestFunction(funcv8 *v8.Function) error {
 	// Die Funktion wird abgespeichert
 	o.eventOnRequest = append(o.eventOnRequest, funcv8)
@@ -70,7 +74,8 @@ func (o *SharedFunction) AddOnRequestFunction(funcv8 *v8.Function) error {
 	return nil
 }
 
-// Fügt ein Event hinzu, dieses Event wird ausgeführt sobald ein neuer Funktionsaufruf Fehlschlägt, bevor er genau zugeordnet werden kann
+// AddOnRequestFailFunction fügt eine neue Funktion hinzu, die aufgerufen wird, wenn eine Anforderung fehlschlägt.
+// Die hinzugefügte Funktion wird in der eventOnRequestFail-Liste gespeichert und eine Log-Meldung wird ausgegeben.
 func (o *SharedFunction) AddOnRequestFailFunction(funcv8 *v8.Function) error {
 	// Die Funktion wird abgespeichert
 	o.eventOnRequestFail = append(o.eventOnRequest, funcv8)
@@ -82,229 +87,10 @@ func (o *SharedFunction) AddOnRequestFailFunction(funcv8 *v8.Function) error {
 	return nil
 }
 
-// Wird verwendet um sicherzustellen dass alle Mikroaufgaben eines RPC Aufrufes durchgeführt wurden
-func (o *SharedFunction) _callInKernelEventLoopCheck(ctx *v8.Context, prom *v8.Promise, request *SharedFunctionRequest) error {
-	switch prom.State() {
-	case v8.Pending:
-		// Planen Sie die nächste Überprüfung, ohne aktives Warten zu verwenden
-		go func() {
-			time.Sleep(1 * time.Millisecond)
-			o.kernel.AddToEventLoop(eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
-				o._callInKernelEventLoopCheck(ctx, prom, request)
-			}))
-		}()
-	case v8.Rejected:
-		ctx.PerformMicrotaskCheckpoint()
-	}
-	return nil
-}
-
-// Wird verwendet um die Funktion innerhalb des Kernels aufzurufen (Schritt 5)
-func (o *SharedFunction) _callInKernelEventLoopStep5(request *SharedFunctionRequest, _ *types.RpcRequest, _ *v8.Value, prom *v8.Promise) error {
-	// Es wird ein neuer Eintrag zu der Event Schleife hinzugefügt
-	return o.kernel.AddToEventLoop(eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
-		err := o._callInKernelEventLoopCheck(ctx, prom, request)
-		if err != nil {
-			// Der Fehler wird zurückgegeben
-			klopr.SetError(err)
-		}
-
-		// Signalisiert dass der Vorgang erfolgreich war
-		klopr.SetResult(nil)
-	}))
-}
-
-// Wird verwendet um die Funktion innerhalb des Kernels aufzurufen (Schritt 4)
-func (o *SharedFunction) _callInKernelEventLoopStep4(request *SharedFunctionRequest, req *types.RpcRequest, result *v8.Value) error {
-	// Diese Funktion wird verwendet um die Antwort zurückzusenden
-	return o.kernel.AddToEventLoop(eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
-		// Es wird ermittelt ob die Verbindung getrennt wurde
-		if !req.HttpRequest.IsConnected.Bool() {
-			klopr.SetError(fmt.Errorf("connection closed"))
-			return
-		}
-
-		// Es wird geprüft ob es sich um ein Promises handelt
-		if !result.IsPromise() {
-			panic("isnr promise")
-		}
-
-		// Das Promises Objekt wird erzeugt
-		prom, err := result.AsPromise()
-		if err != nil {
-			panic(err)
-		}
-
-		// Wird ausgeführt wenn die Funktion erfolgreich aufgerufen wurde
-		prom.Then(func(info *v8.FunctionCallbackInfo) *v8.Value {
-			request.functionCallFinal()
-			return v8.Undefined(info.Context().Isolate())
-		}, func(info *v8.FunctionCallbackInfo) *v8.Value {
-			request.functionCallException(info.Args()[0].String())
-			return v8.Undefined(info.Context().Isolate())
-		})
-
-		// Der 5. Schritt des Funktionsaufrufes wird durchgeführt
-		if err := o._callInKernelEventLoopStep5(request, req, result, prom); err != nil {
-			return
-		}
-
-		// Signalisiert dass der Vorgang erfolgreich war
-		klopr.SetResult(nil)
-	}))
-}
-
-// Wird verwendet um die Funktion innerhalb des Kernels aufzurufen (Schritt 3)
-func (o *SharedFunction) _callInKernelEventLoopStep3(request *SharedFunctionRequest, req *types.RpcRequest, proxFunction *v8.Function, proxArguments []v8.Valuer) error {
-	// Der Finale Funktionsaufruf wird vorbereitet
-	return o.kernel.AddToEventLoop(eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
-		// Es wird ermittelt ob die Verbindung getrennt wurde
-		if !req.HttpRequest.IsConnected.Bool() {
-			klopr.SetError(fmt.Errorf("connection closed"))
-			return
-		}
-
-		// Die Funktion wird ausgeführt
-		result, err := proxFunction.Call(v8.Undefined(ctx.Isolate()), proxArguments...)
-		if err != nil {
-			panic(err)
-		}
-
-		// Der 4. Schritt des Funktionsaufrufes wird durchgeführt
-		if err := o._callInKernelEventLoopStep4(request, req, result); err != nil {
-			return
-		}
-
-		// Signalisiert dass der Vorgang erfolgreich war
-		klopr.SetResult(nil)
-	}))
-}
-
-// Wird verwendet um die Funktion innerhalb des Kernels aufzurufen (Schritt 2)
-func (o *SharedFunction) _callInKernelEventLoopStep2(request *SharedFunctionRequest, req *types.RpcRequest, requestObj *v8.Object, convertedValues []v8.Valuer) error {
-	return o.kernel.AddToEventLoop(eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
-		// Die Finalen Argumente werden erstellt
-		finalArguments := make([]v8.Valuer, 0)
-		finalArguments = append(finalArguments, requestObj)
-		finalArguments = append(finalArguments, convertedValues...)
-
-		// Legt den JS Code fest, dieser wird als Wrapper ausgeführt
-		code := `
-		(funct, proxyobject, ...parms) => {
-			console = { log: proxyobject.proxyShieldConsoleLog, error: proxyobject.proxyShieldErrorLog };
-			clearInterval = () => proxyobject.clearInterval();
-			clearTimeout = () => proxyobject.clearTimeout();
-			setInterval = () => proxyobject.setInterval();
-			setTimeout = () => proxyobject.setTimeout();
-			Resolve = (...parms) =>  proxyobject.resolve(...parms);
-			Promise = class vnh1Promise extends Promise {
-				constructor(executor) {
-					const {resolveProxy, rejectProxy} = proxyobject.newPromise();
-					const wrappedExecutor = (resolve, reject) => {
-						executor(
-							(value) => {
-								resolveProxy();
-								resolve(value);
-							},
-							(reason) => {
-								rejectProxy();
-								reject(reason);
-							}
-						);
-					};
-					super(wrappedExecutor);
-				}
-			}
-			return funct(...parms);
-		}`
-
-		// Der Code für die Proxy Shield Funktion wird ersteltl
-		procxyFunction, err := ctx.RunScript(code, "rpc_function_call_proxy_shield.js")
-		if err != nil {
-			return
-		}
-
-		// Es wird geprüft ob es sich um eine Funktion handelt,
-		// wenn ja wird die Funktion extrahiert
-		proxFunction, err := procxyFunction.AsFunction()
-		if err != nil {
-			return
-		}
-
-		// Das Proxy Objekt wird erzeugt
-		proxyObject, err := makeProxyForRPCCall(ctx, request)
-		if err != nil {
-			return
-		}
-
-		// Die Argumente für den Proxy werden erstellt
-		proxArguments := []v8.Valuer{o.v8Function, proxyObject}
-		proxArguments = append(proxArguments, finalArguments...)
-
-		// Es wird ermittelt ob die Verbindung getrennt wurde
-		if !req.HttpRequest.IsConnected.Bool() {
-			klopr.SetError(fmt.Errorf("connection closed"))
-			return
-		}
-
-		// Der 3. Schritt des Funktionsaufrufes wird durchgeführt
-		if err := o._callInKernelEventLoopStep3(request, req, proxFunction, proxArguments); err != nil {
-			return
-		}
-
-		// Signalisiert dass der Vorgang erfolgreich war
-		klopr.SetResult(nil)
-	}))
-}
-
-// Wird verwendet um die Funktion innerhalb des Kernels aufzurufen (Schritt 1)
-func (o *SharedFunction) _callInKernelEventLoop(_ *v8.Context, request *SharedFunctionRequest, req *types.RpcRequest, lopr *types.KernelLoopOperation) {
-	// Es wird ermittelt ob die Verbindung getrennt wurde
-	if !req.HttpRequest.IsConnected.Bool() {
-		lopr.SetError(fmt.Errorf("connection closed"))
-		return
-	}
-
-	// Fügt ein Event zur Loop hinzu
-	addErr := o.kernel.AddToEventLoop(eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
-		// Die Parameter werden umgewandelt
-		convertedValues, err := convertRequestParametersToV8Parameters(ctx.Isolate(), o.signature.Params, req.Parms)
-		if err != nil {
-			return
-		}
-
-		// Das Request Objekt wird erstellt
-		requestObj, err := makeSharedFunctionObject(ctx, request, req)
-		if err != nil {
-			return
-		}
-
-		// Es wird ermittelt ob die Verbindung getrennt wurde
-		if !req.HttpRequest.IsConnected.Bool() {
-			klopr.SetError(fmt.Errorf("connection closed"))
-			return
-		}
-
-		// Der 2. Schritt des Funktionsaufrufes wird durchgeführt
-		if err := o._callInKernelEventLoopStep2(request, req, requestObj, convertedValues); err != nil {
-			return
-		}
-
-		// Signalisiert dass der Vorgang erfolgreich war
-		klopr.SetResult(nil)
-	}))
-
-	// Es wird geprüft ob ein Fehler aufgetreten ist
-	if addErr != nil {
-		lopr.SetError(addErr)
-		return
-	}
-
-	// Es wird Signalisiert dass der Vorgang erflgreich war
-	lopr.SetResult(nil)
-}
-
-// Ruft die Geteilte Funktion auf,s
+// EnterFunctionCall führt einen Funktionsaufruf innerhalb der SharedFunction-Instanz durch.
+// Es überprüft die Gültigkeit der Parameter und Verbindungen, erstellt ein Request-Objekt,
+// und übergibt die Operation an die Kernel-Eventschleife. Der Aufruf wird in einer neuen Goroutine
+// ausgeführt, die auf die Verarbeitung der Eventschleife wartet und das Ergebnis oder einen Fehler zurückgibt.
 func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) error {
 	// Es wird geprüft ob die Aktuelle SharedFunction "o" NULL ist
 	if o == nil {
@@ -337,8 +123,13 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) error {
 	}
 
 	// Die Loop Aufgabe wird erzeugt
-	kernelLoopOperation := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, lopr *types.KernelLoopOperation) {
-		o._callInKernelEventLoop(ctx, request, req, lopr)
+	kernelLoopOperation := eventloop.NewKernelEventLoopFunctionOperation(func(_ *v8.Context, lopr *types.KernelLoopOperation) {
+		err := functionCallInEventloopInit(o, request, req)
+		if err != nil {
+			lopr.SetError(err)
+			return
+		}
+		lopr.SetResult(nil)
 	})
 
 	// Die Funktion wird an den Eventloop des Kernels übergeben
@@ -406,7 +197,302 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) error {
 	return nil
 }
 
-// Wandelt die RPC Argumente in V8 Argumente für den Aktuellen Context um
+// callInKernelEventLoopCheck überprüft den Status eines Promises in der Kernel-Eventschleife.
+// Bei einem Pending-Promise plant es die nächste Überprüfung ohne aktives Warten.
+// Bei einem Rejected-Promise führt es einen Microtask-Checkpoint durch.
+func callInKernelEventLoopCheck(o *SharedFunction, ctx *v8.Context, prom *v8.Promise, request *SharedFunctionRequest, req *types.RpcRequest) error {
+	// Der Stauts des Objektes wird ermittelt
+	switch prom.State() {
+	case v8.Pending:
+		// Planen Sie die nächste Überprüfung, ohne aktives Warten zu verwenden
+		go func() {
+			// Es wird 1ne Milisekunde gewartet
+			time.Sleep(1 * time.Millisecond)
+
+			// Es wird ein neues Event zum Kernel hinzugefügt
+			o.kernel.AddToEventLoop(eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+				callInKernelEventLoopCheck(o, ctx, prom, request, req)
+			}))
+		}()
+	case v8.Rejected:
+		ctx.PerformMicrotaskCheckpoint()
+	}
+
+	// Keine Rückgabe
+	return nil
+}
+
+// functionCallInEventloopFinall führt den abschließenden Schritt eines Funktionsaufrufs durch.
+// Es fügt einen neuen Eintrag zur Eventschleife hinzu, prüft den Promise-Status und behandelt etwaige Fehler.
+// Bei Erfolg wird das Ergebnis der Operation signalisiert.
+func functionCallInEventloopFinall(o *SharedFunction, request *SharedFunctionRequest, req *types.RpcRequest, prom *v8.Promise) error {
+	// Es wird ermittelt ob die Verbindung getrennt wurde
+	if !req.HttpRequest.IsConnected.Bool() {
+		return fmt.Errorf("connection closed")
+	}
+
+	// Die Eventloop Funktion wird erzeugt
+	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+		err := callInKernelEventLoopCheck(o, ctx, prom, request, req)
+		if err != nil {
+			// Der Fehler wird zurückgegeben
+			klopr.SetError(err)
+		}
+
+		// Signalisiert dass der Vorgang erfolgreich war
+		klopr.SetResult(nil)
+	})
+
+	// Es wird geprüft ob ein Fehler aufgetreten ist
+	if err := o.kernel.AddToEventLoop(eventloopFunction); err != nil {
+		return fmt.Errorf("functionCallInEventloopFinall: " + err.Error())
+	}
+
+	// Es ist kein Fehler aufgetreten
+	return nil
+}
+
+// functionCallInEventloopPromiseOperation verarbeitet das Ergebnis eines Funktionsaufrufs, der ein Promise zurückgibt.
+// Es prüft, ob die Verbindung noch besteht, behandelt das Promise und führt die finalen Schritte des Funktionsaufrufs durch.
+// Bei Erfolg wird das Ergebnis der Operation signalisiert.
+func functionCallInEventloopPromiseOperation(o *SharedFunction, request *SharedFunctionRequest, req *types.RpcRequest, result *v8.Value) error {
+	// Es wird ermittelt ob die Verbindung getrennt wurde
+	if !req.HttpRequest.IsConnected.Bool() {
+		return fmt.Errorf("connection closed")
+	}
+
+	// Die Eventloop Funktion wird erzeugt
+	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+		// Es wird ermittelt ob die Verbindung getrennt wurde
+		if !req.HttpRequest.IsConnected.Bool() {
+			klopr.SetError(fmt.Errorf("connection closed"))
+			return
+		}
+
+		// Es wird geprüft ob es sich um ein Promises handelt
+		if !result.IsPromise() {
+			panic("isnr promise")
+		}
+
+		// Das Promises Objekt wird erzeugt
+		prom, err := result.AsPromise()
+		if err != nil {
+			panic(err)
+		}
+
+		// Wird ausgeführt wenn die Funktion erfolgreich aufgerufen wurde
+		prom.Then(func(info *v8.FunctionCallbackInfo) *v8.Value {
+			request.functionCallFinal()
+			return v8.Undefined(info.Context().Isolate())
+		}, func(info *v8.FunctionCallbackInfo) *v8.Value {
+			request.functionCallException(info.Args()[0].String())
+			return v8.Undefined(info.Context().Isolate())
+		})
+
+		// Der 5. Schritt des Funktionsaufrufes wird durchgeführt
+		if err := functionCallInEventloopFinall(o, request, req, prom); err != nil {
+			return
+		}
+
+		// Signalisiert dass der Vorgang erfolgreich war
+		klopr.SetResult(nil)
+	})
+
+	// Es wird geprüft ob ein Fehler aufgetreten ist
+	if err := o.kernel.AddToEventLoop(eventloopFunction); err != nil {
+		return fmt.Errorf("functionCallInEventloopPromiseOperation: " + err.Error())
+	}
+
+	// Es ist kein Fehler aufgetreten
+	return nil
+}
+
+// functionCallInEventloop führt den vorbereiteten Funktionsaufruf innerhalb der Eventschleife aus.
+// Es prüft, ob die Verbindung noch besteht, führt die Funktion aus und behandelt das Ergebnis.
+// Bei Erfolg wird das Ergebnis der Operation signalisiert.
+func functionCallInEventloop(o *SharedFunction, request *SharedFunctionRequest, req *types.RpcRequest, proxFunction *v8.Function, proxArguments []v8.Valuer) error {
+	// Es wird ermittelt ob die Verbindung getrennt wurde
+	if !req.HttpRequest.IsConnected.Bool() {
+		return fmt.Errorf("connection closed")
+	}
+
+	// Die Eventloop Funktion wird erzeugt
+	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+		// Es wird ermittelt ob die Verbindung getrennt wurde
+		if !req.HttpRequest.IsConnected.Bool() {
+			klopr.SetError(fmt.Errorf("connection closed"))
+			return
+		}
+
+		// Die Funktion wird ausgeführt
+		result, err := proxFunction.Call(v8.Undefined(ctx.Isolate()), proxArguments...)
+		if err != nil {
+			panic(err)
+		}
+
+		// Der 4. Schritt des Funktionsaufrufes wird durchgeführt
+		if err := functionCallInEventloopPromiseOperation(o, request, req, result); err != nil {
+			return
+		}
+
+		// Signalisiert dass der Vorgang erfolgreich war
+		klopr.SetResult(nil)
+	})
+
+	// Es wird geprüft ob ein Fehler aufgetreten ist
+	if err := o.kernel.AddToEventLoop(eventloopFunction); err != nil {
+		return fmt.Errorf("functionCallInEventloop: " + err.Error())
+	}
+
+	// Es ist kein Fehler aufgetreten
+	return nil
+}
+
+// functionCallInEventloopProxyObjectPrepare bereitet den Proxy-Objekt-Funktionsaufruf innerhalb der Eventschleife vor.
+// Es erstellt die finalen Argumente, setzt den JavaScript-Code für den Proxy-Wrap,
+// führt die Funktion in der Eventschleife aus und behandelt mögliche Fehler.
+// Bei Erfolg wird das Ergebnis der Operation signalisiert.
+func functionCallInEventloopProxyObjectPrepare(o *SharedFunction, request *SharedFunctionRequest, req *types.RpcRequest, requestObj *v8.Object, convertedValues []v8.Valuer) error {
+	// Es wird ermittelt ob die Verbindung getrennt wurde
+	if !req.HttpRequest.IsConnected.Bool() {
+		return fmt.Errorf("connection closed")
+	}
+
+	// Die Eventloop Funktion wird erzeugt
+	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+		// Die Finalen Argumente werden erstellt
+		finalArguments := make([]v8.Valuer, 0)
+		finalArguments = append(finalArguments, requestObj)
+		finalArguments = append(finalArguments, convertedValues...)
+
+		// Legt den JS Code fest, dieser wird als Wrapper ausgeführt
+		code := `
+		(funct, proxyobject, ...parms) => {
+			console = { log: proxyobject.proxyShieldConsoleLog, error: proxyobject.proxyShieldErrorLog };
+			clearInterval = () => proxyobject.clearInterval();
+			clearTimeout = () => proxyobject.clearTimeout();
+			setInterval = () => proxyobject.setInterval();
+			setTimeout = () => proxyobject.setTimeout();
+			Resolve = (...parms) =>  proxyobject.resolve(...parms);
+			Promise = class vnh1Promise extends Promise {
+				constructor(executor) {
+					const {resolveProxy, rejectProxy} = proxyobject.newPromise();
+					const wrappedExecutor = (resolve, reject) => {
+						executor(
+							(value) => {
+								resolveProxy();
+								resolve(value);
+							},
+							(reason) => {
+								rejectProxy();
+								reject(reason);
+							}
+						);
+					};
+					super(wrappedExecutor);
+				}
+			}
+			return funct(...parms);
+		}`
+
+		// Der Code für die Proxy Shield Funktion wird ersteltl
+		procxyFunction, err := ctx.RunScript(code, "rpc_function_call_proxy_shield.js")
+		if err != nil {
+			return
+		}
+
+		// Es wird geprüft ob es sich um eine Funktion handelt,
+		// wenn ja wird die Funktion extrahiert
+		proxFunction, err := procxyFunction.AsFunction()
+		if err != nil {
+			return
+		}
+
+		// Das Proxy Objekt wird erzeugt
+		proxyObject, err := makeProxyForRPCCall(ctx, request)
+		if err != nil {
+			return
+		}
+
+		// Die Argumente für den Proxy werden erstellt
+		proxArguments := []v8.Valuer{o.v8Function, proxyObject}
+		proxArguments = append(proxArguments, finalArguments...)
+
+		// Es wird ermittelt ob die Verbindung getrennt wurde
+		if !req.HttpRequest.IsConnected.Bool() {
+			klopr.SetError(fmt.Errorf("connection closed"))
+			return
+		}
+
+		// Der 3. Schritt des Funktionsaufrufes wird durchgeführt
+		if err := functionCallInEventloop(o, request, req, proxFunction, proxArguments); err != nil {
+			return
+		}
+
+		// Signalisiert dass der Vorgang erfolgreich war
+		klopr.SetResult(nil)
+	})
+
+	// Es wird geprüft ob ein Fehler aufgetreten ist
+	if err := o.kernel.AddToEventLoop(eventloopFunction); err != nil {
+		return fmt.Errorf("functionCallInEventloopProxyObjectPrepare: " + err.Error())
+	}
+
+	// Es ist kein Fehler aufgetreten
+	return nil
+}
+
+// functionCallInEventloopInit initialisiert einen Funktionsaufruf innerhalb der Eventschleife.
+// Es prüft, ob die Verbindung besteht, wandelt die Parameter um, erstellt ein Request-Objekt,
+// und führt die vorbereitenden Schritte des Funktionsaufrufs durch.
+// Die Funktion wird zur Eventschleife hinzugefügt und das Ergebnis des Aufrufs wird verarbeitet.
+func functionCallInEventloopInit(o *SharedFunction, request *SharedFunctionRequest, req *types.RpcRequest) error {
+	// Es wird ermittelt ob die Verbindung getrennt wurde
+	if !req.HttpRequest.IsConnected.Bool() {
+		return fmt.Errorf("connection closed")
+	}
+
+	// Die Eventloop Funktion wird erzeugt
+	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+		// Die Parameter werden umgewandelt
+		convertedValues, err := convertRequestParametersToV8Parameters(ctx.Isolate(), o.signature.Params, req.Parms)
+		if err != nil {
+			return
+		}
+
+		// Das Request Objekt wird erstellt
+		requestObj, err := makeSharedFunctionObject(ctx, request, req)
+		if err != nil {
+			return
+		}
+
+		// Es wird ermittelt ob die Verbindung getrennt wurde
+		if !req.HttpRequest.IsConnected.Bool() {
+			klopr.SetError(fmt.Errorf("connection closed"))
+			return
+		}
+
+		// Der 2. Schritt des Funktionsaufrufes wird durchgeführt
+		if err := functionCallInEventloopProxyObjectPrepare(o, request, req, requestObj, convertedValues); err != nil {
+			return
+		}
+
+		// Signalisiert dass der Vorgang erfolgreich war
+		klopr.SetResult(nil)
+	})
+
+	// Es wird geprüft ob ein Fehler aufgetreten ist
+	if err := o.kernel.AddToEventLoop(eventloopFunction); err != nil {
+		return err
+	}
+
+	// Es ist kein Fehler aufgetreten
+	return nil
+}
+
+// convertRequestParametersToV8Parameters wandelt die RPC-Argumente in V8-Argumente für den aktuellen Kontext um.
+// Es überprüft die Datentypen und konvertiert sie in die entsprechenden V8-Typen.
+// Bei einem Fehler wird eine entsprechende Fehlermeldung zurückgegeben.
 func convertRequestParametersToV8Parameters(iso *v8.Isolate, parmTypes []string, reqparms []*types.FunctionParameterCapsle) ([]v8.Valuer, error) {
 	// Es wird versucht die Paraemter in den Richtigen v8 Datentypen umzuwandeln
 	convertedValues := make([]v8.Valuer, 0)
