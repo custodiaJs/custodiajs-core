@@ -28,6 +28,13 @@ type MultiError struct {
 	VmErrorValue error
 }
 
+type SpecificError struct {
+	CliError            error
+	GoProcessError      error
+	LocalApiOrRpcError  error
+	RemoteApiOrRpcError error
+}
+
 func (e *ExtModCGOPanic) Error() string {
 	return e.ErrorValue.Error()
 }
@@ -38,4 +45,8 @@ func (e *ExtModFunctionCallError) Error() string {
 
 func (e *MultiError) Error() string {
 	return e.ErrorValue.Error()
+}
+
+func (e *SpecificError) Error() string {
+	return e.GoProcessError.Error()
 }

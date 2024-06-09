@@ -29,17 +29,13 @@ const (
 )
 
 type SharedFunction struct {
-	kernel     types.KernelInterface // Speichert den Verwendeten Kernel ab
-	v8Function *v8.Function          // Speichert die eigentliche Funktion des V8 Codes ab
-	name       string                // Speichert den Namen der Funktion ab
-	//parmTypes          []string                 // Speichert die Parameterdatentypen welche die Funktion erwartet ab
-	//returnType         string                   // Speichert den Rückgabetypen welche die Funktion zurück gibt ab
-	eventOnRequest     []*v8.Function           // Speichert die Funktionen ab, welche aufgerufen werden sobald das Event eintritt
-	eventOnRequestFail []*v8.Function           // Speichert die Funktionen ab, welche aufgerufen werden sobald das Event eintritt
-	signature          *types.FunctionSignature // Speichert die Signatur der Fuktion ab
+	kernel     types.KernelInterface    // Speichert den Verwendeten Kernel ab
+	v8Function *v8.Function             // Speichert die eigentliche Funktion des V8 Codes ab
+	name       string                   // Speichert den Namen der Funktion ab
+	signature  *types.FunctionSignature // Speichert die Signatur der Fuktion ab
 }
 
-type SharedFunctionRequest struct {
+type SharedFunctionRequestContext struct {
 	resolveChan     chan *types.FunctionCallState
 	kernel          types.KernelInterface
 	_rprequest      *types.RpcRequest
@@ -53,7 +49,7 @@ type CallFunctionSignature struct {
 }
 
 type RequestResponseUnit struct {
-	request *SharedFunctionRequest
+	request *SharedFunctionRequestContext
 }
 
 type RequestResponseWaiterStill struct {

@@ -53,6 +53,9 @@ type KernelEventLoopOperationMethode uint8
 // Gibt die Funktion an, welche aufgerufen werden soll
 type KernelLoopV8Function func(*v8.Context, *KernelLoopOperation)
 
+// Vererbte Structs
+type FunctionCallReturnData ExportedV8Value
+
 type TransportWhitelistVmEntryData struct {
 	WildCardDomains []string
 	ExactDomains    []string
@@ -75,11 +78,6 @@ type VMEntryBaseData struct {
 	Password string
 	Database string
 	Alias    string
-}
-
-type FunctionCallReturnData struct {
-	CType string
-	Value interface{}
 }
 
 type FunctionCallState struct {

@@ -67,7 +67,7 @@ func (o *RequestResponseUnit) WaitOfState() (*types.FunctionCallState, error) {
 	return result.CallState, nil
 }
 
-func newRequestResponseWaiter(request *SharedFunctionRequest) (*RequestResponseUnit, error) {
+func newRequestResponseWaiter(request *SharedFunctionRequestContext) (*RequestResponseUnit, error) {
 	newRRW := &RequestResponseUnit{request: request}
 	return newRRW, nil
 }

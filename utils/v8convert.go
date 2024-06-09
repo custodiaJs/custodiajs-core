@@ -107,3 +107,114 @@ func V8ValueToGoValue(ctx *v8.Context, val *v8.Value) (*types.ExportedV8Value, e
 		return nil, fmt.Errorf("V8ValueToGoValue: unsupported type")
 	}
 }
+
+// Wandelt die Funktionsargumente in Strings um
+func ConvertV8ValuesToString(ctx *v8.Context, args []*v8.Value) ([]string, error) {
+	// Es werden alle Stringwerte Extrahiert
+	extracted := []string{}
+	for _, item := range args {
+		// Es wird geprüft ob es sich um ein Objekt oder um ein Array handelt
+		switch {
+		case item.IsObject() && !item.IsArray():
+			// Es wird versucht das V8GO Objekt in ein Go Struct umzuwandeln
+			obj, err := V8ObjectToGoObject(ctx, item)
+			if err != nil {
+				return nil, fmt.Errorf("internal error by converting, value")
+			}
+
+			// Das Objekt wird in JSON Umgewandelt
+			encoded, err := json.Marshal(obj)
+			if err != nil {
+				return nil, fmt.Errorf("internal error by converting, value")
+			}
+
+			// Der JSON Wert wird zwischengespeichert
+			extracted = append(extracted, string(encoded))
+		case item.IsArray():
+			// Das V8Go Array wird in ein Go Array umgewandelt
+			obj, err := V8ArrayToGoArray(ctx, item)
+			if err != nil {
+				return nil, fmt.Errorf("internal error by converting, value")
+			}
+
+			// Die Einzelnene Einträge werden abgeabreitet
+			var extra []interface{}
+			for _, item := range obj {
+				extra = append(extra, item.Value)
+			}
+
+			// Die Einträge werden Dekodiert
+			encoded, err := json.Marshal(extra)
+			if err != nil {
+				return nil, fmt.Errorf("internal error by converting, value")
+			}
+
+			// Das Go Array wird zwischengspeichert
+			extracted = append(extracted, string(encoded))
+		case item.IsFunction():
+			// Es wird geprüft ob es sich um eine Asynchrone oder um eine Synchrone Funktion handelt
+			if item.IsAsyncFunction() {
+				extracted = append(extracted, fmt.Sprintf("ASYNC:=%p", item))
+			} else {
+				extracted = append(extracted, fmt.Sprintf("SYNC:=%p", item))
+			}
+		default:
+			extracted = append(extracted, item.String())
+		}
+	}
+
+	// Die Exportierten Werte werden zurückgegeben
+	return extracted, nil
+}
+
+// Wandelt V8GO Daten in Go Daten um
+func ConvertV8DataToGoData(args []*v8.Value) ([]*types.ExportedV8Value, error) {
+	// Speichert alle FunktionsStates ab
+	returnValues := make([]*types.ExportedV8Value, 0)
+
+	// Die Einzelnen Parameter werden abgearbeitet
+	for _, item := range args {
+		// Das Datentyp wird ermittelt
+		var responseData *types.ExportedV8Value
+		if item == nil {
+			responseData = &types.ExportedV8Value{Type: "null", Value: nil}
+		} else if item.IsUndefined() || item.IsNull() {
+			responseData = &types.ExportedV8Value{Type: "undefined", Value: nil}
+		} else {
+			switch {
+			case item.IsString():
+				responseData = &types.ExportedV8Value{Type: "string", Value: item.String()}
+			case item.IsNumber():
+				switch {
+				case item.IsBigInt():
+					responseData = &types.ExportedV8Value{Type: "number", Value: item.BigInt().String()}
+				case item.IsInt32():
+					responseData = &types.ExportedV8Value{Type: "number", Value: item.Int32()}
+				case item.IsUint32():
+					responseData = &types.ExportedV8Value{Type: "number", Value: item.Uint32()}
+				case item.IsNumber():
+					responseData = &types.ExportedV8Value{Type: "number", Value: item.Number()}
+				default:
+					responseData = &types.ExportedV8Value{Type: "number", Value: item.Integer()}
+				}
+			case item.IsBoolean():
+				responseData = &types.ExportedV8Value{Type: "boolean", Value: item.Boolean()}
+			case item.IsObject():
+				fmt.Println("Wert ist ein Array:")
+			case item.IsArray():
+				fmt.Println("Wert ist ein Array:")
+			case item.IsFunction():
+				fmt.Println("Wert ist ein Array:")
+			default:
+				// Es wird ein Javascript Fehler zurückgegeben
+				return nil, fmt.Errorf("unsupported datatype for shared function response")
+			}
+		}
+
+		// Der Eintrag wird abgespeichert
+		returnValues = append(returnValues, responseData)
+	}
+
+	// Die Werte werden zurückgegeben
+	return returnValues, nil
+}

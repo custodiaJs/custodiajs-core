@@ -342,7 +342,7 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 	if result.State == "ok" {
 		dt := make([]*RPCResponseData, 0)
 		for _, item := range result.Return {
-			dt = append(dt, &RPCResponseData{DType: item.CType, Value: item.Value})
+			dt = append(dt, &RPCResponseData{DType: item.Type, Value: item.Value})
 		}
 		responseData = &ResponseCapsle{Data: dt}
 	} else if result.State == "failed" {

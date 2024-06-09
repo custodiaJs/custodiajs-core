@@ -23,28 +23,28 @@ func (o *ExtModuleLink) addGlobalFunc(extModFunc *cgowrapper.CGOWrappedLibModule
 			// Das Datentyp wird ermittelt
 			var responseData *types.FunctionCallReturnData
 			if item == nil {
-				responseData = &types.FunctionCallReturnData{CType: "null", Value: nil}
+				responseData = &types.FunctionCallReturnData{Type: "null", Value: nil}
 			} else if item.IsUndefined() || item.IsNull() {
-				responseData = &types.FunctionCallReturnData{CType: "undefined", Value: nil}
+				responseData = &types.FunctionCallReturnData{Type: "undefined", Value: nil}
 			} else {
 				switch {
 				case item.IsString():
-					responseData = &types.FunctionCallReturnData{CType: "string", Value: item.String()}
+					responseData = &types.FunctionCallReturnData{Type: "string", Value: item.String()}
 				case item.IsNumber():
 					switch {
 					case item.IsBigInt():
-						responseData = &types.FunctionCallReturnData{CType: "number", Value: item.BigInt().String()}
+						responseData = &types.FunctionCallReturnData{Type: "number", Value: item.BigInt().String()}
 					case item.IsInt32():
-						responseData = &types.FunctionCallReturnData{CType: "number", Value: item.Int32()}
+						responseData = &types.FunctionCallReturnData{Type: "number", Value: item.Int32()}
 					case item.IsUint32():
-						responseData = &types.FunctionCallReturnData{CType: "number", Value: item.Uint32()}
+						responseData = &types.FunctionCallReturnData{Type: "number", Value: item.Uint32()}
 					case item.IsNumber():
-						responseData = &types.FunctionCallReturnData{CType: "number", Value: item.Number()}
+						responseData = &types.FunctionCallReturnData{Type: "number", Value: item.Number()}
 					default:
-						responseData = &types.FunctionCallReturnData{CType: "number", Value: item.Integer()}
+						responseData = &types.FunctionCallReturnData{Type: "number", Value: item.Integer()}
 					}
 				case item.IsBoolean():
-					responseData = &types.FunctionCallReturnData{CType: "boolean", Value: item.Boolean()}
+					responseData = &types.FunctionCallReturnData{Type: "boolean", Value: item.Boolean()}
 				case item.IsObject():
 					fmt.Println("Wert ist ein Array:")
 				case item.IsArray():

@@ -193,12 +193,10 @@ func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInt
 
 		// Das Objekt wird erzeugt
 		newSharedFunction := &SharedFunction{
-			kernel:             kernel,
-			name:               info.Args()[0].String(),
-			v8Function:         rpcFunc,
-			eventOnRequest:     make([]*v8.Function, 0),
-			eventOnRequestFail: make([]*v8.Function, 0),
-			signature:          funcSig,
+			kernel:     kernel,
+			name:       info.Args()[0].String(),
+			v8Function: rpcFunc,
+			signature:  funcSig,
 		}
 
 		// Die Geteilte Funktion wird erzeugt und abgespeichert
