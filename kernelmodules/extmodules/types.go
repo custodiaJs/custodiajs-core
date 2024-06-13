@@ -1,6 +1,6 @@
 package extmodules
 
-import cgowrapper "vnh1/kernel/extmodules/cgo_wrapper"
+import cgowrapper "vnh1/kernelmodules/extmodules/cgo_wrapper"
 
 type ExternModuleImport struct {
 }

@@ -1,12 +1,12 @@
 package kernel
 
 import (
-	kmoduleconsole "vnh1/kernel/modules/console"
-	kmodulecrypto "vnh1/kernel/modules/crypto"
-	kmoduledatabase "vnh1/kernel/modules/database"
-	kmodulehttp "vnh1/kernel/modules/http"
-	kmodulenet "vnh1/kernel/modules/network"
-	kmodulerpc "vnh1/kernel/modules/rpc"
+	kmoduleconsole "vnh1/kernelmodules/mainmodules/console"
+	kmodulecrypto "vnh1/kernelmodules/mainmodules/crypto"
+	kmoduledatabase "vnh1/kernelmodules/mainmodules/database"
+	kmodulehttp "vnh1/kernelmodules/mainmodules/http"
+	kmodulenet "vnh1/kernelmodules/mainmodules/network"
+	kmodulerpc "vnh1/kernelmodules/mainmodules/rpc"
 	"vnh1/types"
 )
 

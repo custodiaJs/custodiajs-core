@@ -5,7 +5,7 @@ import (
 	"sync"
 	"vnh1/databaseservices"
 	"vnh1/identkeydatabase"
-	"vnh1/kernel/extmodules"
+	"vnh1/kernelmodules/extmodules"
 	"vnh1/types"
 )
 

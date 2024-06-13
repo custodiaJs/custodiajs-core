@@ -11,7 +11,7 @@ import (
 	"vnh1/databaseservices"
 	"vnh1/filesystem"
 	"vnh1/identkeydatabase"
-	extmodules "vnh1/kernel/extmodules"
+	extmodules "vnh1/kernelmodules/extmodules"
 	"vnh1/static"
 	"vnh1/types"
 	"vnh1/utils"

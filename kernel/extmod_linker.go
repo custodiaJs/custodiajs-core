@@ -2,8 +2,8 @@ package kernel
 
 import (
 	"fmt"
-	"vnh1/kernel/extmodules"
-	cgowrapper "vnh1/kernel/extmodules/cgo_wrapper"
+	"vnh1/kernelmodules/extmodules"
+	cgowrapper "vnh1/kernelmodules/extmodules/cgo_wrapper"
 	"vnh1/types"
 	"vnh1/utils"
 

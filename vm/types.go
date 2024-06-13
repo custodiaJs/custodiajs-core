@@ -4,7 +4,7 @@ import (
 	"sync"
 	"vnh1/databaseservices/services"
 	"vnh1/kernel"
-	extmodules "vnh1/kernel/extmodules"
+	extmodules "vnh1/kernelmodules/extmodules"
 	"vnh1/types"
 	"vnh1/vmdb"
 )

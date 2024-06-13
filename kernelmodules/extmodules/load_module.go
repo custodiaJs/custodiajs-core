@@ -2,7 +2,7 @@ package extmodules
 
 import (
 	"fmt"
-	cgowrapper "vnh1/kernel/extmodules/cgo_wrapper"
+	cgowrapper "vnh1/kernelmodules/extmodules/cgo_wrapper"
 )
 
 // Lädt ein Libmodule
