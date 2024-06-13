@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"vnh1/localgrpcproto"
-	"vnh1/utils"
+	"vnh1/utils/procslog"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -27,7 +27,7 @@ func (s *CliGrpcServer) ListVMs(ctx context.Context, _ *emptypb.Empty) (*localgr
 	returnValue := &localgrpcproto.VmListResponse{Vms: entry}
 
 	// Log
-	utils.LogPrint(fmt.Sprintf("CLI: Retrieve VmList with %d items\n", len(entry)))
+	procslog.LogPrint(fmt.Sprintf("CLI: Retrieve VmList with %d items\n", len(entry)))
 
 	// Die Daten werden zurückgesendet
 	return returnValue, nil

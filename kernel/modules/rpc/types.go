@@ -52,7 +52,7 @@ type RequestResponseUnit struct {
 	request *SharedFunctionRequestContext
 }
 
-type RequestResponseWaiterStill struct {
+type RequestResponseWaiter struct {
 	CallState *types.FunctionCallState
 	Error     error
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"vnh1/filesystem"
 	"vnh1/utils"
 
 	"github.com/gofrs/flock"
@@ -45,7 +46,7 @@ func (o *ManifestFile) ValidateWithState() error {
 
 func loadManifestFile(path string) (*ManifestFile, error) {
 	// Es wird geprüft ob die Datei vorhanden ist
-	if !utils.FileExists(path) {
+	if !filesystem.FileExists(path) {
 		return nil, fmt.Errorf(fmt.Sprintf("loadManifestFile: file '%s' not found", path))
 	}
 
@@ -74,7 +75,7 @@ func loadManifestFile(path string) (*ManifestFile, error) {
 	}
 
 	// Die Datei wird eingelesen
-	readedFileBytes, err := utils.ReadFileBytes(openFile)
+	readedFileBytes, err := filesystem.ReadFileBytes(openFile)
 	if err != nil {
 		return nil, fmt.Errorf("loadManifestFile: " + err.Error())
 	}
@@ -86,7 +87,7 @@ func loadManifestFile(path string) (*ManifestFile, error) {
 	}
 
 	// Die Größe der Datei wird ermittelt
-	fsize, err := utils.GetFileSize(path)
+	fsize, err := filesystem.GetFileSize(path)
 	if err != nil {
 		return nil, fmt.Errorf("loadMainJsFile: " + err.Error())
 	}

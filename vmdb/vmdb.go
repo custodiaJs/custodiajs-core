@@ -3,14 +3,14 @@ package vmdb
 import (
 	"fmt"
 	"strings"
-	"vnh1/utils"
+	"vnh1/filesystem"
 )
 
 // loadAllVirtualMachines lädt alle virtuellen Maschinen aus dem angegebenen Verzeichnis und speichert sie im VmDatabase-Objekt.
 // Falls ein Fehler auftritt, wird eine entsprechende Fehlermeldung zurückgegeben.
 func (o *VmDatabase) loadAllVirtualMachines() error {
 	// Die VM's werden geladen
-	vms, err := utils.ScanVmDir(o.vmRootDir)
+	vms, err := filesystem.ScanVmDir(o.vmRootDir)
 	if err != nil {
 		return fmt.Errorf("VmDatabase->LoadAllVirtualMachines: " + err.Error())
 	}

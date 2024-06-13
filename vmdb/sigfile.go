@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"vnh1/utils"
+	"vnh1/filesystem"
 
 	"github.com/gofrs/flock"
 )
 
 func loadSignatureFile(path string) (*SignatureFile, error) {
 	// Es wird geprüft ob die Datei vorhanden ist
-	if !utils.FileExists(path) {
+	if !filesystem.FileExists(path) {
 		return nil, fmt.Errorf(fmt.Sprintf("loadSignatureFile: file '%s' not found", path))
 	}
 

@@ -17,8 +17,8 @@ package kmodulerpc
 
 import (
 	"fmt"
+	"vnh1/eventloop"
 	"vnh1/types"
-	"vnh1/utils/eventloop"
 	rpcrequest "vnh1/utils/rpc_request"
 
 	v8 "rogchap.com/v8go"
@@ -96,7 +96,7 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) error {
 	}
 
 	// Die Loop Aufgabe wird erzeugt
-	kernelLoopOperation := eventloop.NewKernelEventLoopFunctionOperation(func(_ *v8.Context, lopr *types.KernelLoopOperation) {
+	kernelLoopOperation := eventloop.NewKernelEventLoopFunctionOperation(func(_ *v8.Context, lopr types.KernelEventLoopContextInterface) {
 		// Es wird geprüft ob die Verbindung getrennt wurde
 		if !rpcrequest.ConnectionIsOpen(req) {
 			o.kernel.LogPrint("RPC", "Process aborted, connection closed")

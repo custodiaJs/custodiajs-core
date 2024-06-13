@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"strings"
 	"unsafe"
+	"vnh1/filesystem"
 	"vnh1/types"
-	"vnh1/utils"
 )
 
 type CGOWrappedLibModuleFunction struct {
@@ -146,7 +146,7 @@ func LoadWrappedCGOLibModule(pathv string) (*CGOWrappedLibModule, error) {
 	// passend zum Datentyp die Lib einzulesen
 	var lib C.STARTUP_RESULT
 	var libPath *C.char
-	if utils.FileExists(pathv) {
+	if filesystem.FileExists(pathv) {
 		// Pfad zur Shared Library
 		libPath = C.CString(pathv)
 
@@ -156,7 +156,7 @@ func LoadWrappedCGOLibModule(pathv string) (*CGOWrappedLibModule, error) {
 		// Sollte es sich nicht um eines dieser Dateiformate handeln, wird ein Fehler ausgelöst.
 		if strings.HasSuffix(pathv, ".so") {
 			// Es wird geprüft ob es sich um eine Unix .so Datei handelt
-			if !utils.IsUnixSOFile(pathv) {
+			if !filesystem.IsUnixSOFile(pathv) {
 				defer C.free(unsafe.Pointer(libPath))
 				return nil, fmt.Errorf("LoadWrappedCGOLibModule: invalid lib file")
 			}
@@ -169,7 +169,7 @@ func LoadWrappedCGOLibModule(pathv string) (*CGOWrappedLibModule, error) {
 			}
 		} else if strings.HasSuffix(pathv, ".dll") {
 			// Es wird geprüft ob es sich um eine Windows .DLL handelt
-			if !utils.IsWindowsDLL(pathv) {
+			if !filesystem.IsWindowsDLL(pathv) {
 				defer C.free(unsafe.Pointer(libPath))
 				return nil, fmt.Errorf("LoadWrappedCGOLibModule: not supported data binary format")
 			}
@@ -182,7 +182,7 @@ func LoadWrappedCGOLibModule(pathv string) (*CGOWrappedLibModule, error) {
 			}
 		} else if strings.HasSuffix(pathv, ".dylib") {
 			// Es wird gerprüft ob der Header korrekt ist
-			if !utils.IsDylib(pathv) {
+			if !filesystem.IsDylib(pathv) {
 				defer C.free(unsafe.Pointer(libPath))
 				return nil, fmt.Errorf("LoadWrappedCGOLibModule: not supported data binary format")
 			}

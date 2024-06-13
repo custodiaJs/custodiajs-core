@@ -269,19 +269,6 @@ func (o *RPCModule) rpcNewSharePublic(kernel types.KernelInterface, context *v8.
 // Ermöglicht es eine Lokale Javascript Funktion aufzurufen
 func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate) *v8.FunctionTemplate {
 	return v8.NewFunctionTemplate(iso, func(info *v8.FunctionCallbackInfo) *v8.Value {
-		// Erstelle einen Promise Resolver
-		resolver, err := v8.NewPromiseResolver(info.Context())
-		if err != nil {
-			// Es wird Javascript Fehler ausgelöst
-			utils.V8ContextThrow(info.Context(), "Error attempting to create a promise 'rpcCall'")
-
-			// Rückgabe
-			return v8.Undefined(info.Context().Isolate())
-		}
-
-		// Gebe die Promise des Resolvers zurück
-		promise := resolver.GetPromise()
-
 		// Es wird geprüft ob mindestens 3 Parameter vorhanden sind
 		if len(info.Args()) < 3 {
 			// Es wird Javascript Fehler ausgelöst
@@ -316,6 +303,19 @@ func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate) *v8.F
 
 		// Speichert die Container ID ab
 		rpcSignatureStr := info.Args()[0].String()
+
+		// Erstelle einen Promise Resolver
+		resolver, err := v8.NewPromiseResolver(info.Context())
+		if err != nil {
+			// Es wird Javascript Fehler ausgelöst
+			utils.V8ContextThrow(info.Context(), "Error attempting to create a promise 'rpcCall'")
+
+			// Rückgabe
+			return v8.Undefined(info.Context().Isolate())
+		}
+
+		// Gebe die Promise des Resolvers zurück
+		//promise := resolver.GetPromise()
 
 		// Es wird versucht die Signatur einzulesen
 		funcSig, err := utils.ParseFunctionSignatureOptionalFunction(rpcSignatureStr)
@@ -410,7 +410,7 @@ func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate) *v8.F
 		}()
 
 		// Rückgabe
-		return promise.Value
+		return resolver.Value
 	})
 }
 

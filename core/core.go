@@ -9,6 +9,7 @@ import (
 	"sync"
 	"vnh1/container"
 	"vnh1/databaseservices"
+	"vnh1/filesystem"
 	"vnh1/identkeydatabase"
 	extmodules "vnh1/kernel/extmodules"
 	"vnh1/static"
@@ -109,7 +110,7 @@ func (o *Core) AddNewVMInstance(vmDbEntry *vmdb.VmDBEntry) (types.VmInterface, e
 	}
 
 	// Das Logging Verzeichniss wird erstellt
-	logPath, err := utils.MakeLogDirForVM(o.logDIR, vmDbEntry.GetVMName())
+	logPath, err := filesystem.MakeLogDirForVM(o.logDIR, vmDbEntry.GetVMName())
 	if err != nil {
 		return nil, fmt.Errorf("Core->AddNewVMInstance: " + err.Error())
 	}

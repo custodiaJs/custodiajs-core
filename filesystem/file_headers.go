@@ -1,4 +1,4 @@
-package utils
+package filesystem
 
 // ELFHeader enthält den Header einer ELF-Datei
 type elfheader struct {

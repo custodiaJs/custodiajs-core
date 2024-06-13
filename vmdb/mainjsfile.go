@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"vnh1/filesystem"
 	"vnh1/utils"
 
 	"github.com/gofrs/flock"
@@ -23,7 +24,7 @@ func (o *MainJsFile) GetContent() ([]byte, error) {
 
 func loadMainJsFile(path string) (*MainJsFile, error) {
 	// Es wird geprüft ob die Datei vorhanden ist
-	if !utils.FileExists(path) {
+	if !filesystem.FileExists(path) {
 		return nil, fmt.Errorf(fmt.Sprintf("loadMainJsFile: file '%s' not found", path))
 	}
 
@@ -46,7 +47,7 @@ func loadMainJsFile(path string) (*MainJsFile, error) {
 	}
 
 	// Die Größe der Datei wird ermittelt
-	fsize, err := utils.GetFileSize(path)
+	fsize, err := filesystem.GetFileSize(path)
 	if err != nil {
 		return nil, fmt.Errorf("loadMainJsFile: " + err.Error())
 	}

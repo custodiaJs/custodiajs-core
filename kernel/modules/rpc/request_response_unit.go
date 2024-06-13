@@ -8,7 +8,7 @@ import (
 
 func (o *RequestResponseUnit) WaitOfState() (*types.FunctionCallState, error) {
 	// Diese Chan wird verwendet um auf das Ergebniss zu warten
-	resultChan := make(chan *RequestResponseWaiterStill)
+	resultChan := make(chan *RequestResponseWaiter)
 
 	// Diese Funktion wartet darauf, das neue Daten vorliegen
 	go func() {
@@ -24,7 +24,7 @@ func (o *RequestResponseUnit) WaitOfState() (*types.FunctionCallState, error) {
 		}
 
 		// Das Ergebniss wird zurückgegegben
-		resultChan <- &RequestResponseWaiterStill{CallState: result, Error: nil}
+		resultChan <- &RequestResponseWaiter{CallState: result, Error: nil}
 	}()
 
 	// Diese Funktion wartet darauf, dass die Verbindung getrennt wird
@@ -32,8 +32,11 @@ func (o *RequestResponseUnit) WaitOfState() (*types.FunctionCallState, error) {
 		// Es wird darauf gewartet, dass die Verbindung geschlossen wurde
 		rpcrequest.WaitOfConnectionStateChange(o.request._rprequest, false)
 
-		// Der Fehler wird zurückgegeben
+		// Die ResultChan wird geschlossen
 		close(resultChan)
+
+		// Die *.request.resolveChan wird geschlossen
+		close(o.request.resolveChan)
 	}()
 
 	// Es wird auf das Ergebniss der beiden Geroutinen gewartets

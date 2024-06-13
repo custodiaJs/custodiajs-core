@@ -3,10 +3,10 @@ package kmodulerpc
 import (
 	"fmt"
 	"time"
+	"vnh1/eventloop"
 	"vnh1/static"
 	"vnh1/types"
 	"vnh1/utils"
-	"vnh1/utils/eventloop"
 	rpcrequest "vnh1/utils/rpc_request"
 
 	v8 "rogchap.com/v8go"
@@ -24,10 +24,13 @@ func callInKernelEventLoopCheck(o *SharedFunction, ctx *v8.Context, prom *v8.Pro
 			// Es wird 1ne Milisekunde gewartet
 			time.Sleep(1 * time.Millisecond)
 
-			// Es wird ein neues Event zum Kernel hinzugefügt
-			o.kernel.AddToEventLoop(eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+			// Es wird eine neue Kernel Funktion erzeugt
+			eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
 				callInKernelEventLoopCheck(o, ctx, prom, request, req)
-			}))
+			})
+
+			// Es wird ein neues Event zum Kernel hinzugefügt
+			o.kernel.AddToEventLoop(eventloopFunction)
 		}()
 	case v8.Rejected:
 		ctx.PerformMicrotaskCheckpoint()
@@ -47,7 +50,7 @@ func functionCallInEventloopFinall(o *SharedFunction, request *SharedFunctionReq
 	}
 
 	// Die Eventloop Funktion wird erzeugt
-	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
 		err := callInKernelEventLoopCheck(o, ctx, prom, request, req)
 		if err != nil {
 			// Der Fehler wird zurückgegeben
@@ -77,7 +80,7 @@ func functionCallInEventloopPromiseOperation(o *SharedFunction, request *SharedF
 	}
 
 	// Die Eventloop Funktion wird erzeugt
-	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
 		// Es wird ermittelt ob die Verbindung getrennt wurde
 		if !req.HttpRequest.IsConnected.Bool() {
 			klopr.SetError(fmt.Errorf("connection closed"))
@@ -132,7 +135,7 @@ func functionCallInEventloop(o *SharedFunction, request *SharedFunctionRequestCo
 	}
 
 	// Die Eventloop Funktion wird erzeugt
-	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
 		// Es wird ermittelt ob die Verbindung getrennt wurde
 		if !req.HttpRequest.IsConnected.Bool() {
 			klopr.SetError(fmt.Errorf("connection closed"))
@@ -174,44 +177,14 @@ func functionCallInEventloopProxyObjectPrepare(o *SharedFunction, request *Share
 	}
 
 	// Die Eventloop Funktion wird erzeugt
-	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
 		// Die Finalen Argumente werden erstellt
 		finalArguments := make([]v8.Valuer, 0)
 		finalArguments = append(finalArguments, requestObj)
 		finalArguments = append(finalArguments, convertedValues...)
 
-		// Legt den JS Code fest, dieser wird als Wrapper ausgeführt
-		code := `
-		(funct, proxyobject, ...parms) => {
-			console = { log: proxyobject.proxyShieldConsoleLog, error: proxyobject.proxyShieldErrorLog };
-			clearInterval = () => proxyobject.clearInterval();
-			clearTimeout = () => proxyobject.clearTimeout();
-			setInterval = () => proxyobject.setInterval();
-			setTimeout = () => proxyobject.setTimeout();
-			Resolve = (...parms) =>  proxyobject.resolve(...parms);
-			Promise = class vnh1Promise extends Promise {
-				constructor(executor) {
-					const {resolveProxy, rejectProxy} = proxyobject.newPromise();
-					const wrappedExecutor = (resolve, reject) => {
-						executor(
-							(value) => {
-								resolveProxy();
-								resolve(value);
-							},
-							(reason) => {
-								rejectProxy();
-								reject(reason);
-							}
-						);
-					};
-					super(wrappedExecutor);
-				}
-			}
-			return funct(...parms);
-		}`
-
 		// Der Code für die Proxy Shield Funktion wird ersteltl
-		procxyFunction, err := ctx.RunScript(code, "rpc_function_call_proxy_shield.js")
+		procxyFunction, err := ctx.RunScript(testJsProxySource, "rpc_function_call_proxy_shield.js")
 		if err != nil {
 			return
 		}
@@ -268,7 +241,7 @@ func functionCallInEventloopInit(o *SharedFunction, request *SharedFunctionReque
 	}
 
 	// Die Eventloop Funktion wird erzeugt
-	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr *types.KernelLoopOperation) {
+	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
 		// Die Parameter werden umgewandelt
 		convertedValues, err := convertRequestParametersToV8Parameters(ctx.Isolate(), o.signature.Params, req.Parms)
 		if err != nil {
@@ -584,7 +557,12 @@ func v8makeProxyForRPCCall(context *v8.Context, request *SharedFunctionRequestCo
 		return nil, makeV8Error("makeProxyForRPCCall", err)
 	}
 	if err := obj.Set("newPromise", v8.NewFunctionTemplate(context.Isolate(), request.proxyShield_NewPromise)); err != nil {
-		return nil, makeV8Error("makeProxyForRPCCall", err)
+		return nil, makeV8Error("v8makeProxyForRPCCall", err)
+	}
+
+	// Die Testfunktionen werden hinzugefügt
+	if err := obj.Set("wait", v8.NewFunctionTemplate(context.Isolate(), request.testWait)); err != nil {
+		return nil, makeV8Error("v8makeProxyForRPCCall", err)
 	}
 
 	// Das Finale Objekt wird erstellt

@@ -1,4 +1,4 @@
-package utils
+package filesystem
 
 import (
 	"encoding/hex"
@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"vnh1/utils"
 )
 
 type FileInfo struct {
@@ -33,9 +34,9 @@ func WalkDir(dirPath string, withHash bool) ([]FileInfo, error) {
 			// Sollte es sich um einen Ordner handeln, wird ein Hash aus dem Namen erzeugt, ansonsten wird der Dateiinhalt gehast
 			var hash string
 			if info.IsDir() {
-				hash = HashOfString(info.Name())
+				hash = utils.HashOfString(info.Name())
 			} else {
-				fHash, err := HashFile(path)
+				fHash, err := utils.HashFile(path)
 				if err != nil {
 					return err
 				}

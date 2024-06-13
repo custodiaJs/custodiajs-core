@@ -206,6 +206,7 @@ func (o *Kernel) ServeEventLoop() error {
 }
 
 func (o *Kernel) AddToEventLoop(operation types.KernelEventLoopOperationInterface) error {
+	// Mittels Goroutine wird ein neues Event hinzugefügt
 	go func() {
 		// Der Mutex wird verwendet
 		o.eventLoopLockCond.L.Lock()

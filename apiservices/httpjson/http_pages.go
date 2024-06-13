@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"vnh1/static"
-	"vnh1/utils"
+	"vnh1/utils/procslog"
 )
 
 func (o *HttpApiService) indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +25,7 @@ func (o *HttpApiService) indexHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// Log
-	utils.LogPrint("HTTP-API: retrive host informations\n")
+	procslog.LogPrint("HTTP-API: retrive host informations\n")
 
 	// Schreibe die JSON-Daten in den ResponseWriter.
 	if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -108,5 +108,5 @@ func (o *HttpApiService) vmInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Log
-	utils.LogPrint(fmt.Sprintf("HTTP-API: retrive vm '%s' informations\n", strings.ToUpper(request.VmId)))
+	procslog.LogPrint(fmt.Sprintf("HTTP-API: retrive vm '%s' informations\n", strings.ToUpper(request.VmId)))
 }

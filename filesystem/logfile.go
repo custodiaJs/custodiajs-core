@@ -1,15 +1,10 @@
-package utils
+package filesystem
 
 import (
 	"fmt"
-	"log"
 	"path"
 	"vnh1/types"
 )
-
-func LogPrint(text string) {
-	log.Print(text)
-}
 
 func MakeLogDirForVM(rootdir types.LOG_DIR, vmName string) (types.LOG_DIR, error) {
 	np := path.Join(string(rootdir), vmName)

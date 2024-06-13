@@ -18,6 +18,7 @@ package kmodulerpc
 import (
 	"fmt"
 	"strings"
+	"time"
 	"vnh1/types"
 	"vnh1/utils"
 
@@ -127,8 +128,19 @@ func (o *SharedFunctionRequestContext) rejectFunctionCallbackV8(info *v8.Functio
 	return nil
 }
 
+// Räumt auf und Zerstört das Objekt
+func (o *SharedFunctionRequestContext) clearAndDestroy() {
+	// Es wird geprüft ob das Objekt zerstört wurde
+	if requestContextIsClosedAndDestroyed(o) {
+		panic("destroyed object")
+	}
+
+	// Kernel Log
+	o.kernel.LogPrint(fmt.Sprintf("RPC(%s)", o._rprequest.ProcessLog.GetID()), "request closed")
+}
+
 // Wird ausgeführt wenn die Funktion zuende aufgerufen wurde
-func (o *SharedFunctionRequestContext) functionCallFinal() error {
+func (o *SharedFunctionRequestContext) functionCallFinal() {
 	// Es wird geprüft ob das Objekt zerstört wurde
 	if requestContextIsClosedAndDestroyed(o) {
 		panic("destroyed object")
@@ -142,37 +154,17 @@ func (o *SharedFunctionRequestContext) functionCallFinal() error {
 
 	// Kernel Log
 	o.kernel.LogPrint(fmt.Sprintf("RPC(%s)", o._rprequest.ProcessLog.GetID()), "function call finalized")
-
-	// Es wird nichts zurückgegeben
-	return nil
 }
 
 // Wird ausgeführt wenn ein Throw durch die Funktion ausgelöst wird
-func (o *SharedFunctionRequestContext) functionCallException(msg string) error {
+func (o *SharedFunctionRequestContext) functionCallException(msg string) {
 	// Es wird geprüft ob das Objekt zerstört wurde
 	if requestContextIsClosedAndDestroyed(o) {
 		panic("destroyed object")
 	}
 
 	// Die Antwort wird zurückgesendet
-	o.resolveChan <- &types.FunctionCallState{Error: msg, State: "exception"}
-
-	// Es wird Signalisiert dass eine Antwort gesendet wurde
-	o._wasResponded = true
-
-	// Rückgabe
-	return nil
-}
-
-// Räumt auf und Zerstört das Objekt
-func (o *SharedFunctionRequestContext) clearAndDestroy() {
-	// Es wird geprüft ob das Objekt zerstört wurde
-	if requestContextIsClosedAndDestroyed(o) {
-		panic("destroyed object")
-	}
-
-	// Kernel Log
-	o.kernel.LogPrint(fmt.Sprintf("RPC(%s)", o._rprequest.ProcessLog.GetID()), "request closed")
+	writeRequestReturnResponse(o, &types.FunctionCallState{Error: msg, State: "exception"})
 }
 
 // Proxy Shielded, Set Timeout funktion
@@ -284,6 +276,54 @@ func (o *SharedFunctionRequestContext) wasResponsed() bool {
 
 // Startet den Timer, welcher den Vorgang nach erreichen des Timeouts, abbricht
 func (o *SharedFunctionRequestContext) startTimeoutTimer() {
+}
+
+// Wird für Tests verwendet um den RPC aufruf zu stoppen bis die Verbindung geschlossen wurde
+func (o *SharedFunctionRequestContext) testWait(info *v8.FunctionCallbackInfo) *v8.Value {
+	// Es wird ermittelt ob ein Argument angegeben wurde
+	if len(info.Args()) < 1 {
+		utils.V8ContextThrow(info.Context(), "to few arguments")
+		return nil
+	}
+	if len(info.Args()) > 1 {
+		utils.V8ContextThrow(info.Context(), "to many arguments")
+		return nil
+	}
+
+	// Es muss sich um ein uint32 handeln
+	if !info.Args()[0].IsUint32() {
+		utils.V8ContextThrow(info.Context(), "only integer allowed")
+		return nil
+	}
+
+	// Erstelle einen Promise Resolver
+	resolver, err := v8.NewPromiseResolver(info.Context())
+	if err != nil {
+		// Es wird Javascript Fehler ausgelöst
+		utils.V8ContextThrow(info.Context(), "Error attempting to create a promise 'rpcCall'")
+
+		// Rückgabe
+		return v8.Undefined(info.Context().Isolate())
+	}
+
+	// Es wird eine Goroutine ausgeführt, diese Wartet X Millisekunden
+	go func(res *v8.PromiseResolver, wtime uint32, iso *v8.Isolate) {
+		// Es wird 'wtime' * Millisecond gewartet
+		if wtime == 0 {
+			time.Sleep(1 * time.Millisecond)
+		} else {
+			time.Sleep(time.Duration(wtime) * time.Millisecond)
+		}
+
+		// Es wird Signalisiert, das der Vorgang erfolgreich ausgeführt wurde
+		res.Resolve(v8.Null(info.Context().Isolate()))
+	}(resolver, info.Args()[0].Uint32(), info.Context().Isolate())
+
+	// Das Promise wird zurückgegeben
+	promise := resolver.GetPromise()
+
+	// Rückgabe
+	return promise.Value
 }
 
 // Erstellt einen neuen SharedFunctionRequestContext

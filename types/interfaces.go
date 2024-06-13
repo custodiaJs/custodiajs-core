@@ -105,11 +105,16 @@ type ProcessLogSessionInterface interface {
 	GetID() string
 }
 
+type KernelEventLoopContextInterface interface {
+	SetError(error)
+	SetResult(*v8.Value)
+}
+
 type KernelEventLoopOperationInterface interface {
 	GetType() KernelEventLoopOperationMethode
-	GetFunction() KernelLoopV8Function
+	GetFunction() func(*v8.Context, KernelEventLoopContextInterface)
 	WaitOfResponse() (*v8.Value, error)
-	GetOperation() *KernelLoopOperation
+	GetOperation() KernelEventLoopContextInterface
 	GetSourceCode() string
 	SetResult(*v8.Value)
 	SetError(error)

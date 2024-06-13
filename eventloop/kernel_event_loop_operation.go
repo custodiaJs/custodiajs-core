@@ -1,8 +1,6 @@
 package eventloop
 
 import (
-	"sync"
-	"vnh1/static"
 	"vnh1/types"
 
 	v8 "rogchap.com/v8go"
@@ -12,7 +10,7 @@ func (o *KernelEventLoopOperation) GetType() types.KernelEventLoopOperationMetho
 	return o.Type
 }
 
-func (o *KernelEventLoopOperation) GetFunction() types.KernelLoopV8Function {
+func (o *KernelEventLoopOperation) GetFunction() func(*v8.Context, types.KernelEventLoopContextInterface) {
 	return o.DirectV8Function
 }
 
@@ -90,16 +88,6 @@ func (o *KernelEventLoopOperation) WaitOfResponse() (*v8.Value, error) {
 	}
 }
 
-func (o *KernelEventLoopOperation) GetOperation() *types.KernelLoopOperation {
-	return &types.KernelLoopOperation{SetError: o.SetError, SetResult: o.SetResult}
-}
-
-func NewKernelEventLoopFunctionOperation(funct types.KernelLoopV8Function) *KernelEventLoopOperation {
-	mutex := &sync.Mutex{}
-	return &KernelEventLoopOperation{DirectV8Function: funct, Type: static.KERNEL_EVENT_LOOP_FUNCTION, _cond: sync.NewCond(mutex), _mutex: mutex, _hasNullReturn: false}
-}
-
-func NewKernelEventLoopSourceOperation(source string) *KernelEventLoopOperation {
-	mutex := &sync.Mutex{}
-	return &KernelEventLoopOperation{EngineSourceCode: source, Type: static.KERNEL_EVENT_LOOP_SOURCE_CODE, _cond: sync.NewCond(mutex), _mutex: mutex, _hasNullReturn: false}
+func (o *KernelEventLoopOperation) GetOperation() types.KernelEventLoopContextInterface {
+	return &KernelEventLoopContext{setError: o.SetError, setResult: o.SetResult}
 }

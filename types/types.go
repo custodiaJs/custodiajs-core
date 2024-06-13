@@ -20,8 +20,6 @@ import (
 	"net/http"
 	"net/url"
 	"vnh1/utils/grsbool"
-
-	v8 "rogchap.com/v8go"
 )
 
 // VM und Core Status Typen sowie Repo Datentypen
@@ -49,9 +47,6 @@ type RpcRequestMethode uint8 // Gibt an, über welche Methode der RPC Request Em
 
 // Kernel Loop Operation Methode
 type KernelEventLoopOperationMethode uint8
-
-// Gibt die Funktion an, welche aufgerufen werden soll
-type KernelLoopV8Function func(*v8.Context, *KernelLoopOperation)
 
 // Vererbte Structs
 type FunctionCallReturnData ExportedV8Value
@@ -140,9 +135,4 @@ type RpcRequest struct {
 	Parms       []*FunctionParameterCapsle
 	RpcRequest  HttpJsonRequestData
 	Resolve     chan *FunctionCallReturn
-}
-
-type KernelLoopOperation struct {
-	SetError  func(error)
-	SetResult func(*v8.Value)
 }
