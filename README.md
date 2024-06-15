@@ -12,14 +12,23 @@
 - **Process Isolation**: V8go interpreters are executed in separate processes, ensuring that each process manages its own resources.
 - **Restricted Access**: The executed scripts have no access to the host filesystem or network, minimizing the risk of damage or data exfiltration.
 
-## Benefits
+## Functionality
 
-- **Security**: Combining containerization and sandboxing creates a secure execution environment.
-- **Flexibility**: Multiple scripts can be executed in parallel and independently without affecting each other.
-- **Isolation**: Strict separation between the scripts and the host system prevents unwanted interactions and enhances security.
+- **RPC Function Calls** ✅
+- **Network Functions, Sockets, etc.** ⚠️
+- **HTTP Client / Server Functions** ⚠️
+- **Electrum Support** ⚠️
+- **Lightning Support** ⚠️
+- **Nostr Support** ⚠️
+- **Database Support (MySQL/SQLite, MongoDB)** ⚠️
+- **Crypto Functions (SSL, ECC, RSA, PGP)** ⚠️
+- **NodeJS (JS) Console Functions** ⚠️
+- **Filesystem Access** ⚠️
+- **Wireguard Management** ⚠️
 
-## Use Cases
+## Roadmap
 
-- Secure execution of custom JavaScript code.
-- Provision of an isolated environment for script-based automations.
-- Development and testing of JavaScript code in a controlled environment.
+- **Linux**: Currently in development ✅
+- **Windows**: Planned with limited support ⚠️
+- **MacOS**: Planned support ⚠️
+- **BSD**: Planned support ⚠️

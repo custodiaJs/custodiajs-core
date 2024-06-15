@@ -126,53 +126,6 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) error {
 		if err != nil {
 			panic(err)
 		}
-
-		// Die Daten werden aus dem Request ausgelesen
-		returnData, err := request.waitOfResponse()
-		if err != nil {
-			// Es wird geprüft ob die Verbindung getrennt wurde, wenn ja, wird der Vorgang abgebrochen
-			if !rpcrequest.ConnectionIsOpen(req) {
-				o.kernel.LogPrint("RPC", "Process aborted, connection closed")
-				return
-			}
-
-			// Es handelt sich um einen Mysteriösen Fehler
-			return //&types.MultiError{ErrorValue: fmt.Errorf("EnterFunctionCall: " + err.Error()), VmErrorValue: fmt.Errorf("internal error")}
-		}
-
-		// Es wird geprüft ob daten zurückgelifert wurden
-		if returnData == nil {
-			// Es wird geprüft ob die Verbindung getrennt wurde, wenn ja, wird der Vorgang abgebrochen
-			if !rpcrequest.ConnectionIsOpen(req) {
-				o.kernel.LogPrint("RPC", "Process aborted, connection closed")
-				return
-			}
-
-			// Es handelt sich um einen Mysteriösen Fehler
-			return //&types.MultiError{ErrorValue: fmt.Errorf("EnterFunctionCall: invalid returned data"), VmErrorValue: fmt.Errorf("internal error")}
-		}
-
-		// Diese Funktion wird aufgerufen, sobald die Antwort Übermittelt wurde
-		resolveTransmittedData := func() {
-			request.clearAndDestroy()
-		}
-
-		// Diese Funktion wird aufgerufen, wenn das übermitteln der Daten fehlgeschlagen ist
-		rejectTransmittedData := func() {
-		}
-
-		// Das Rückgabe Objekt wird erstellt
-		returnObject := &types.FunctionCallReturn{
-			FunctionCallState: returnData,
-			Resolve:           resolveTransmittedData,
-			Reject:            rejectTransmittedData,
-		}
-
-		// Das Rückgabe Objekt wird zurückgegeben
-		req.Resolve <- returnObject
-
-		// Log
-		o.kernel.LogPrint(fmt.Sprintf("RPC(%s)", req.ProcessLog.GetID()), "'%s' has return", o.name)
 	}()
 
 	// Das Ergebniss wird zurückgegeben

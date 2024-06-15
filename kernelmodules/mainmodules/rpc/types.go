@@ -16,6 +16,7 @@
 package kmodulerpc
 
 import (
+	"vnh1/saftychan"
 	"vnh1/types"
 
 	v8 "rogchap.com/v8go"
@@ -35,24 +36,21 @@ type SharedFunction struct {
 	signature  *types.FunctionSignature // Speichert die Signatur der Fuktion ab
 }
 
-type SharedFunctionRequestContext struct {
-	resolveChan     chan *types.FunctionCallState
-	kernel          types.KernelInterface
-	_rprequest      *types.RpcRequest
-	_returnDataType string
-	_wasResponded   bool
-	_destroyed      bool
-}
-
 type CallFunctionSignature struct {
 	*types.FunctionSignature
-}
-
-type RequestResponseUnit struct {
-	request *SharedFunctionRequestContext
 }
 
 type RequestResponseWaiter struct {
 	CallState *types.FunctionCallState
 	Error     error
+}
+
+type SharedFunctionRequestContext struct {
+	//resolveChan     chan *types.FunctionCallState
+	responseChan    *saftychan.FunctionCallStateChan
+	kernel          types.KernelInterface
+	_rprequest      *types.RpcRequest
+	_returnDataType string
+	_wasResponded   bool
+	_destroyed      bool
 }

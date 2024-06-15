@@ -134,5 +134,6 @@ type RpcRequest struct {
 	ProcessLog  ProcessLogSessionInterface
 	Parms       []*FunctionParameterCapsle
 	RpcRequest  HttpJsonRequestData
-	Resolve     chan *FunctionCallReturn
+	//Resolve     chan *FunctionCallReturn
+	Resolve func(*FunctionCallReturn) error
 }

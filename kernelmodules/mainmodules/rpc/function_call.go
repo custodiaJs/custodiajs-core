@@ -44,11 +44,6 @@ func callInKernelEventLoopCheck(o *SharedFunction, ctx *v8.Context, prom *v8.Pro
 // Es fügt einen neuen Eintrag zur Eventschleife hinzu, prüft den Promise-Status und behandelt etwaige Fehler.
 // Bei Erfolg wird das Ergebnis der Operation signalisiert.
 func functionCallInEventloopFinall(o *SharedFunction, request *SharedFunctionRequestContext, req *types.RpcRequest, prom *v8.Promise) error {
-	// Es wird ermittelt ob die Verbindung getrennt wurde
-	if !req.HttpRequest.IsConnected.Bool() {
-		return fmt.Errorf("connection closed")
-	}
-
 	// Die Eventloop Funktion wird erzeugt
 	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
 		err := callInKernelEventLoopCheck(o, ctx, prom, request, req)
@@ -74,19 +69,8 @@ func functionCallInEventloopFinall(o *SharedFunction, request *SharedFunctionReq
 // Es prüft, ob die Verbindung noch besteht, behandelt das Promise und führt die finalen Schritte des Funktionsaufrufs durch.
 // Bei Erfolg wird das Ergebnis der Operation signalisiert.
 func functionCallInEventloopPromiseOperation(o *SharedFunction, request *SharedFunctionRequestContext, req *types.RpcRequest, result *v8.Value) error {
-	// Es wird ermittelt ob die Verbindung getrennt wurde
-	if !req.HttpRequest.IsConnected.Bool() {
-		return fmt.Errorf("connection closed")
-	}
-
 	// Die Eventloop Funktion wird erzeugt
 	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
-		// Es wird ermittelt ob die Verbindung getrennt wurde
-		if !req.HttpRequest.IsConnected.Bool() {
-			klopr.SetError(fmt.Errorf("connection closed"))
-			return
-		}
-
 		// Es wird geprüft ob es sich um ein Promises handelt
 		if !result.IsPromise() {
 			panic("isnr promise")
@@ -129,19 +113,8 @@ func functionCallInEventloopPromiseOperation(o *SharedFunction, request *SharedF
 // Es prüft, ob die Verbindung noch besteht, führt die Funktion aus und behandelt das Ergebnis.
 // Bei Erfolg wird das Ergebnis der Operation signalisiert.
 func functionCallInEventloop(o *SharedFunction, request *SharedFunctionRequestContext, req *types.RpcRequest, proxFunction *v8.Function, proxArguments []v8.Valuer) error {
-	// Es wird ermittelt ob die Verbindung getrennt wurde
-	if !req.HttpRequest.IsConnected.Bool() {
-		return fmt.Errorf("connection closed")
-	}
-
 	// Die Eventloop Funktion wird erzeugt
 	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
-		// Es wird ermittelt ob die Verbindung getrennt wurde
-		if !req.HttpRequest.IsConnected.Bool() {
-			klopr.SetError(fmt.Errorf("connection closed"))
-			return
-		}
-
 		// Die Funktion wird ausgeführt
 		result, err := proxFunction.Call(v8.Undefined(ctx.Isolate()), proxArguments...)
 		if err != nil {
@@ -171,11 +144,6 @@ func functionCallInEventloop(o *SharedFunction, request *SharedFunctionRequestCo
 // führt die Funktion in der Eventschleife aus und behandelt mögliche Fehler.
 // Bei Erfolg wird das Ergebnis der Operation signalisiert.
 func functionCallInEventloopProxyObjectPrepare(o *SharedFunction, request *SharedFunctionRequestContext, req *types.RpcRequest, requestObj *v8.Object, convertedValues []v8.Valuer) error {
-	// Es wird ermittelt ob die Verbindung getrennt wurde
-	if !req.HttpRequest.IsConnected.Bool() {
-		return fmt.Errorf("connection closed")
-	}
-
 	// Die Eventloop Funktion wird erzeugt
 	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
 		// Die Finalen Argumente werden erstellt
@@ -206,12 +174,6 @@ func functionCallInEventloopProxyObjectPrepare(o *SharedFunction, request *Share
 		proxArguments := []v8.Valuer{o.v8Function, proxyObject}
 		proxArguments = append(proxArguments, finalArguments...)
 
-		// Es wird ermittelt ob die Verbindung getrennt wurde
-		if !req.HttpRequest.IsConnected.Bool() {
-			klopr.SetError(fmt.Errorf("connection closed"))
-			return
-		}
-
 		// Der 3. Schritt des Funktionsaufrufes wird durchgeführt
 		if err := functionCallInEventloop(o, request, req, proxFunction, proxArguments); err != nil {
 			return
@@ -235,11 +197,6 @@ func functionCallInEventloopProxyObjectPrepare(o *SharedFunction, request *Share
 // und führt die vorbereitenden Schritte des Funktionsaufrufs durch.
 // Die Funktion wird zur Eventschleife hinzugefügt und das Ergebnis des Aufrufs wird verarbeitet.
 func functionCallInEventloopInit(o *SharedFunction, request *SharedFunctionRequestContext, req *types.RpcRequest) error {
-	// Es wird ermittelt ob die Verbindung getrennt wurde
-	if !req.HttpRequest.IsConnected.Bool() {
-		return fmt.Errorf("connection closed")
-	}
-
 	// Die Eventloop Funktion wird erzeugt
 	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
 		// Die Parameter werden umgewandelt
@@ -251,12 +208,6 @@ func functionCallInEventloopInit(o *SharedFunction, request *SharedFunctionReque
 		// Das Request Objekt wird erstellt
 		requestObj, err := v8makeSharedFunctionObject(ctx, request, req)
 		if err != nil {
-			return
-		}
-
-		// Es wird ermittelt ob die Verbindung getrennt wurde
-		if !req.HttpRequest.IsConnected.Bool() {
-			klopr.SetError(fmt.Errorf("connection closed"))
 			return
 		}
 
@@ -345,7 +296,7 @@ func validateSharedFunctionRequestContext(o *SharedFunctionRequestContext) bool 
 	}
 
 	// Es wird geprüft ob die Resolve Chain NULL ist
-	if o.resolveChan == nil {
+	if o.responseChan == nil {
 		return false
 	}
 
@@ -360,18 +311,18 @@ func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequ
 
 	// Die Resolve Funktion wird festgelegt
 	if err := objTemplate.Set("Resolve", v8.NewFunctionTemplate(context.Isolate(), request.resolveFunctionCallbackV8)); err != nil {
-		return nil, makeV8Error("v8makeSharedFunctionObject", err)
+		return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 	}
 
 	// Die Reject Funktion wird festgelegt
 	if err := objTemplate.Set("Reject", v8.NewFunctionTemplate(context.Isolate(), request.rejectFunctionCallbackV8)); err != nil {
-		return nil, makeV8Error("v8makeSharedFunctionObject", err)
+		return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 	}
 
 	// Das Objekt wird erzeugt
 	obj, err := objTemplate.NewInstance(context)
 	if err != nil {
-		return nil, makeV8Error("v8makeSharedFunctionObject", err)
+		return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 	}
 
 	// Wird von V8 Verwendet um zu ermitteln ob die Verbindung mit der Anfragendenseite noch besteht
@@ -399,7 +350,7 @@ func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequ
 	case static.HTTP_REQUEST:
 		// Es wird geprüft ob der http Request vorhanden ist
 		if !rpcrequest.IsHttpRequest(rrpcrequest) {
-			return nil, makeRequestTypeIsNotHttpRequest("v8makeSharedFunctionObject")
+			return nil, utils.MakeRequestTypeIsNotHttpRequest("v8makeSharedFunctionObject")
 		}
 
 		// Der Type der Verbindung wird definiert
@@ -417,7 +368,7 @@ func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequ
 
 			// Der Eintrag wird hinzugefügt
 			if err := cookies.Set(item.Name, cookieObject); err != nil {
-				return nil, makeV8Error("v8makeSharedFunctionObject", err)
+				return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 			}
 		}
 
@@ -425,7 +376,7 @@ func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequ
 		headersTemplate := v8.NewObjectTemplate(context.Isolate())
 		headers, err := headersTemplate.NewInstance(context)
 		if err != nil {
-			return nil, makeV8Error("v8makeSharedFunctionObject", err)
+			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
 
 		// Die Header werden extrahiert
@@ -433,13 +384,13 @@ func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequ
 			// Es wird ein neues Slices erzeugt
 			sliceV8, err := context.RunScript("(function() { return []; })();", "slice.js")
 			if err != nil {
-				return nil, makeV8Error("v8makeSharedFunctionObject", err)
+				return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 			}
 
 			// Das Objekt wird ausgelesen
 			sliceObject, err := sliceV8.AsObject()
 			if err != nil {
-				return nil, makeV8Error("v8makeSharedFunctionObject", err)
+				return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 			}
 
 			// Die Einzelnen Werte werden umgewandelt
@@ -447,7 +398,7 @@ func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequ
 				// Der Wert wird umgewandelt
 				v8Value, err := v8.NewValue(context.Isolate(), value)
 				if err != nil {
-					return nil, makeV8Error("v8makeSharedFunctionObject", err)
+					return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 				}
 
 				// Der Wert wird hinzugefügt
@@ -456,7 +407,7 @@ func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequ
 
 			// Der Eintrag wird hinzugefügt
 			if err := headers.Set(k, sliceObject); err != nil {
-				return nil, makeV8Error("v8makeSharedFunctionObject", err)
+				return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 			}
 		}
 
@@ -465,41 +416,41 @@ func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequ
 
 		// Die Werte werden hinzugefügt
 		if err := httpObj.Set("IsConnected", v8.NewFunctionTemplate(context.Isolate(), isConnected)); err != nil {
-			return nil, makeV8Error("v8makeSharedFunctionObject", err)
+			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
 		if err := httpObj.Set("ContentLength", float64(rrpcrequest.HttpRequest.ContentLength)); err != nil {
-			return nil, makeV8Error("v8makeSharedFunctionObject", err)
+			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
 		if err := httpObj.Set("Host", rrpcrequest.HttpRequest.Host); err != nil {
-			return nil, makeV8Error("v8makeSharedFunctionObject", err)
+			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
 		if err := httpObj.Set("Proto", rrpcrequest.HttpRequest.Proto); err != nil {
-			return nil, makeV8Error("v8makeSharedFunctionObject", err)
+			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
 		if err := httpObj.Set("RemoteAddr", rrpcrequest.HttpRequest.RemoteAddr); err != nil {
-			return nil, makeV8Error("v8makeSharedFunctionObject", err)
+			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
 		if err := httpObj.Set("RequestURI", rrpcrequest.HttpRequest.RequestURI); err != nil {
-			return nil, makeV8Error("v8makeSharedFunctionObject", err)
+			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
 		if err := httpObj.Set("Cookies", cookies); err != nil {
-			return nil, makeV8Error("v8makeSharedFunctionObject", err)
+			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
 
 		// Das Finale Objekt wird erzeugt
 		http, err := httpObj.NewInstance(context)
 		if err != nil {
-			return nil, makeV8Error("v8makeSharedFunctionObject", err)
+			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
 
 		// Die Header werden hinzugefügt
 		if err := http.Set("Headers", headers); err != nil {
-			return nil, makeV8Error("v8makeSharedFunctionObject", err)
+			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
 
 		// Das Objekt wird abgespeichert
 		if err := obj.Set("http", http); err != nil {
-			return nil, makeV8Error("v8makeSharedFunctionObject", err)
+			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
 	case static.WEBSOCKET_REQUEST:
 		// Der Type wird Signalisiert
@@ -508,18 +459,18 @@ func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequ
 		// Der Type wird Signalisiert
 		rpcConnectionType = "ipc"
 	default:
-		return nil, makeUnkownMethodeError("v8makeSharedFunctionObject")
+		return nil, utils.MakeUnkownMethodeError("v8makeSharedFunctionObject")
 	}
 
 	// Der Wert wird eingelesen
 	val, err := v8.NewValue(context.Isolate(), rpcConnectionType)
 	if err != nil {
-		return nil, makeV8Error("v8makeSharedFunctionObject", err)
+		return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 	}
 
 	// Der Eintrag wird im Objekt hinzugefügt
 	if err := obj.Set("CallMethode", val); err != nil {
-		return nil, makeV8Error("v8makeSharedFunctionObject", err)
+		return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 	}
 
 	// Rückgabe ohne Fehler
@@ -533,42 +484,42 @@ func v8makeProxyForRPCCall(context *v8.Context, request *SharedFunctionRequestCo
 
 	// Die Funktionen werden hinzugefügt
 	if err := obj.Set("proxyShieldConsoleLog", v8.NewFunctionTemplate(context.Isolate(), request.proxyShield_ConsoleLog)); err != nil {
-		return nil, makeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
 	}
 	if err := obj.Set("proxyShieldErrorLog", v8.NewFunctionTemplate(context.Isolate(), request.proxyShield_ErrorLog)); err != nil {
-		return nil, makeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
 	}
 	if err := obj.Set("clearInterval", v8.NewFunctionTemplate(context.Isolate(), request.proxyShield_ClearInterval)); err != nil {
-		return nil, makeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
 	}
 	if err := obj.Set("clearTimeout", v8.NewFunctionTemplate(context.Isolate(), request.proxyShield_ClearTimeout)); err != nil {
-		return nil, makeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
 	}
 	if err := obj.Set("setInterval", v8.NewFunctionTemplate(context.Isolate(), request.proxyShield_SetInterval)); err != nil {
-		return nil, makeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
 	}
 	if err := obj.Set("setTimeout", v8.NewFunctionTemplate(context.Isolate(), request.proxyShield_SetTimeout)); err != nil {
-		return nil, makeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
 	}
 	if err := obj.Set("resolve", v8.NewFunctionTemplate(context.Isolate(), request.resolveFunctionCallbackV8)); err != nil {
-		return nil, makeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
 	}
 	if err := obj.Set("reject", v8.NewFunctionTemplate(context.Isolate(), request.rejectFunctionCallbackV8)); err != nil {
-		return nil, makeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
 	}
 	if err := obj.Set("newPromise", v8.NewFunctionTemplate(context.Isolate(), request.proxyShield_NewPromise)); err != nil {
-		return nil, makeV8Error("v8makeProxyForRPCCall", err)
+		return nil, utils.MakeV8Error("v8makeProxyForRPCCall", err)
 	}
 
 	// Die Testfunktionen werden hinzugefügt
 	if err := obj.Set("wait", v8.NewFunctionTemplate(context.Isolate(), request.testWait)); err != nil {
-		return nil, makeV8Error("v8makeProxyForRPCCall", err)
+		return nil, utils.MakeV8Error("v8makeProxyForRPCCall", err)
 	}
 
 	// Das Finale Objekt wird erstellt
 	fobj, err := obj.NewInstance(context)
 	if err != nil {
-		return nil, makeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
 	}
 
 	// Rückgabe ohne Fehler

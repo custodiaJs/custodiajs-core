@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"time"
+	"vnh1/saftychan"
 	"vnh1/static"
 	"vnh1/types"
 	"vnh1/utils"
@@ -28,6 +29,9 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 	// Gibt an ob die Verbindung getrennt wurde
 	isConnected := grsbool.NewGrsbool(true)
 
+	// Der ResultChan wird erezugt
+	saftyResponseChan := saftychan.NewFunctionCallReturnChan()
+
 	// Starte eine Go-Routine, um die Verbindung zu überwachen
 	go func() {
 		// Es wird darauf gewartet dass die Verbindung geschlossen wird
@@ -35,6 +39,9 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 
 		// Es wird Signalisiert dass die Verbindung geschlossen wurde
 		isConnected.Set(false)
+
+		// Das SaftyChan wird geschlossen
+		saftyResponseChan.Close()
 	}()
 
 	// Es wird geprüft ob es sich um die POST Methode handelt
@@ -307,8 +314,26 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 		UserAgent:        r.UserAgent(),
 	}
 
-	// Der ResultChan wird erezugt
-	resultChan := make(chan *types.FunctionCallReturn)
+	// Diese Funktion nimmt die Antwort entgegen
+	resolveFunction := func(response *types.FunctionCallReturn) error {
+		// Es wird geprüft ob das Response Null ist, wenn ja wird ein Panic ausgelöst
+		if response == nil {
+			panic("http rpc function call response is null, critical error")
+		}
+
+		// Es wird geprüft ob der Vorgang bereits abgeschlossen wurde
+		if saftyResponseChan.IsClosed() && isConnected.Bool() {
+			return utils.MakeHttpConnectionIsClosed()
+		} else if !isConnected.Bool() {
+			return utils.MakeAlreadyAnsweredRPCRequestError()
+		}
+
+		// Die Antwort wird geschrieben
+		saftyResponseChan.WriteAndClose(response)
+
+		// Es ist kein Fehler aufgetreten
+		return nil
+	}
 
 	// Das Request Objekt wird erzeugt
 	requestObject := &types.RpcRequest{
@@ -317,7 +342,7 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 		ProcessLog:  proc,
 		RequestType: static.HTTP_REQUEST,
 		HttpRequest: requestHttpObject,
-		Resolve:     resultChan,
+		Resolve:     resolveFunction,
 	}
 
 	// Die Funktion wird aufgerufen
@@ -329,12 +354,19 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 	}
 
 	// Es wird auf das Ergebniss gewartet
-	result := <-resultChan
+	result, ok := saftyResponseChan.Read()
+	if !ok || result == nil {
+		// Es wird geprüft ob die Verbindung aufgebaut ist
+		if !isConnected.Bool() {
+			// Log
+			proc.LogPrint("HTTP-RPC", "aborted, connection closed\n")
 
-	// Es wird geprüft ob Daten zurückgegen wurden
-	if result == nil {
-		proc.LogPrint("HTTP-RPC", "aborted, connection closed\n")
-		return
+			// Rückgabe
+			return
+		}
+
+		// Es handelt sich um einen unbekannten Fehler, Panic
+		panic("unkown internal http rpc calling error")
 	}
 
 	// Die Antwort wird gebaut

@@ -19,28 +19,43 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"vnh1/saftychan"
 	"vnh1/types"
 	"vnh1/utils"
+	rpcrequest "vnh1/utils/rpc_request"
 
 	v8 "rogchap.com/v8go"
 )
 
 // Sendet eine Erfolgreiche Antwort zurück
 func (o *SharedFunctionRequestContext) resolveFunctionCallbackV8(info *v8.FunctionCallbackInfo) *v8.Value {
-	// Es wird geprüft ob das Objekt zerstört wurde
-	if requestContextIsClosedAndDestroyed(o) {
-		panic("destroyed object")
-	}
-
 	// Es wird geprüft ob die v8.FunctionCallbackInfo "info" NULL ist
 	// In diesem fall muss ein Panic ausgelöst werden, da es keine Logik gibt, wann diese Eintreten kann
 	if info == nil {
-		panic("vm information callback infor null error")
+		panic("vm information callback null error")
 	}
 
 	// Es wird geprüft ob SharedFunctionRequestContext "o" NULL ist
 	if !validateSharedFunctionRequestContext(o) {
 		panic("SharedFunctionRequestContext 'o' is empty")
+	}
+
+	// Es wird geprüft ob das Objekt zerstört wurde
+	if o.responseChan.IsClosed() || !rpcrequest.ConnectionIsOpen(o._rprequest) || requestContextIsClosedAndDestroyed(o) {
+		// Der Grund für das Abbrechen des Vorganges wird ermittelt
+		switch {
+		case requestContextIsClosedAndDestroyed(o):
+			utils.V8ContextThrow(info.Context(), "It is not possible to respond to an already fully closed RPC request.")
+		case o.responseChan.IsClosed() && rpcrequest.ConnectionIsOpen(o._rprequest):
+			utils.V8ContextThrow(info.Context(), "An answer has already been sent, the process was aborted.")
+		case !rpcrequest.ConnectionIsOpen(o._rprequest):
+			utils.V8ContextThrow(info.Context(), "Resolving could not be performed, the connection was terminated.")
+		default:
+			utils.V8ContextThrow(info.Context(), "Resolving could not be performed, reason: unknown.")
+		}
+
+		// Rückgabe
+		return v8.Undefined(info.Context().Isolate())
 	}
 
 	// Es wird geprüft ob der Vorgang bereits beantwortet wurde,
@@ -50,9 +65,6 @@ func (o *SharedFunctionRequestContext) resolveFunctionCallbackV8(info *v8.Functi
 		return nil
 	}
 
-	// Speichert alle FunktionsStates ab
-	resolves := &types.FunctionCallState{Return: make([]*types.FunctionCallReturnData, 0), State: "ok"}
-
 	// Die Argumente werden umgewandelt
 	convertedArguments, err := utils.ConvertV8DataToGoData(info.Args())
 	if err != nil {
@@ -60,22 +72,45 @@ func (o *SharedFunctionRequestContext) resolveFunctionCallbackV8(info *v8.Functi
 		return nil
 	}
 
+	// Speichert alle FunktionsStates ab
+	resolves := &types.FunctionCallState{
+		Return: make([]*types.FunctionCallReturnData, 0),
+		State:  "ok",
+	}
+
 	// Die Einzelnen Parameter werden abgearbeitet
 	for _, item := range convertedArguments {
 		resolves.Return = append(resolves.Return, (*types.FunctionCallReturnData)(item))
 	}
 
-	// Es wird geprüft ob die Verbindung mit der gegenseite getrennt wurde
-	if !o._rprequest.HttpRequest.IsConnected.Bool() {
-		utils.V8ContextThrow(info.Context(), "")
-		return nil
+	// Es wird geprüft ob das ResponseChan geschlossen wurde
+	if o.responseChan.IsClosed() || !rpcrequest.ConnectionIsOpen(o._rprequest) {
+		// Der Grund für das Abbrechen des Vorganges wird ermittelt
+		switch {
+		case o.responseChan.IsClosed() && rpcrequest.ConnectionIsOpen(o._rprequest):
+			utils.V8ContextThrow(info.Context(), "An answer has already been sent, the process was aborted.")
+		case !rpcrequest.ConnectionIsOpen(o._rprequest):
+			utils.V8ContextThrow(info.Context(), "Resolving could not be performed, the connection was terminated.")
+		default:
+			utils.V8ContextThrow(info.Context(), "Resolving could not be performed, reason: unknown.")
+		}
+
+		// Rückgabe
+		return v8.Undefined(info.Context().Isolate())
 	}
 
 	// Die Antwort wird geschrieben
-	writeRequestReturnResponse(o, resolves)
+	if err := writeRequestReturnResponse(o, resolves); err != nil {
+		switch err := err.(type) {
+		case *types.SpecificError:
+			utils.V8ContextThrow(info.Context(), err.LocalJSVMError.Error())
+		default:
+			utils.V8ContextThrow(info.Context(), err.Error())
+		}
+	}
 
 	// Es ist kein Fehler aufgetreten
-	return nil
+	return v8.Undefined(info.Context().Isolate())
 }
 
 // Sendet eine Rejectantwort zurück
@@ -84,6 +119,24 @@ func (o *SharedFunctionRequestContext) rejectFunctionCallbackV8(info *v8.Functio
 	// In diesem fall muss ein Panic ausgelöst werden, da es keine Logik gibt, wann diese Eintreten kann
 	if info == nil {
 		panic("vm information callback infor null error")
+	}
+
+	// Es wird geprüft ob das Objekt zerstört wurde
+	if o.responseChan.IsClosed() || !rpcrequest.ConnectionIsOpen(o._rprequest) || requestContextIsClosedAndDestroyed(o) {
+		// Der Grund für das Abbrechen des Vorganges wird ermittelt
+		switch {
+		case requestContextIsClosedAndDestroyed(o):
+			utils.V8ContextThrow(info.Context(), "It is not possible to respond to an already fully closed RPC request.")
+		case o.responseChan.IsClosed() && rpcrequest.ConnectionIsOpen(o._rprequest):
+			utils.V8ContextThrow(info.Context(), "An answer has already been sent, the process was aborted.")
+		case !rpcrequest.ConnectionIsOpen(o._rprequest):
+			utils.V8ContextThrow(info.Context(), "Resolving could not be performed, the connection was terminated.")
+		default:
+			utils.V8ContextThrow(info.Context(), "Resolving could not be performed, reason: unknown.")
+		}
+
+		// Rückgabe
+		return v8.Undefined(info.Context().Isolate())
 	}
 
 	// Es wird geprüft ob SharedFunctionRequestContext "o" NULL ist
@@ -115,17 +168,29 @@ func (o *SharedFunctionRequestContext) rejectFunctionCallbackV8(info *v8.Functio
 		finalErrorStr = strings.Join(extractedStrings, " ")
 	}
 
-	// Es wird geprüft ob die Verbindung mit der gegenseite getrennt wurde
-	if !o._rprequest.HttpRequest.IsConnected.Bool() {
-		utils.V8ContextThrow(info.Context(), "")
-		return nil
+	// Es wird geprüft ob das ResponseChan geschlossen wurde
+	if o.responseChan.IsClosed() || !rpcrequest.ConnectionIsOpen(o._rprequest) {
+		// Der Fehler wird ermittelt
+		switch {
+		case o.responseChan.IsClosed() && rpcrequest.ConnectionIsOpen(o._rprequest):
+			utils.V8ContextThrow(info.Context(), "An answer has already been sent, the process was aborted.")
+		case !rpcrequest.ConnectionIsOpen(o._rprequest):
+			utils.V8ContextThrow(info.Context(), "Resolving could not be performed, the connection was terminated.")
+		default:
+			utils.V8ContextThrow(info.Context(), "Resolving could not be performed, reason: unknown.")
+		}
+
+		// Rückgabe
+		return v8.Undefined(info.Context().Isolate())
 	}
 
 	// Die Antwort wird zurückgesendet
-	writeRequestReturnResponse(o, &types.FunctionCallState{Error: finalErrorStr, State: "failed"})
+	if err := writeRequestReturnResponse(o, &types.FunctionCallState{Error: finalErrorStr, State: "failed"}); err != nil {
+		utils.V8ContextThrow(info.Context(), "Resolving could not be performed, the connection was terminated.")
+	}
 
 	// Es ist kein Fehler aufgetreten
-	return nil
+	return v8.Undefined(info.Context().Isolate())
 }
 
 // Räumt auf und Zerstört das Objekt
@@ -164,7 +229,9 @@ func (o *SharedFunctionRequestContext) functionCallException(msg string) {
 	}
 
 	// Die Antwort wird zurückgesendet
-	writeRequestReturnResponse(o, &types.FunctionCallState{Error: msg, State: "exception"})
+	if err := writeRequestReturnResponse(o, &types.FunctionCallState{Error: msg, State: "exception"}); err != nil {
+
+	}
 }
 
 // Proxy Shielded, Set Timeout funktion
@@ -250,24 +317,6 @@ func (o *SharedFunctionRequestContext) proxyShield_ErrorLog(info *v8.FunctionCal
 	return v8.Undefined(info.Context().Isolate())
 }
 
-// Wartet auf eine Antwort
-func (o *SharedFunctionRequestContext) waitOfResponse() (*types.FunctionCallState, error) {
-	// Es wird ein neuer Response Waiter erzeugt
-	responseWaiter, err := newRequestResponseWaiter(o)
-	if err != nil {
-		return nil, err
-	}
-
-	// Es wird auf den Status gewartet
-	finalResolve, err := responseWaiter.WaitOfState()
-	if err != nil {
-		return nil, err
-	}
-
-	// Das Ergebniss wird zurückgegeben
-	return finalResolve, nil
-}
-
 // Gibt an ob eine Antwort verfügbar ist
 func (o *SharedFunctionRequestContext) wasResponsed() bool {
 	// Der Mutex wird verwendet
@@ -330,7 +379,8 @@ func (o *SharedFunctionRequestContext) testWait(info *v8.FunctionCallbackInfo) *
 func newSharedFunctionRequestContext(kernel types.KernelInterface, returnDatatype string, rpcRequest *types.RpcRequest) *SharedFunctionRequestContext {
 	// Das Rückgabeobjekt wird erstellt
 	returnObject := &SharedFunctionRequestContext{
-		resolveChan:     make(chan *types.FunctionCallState),
+		//resolveChan:     make(chan *types.FunctionCallState),
+		responseChan:    saftychan.NewFunctionCallStateChan(),
 		_returnDataType: returnDatatype,
 		_wasResponded:   false,
 		_rprequest:      rpcRequest,
@@ -347,13 +397,33 @@ func requestContextIsClosedAndDestroyed(o *SharedFunctionRequestContext) bool {
 }
 
 // Sendet die Antwort zurück und setzt den Vorgang auf erfolgreich
-func writeRequestReturnResponse(o *SharedFunctionRequestContext, returnv *types.FunctionCallState) {
-	// Die Goroutine wird verwendet um die Änderungen an dem Request durchzuführen
-	go func() {
-		// Die Antwort wird zurückgesendet
-		o.resolveChan <- returnv
+func writeRequestReturnResponse(o *SharedFunctionRequestContext, returnv *types.FunctionCallState) error {
+	// Diese Funktion wird aufgerufen, sobald die Antwort Übermittelt wurde
+	resolveTransmittedData := func() {
+		o.clearAndDestroy()
+	}
 
-		// Es wird Signalisiert dass eine Antwort gesendet wurde
-		o._wasResponded = true
-	}()
+	// Diese Funktion wird aufgerufen, wenn das übermitteln der Daten fehlgeschlagen ist
+	rejectTransmittedData := func() {
+	}
+
+	// Das Rückgabe Objekt wird erstellt
+	returnObject := &types.FunctionCallReturn{
+		FunctionCallState: returnv,
+		Resolve:           resolveTransmittedData,
+		Reject:            rejectTransmittedData,
+	}
+
+	// Die Antwort wird an den Eigentlichen Request zurückgegeben
+	if err := o._rprequest.Resolve(returnObject); err != nil {
+		switch err := err.(type) {
+		case *types.SpecificError:
+			return err
+		default:
+			return fmt.Errorf("writeRequestReturnResponse: " + err.Error())
+		}
+	}
+
+	// Es ist kein Fehler aufgetreten
+	return nil
 }

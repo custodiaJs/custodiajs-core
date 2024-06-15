@@ -30,6 +30,7 @@ type MultiError struct {
 
 type SpecificError struct {
 	CliError            error
+	LocalJSVMError      error
 	GoProcessError      error
 	LocalApiOrRpcError  error
 	RemoteApiOrRpcError error
