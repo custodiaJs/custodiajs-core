@@ -23,11 +23,6 @@ type ExtModFunctionCallError struct {
 	ErrorValue error
 }
 
-type MultiError struct {
-	ErrorValue   error
-	VmErrorValue error
-}
-
 type SpecificError struct {
 	CliError            error
 	LocalJSVMError      error
@@ -41,10 +36,6 @@ func (e *ExtModCGOPanic) Error() string {
 }
 
 func (e *ExtModFunctionCallError) Error() string {
-	return e.ErrorValue.Error()
-}
-
-func (e *MultiError) Error() string {
 	return e.ErrorValue.Error()
 }
 

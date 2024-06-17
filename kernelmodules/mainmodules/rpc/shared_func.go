@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"vnh1/eventloop"
 	"vnh1/types"
+	"vnh1/utils"
 	rpcrequest "vnh1/utils/rpc_request"
 
 	v8 "rogchap.com/v8go"
@@ -67,39 +68,47 @@ func (o *SharedFunction) GetReturnDatatype() string {
 func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) error {
 	// Es wird geprüft ob die Aktuelle SharedFunction "o" NULL ist
 	if o == nil {
-		return &types.MultiError{ErrorValue: fmt.Errorf("EnterFunctionCall: o is null"), VmErrorValue: fmt.Errorf("internal error")}
+		return utils.RPCFunctionCallNullSharedFunctionObject()
 	}
 
 	// Es wird geprüft ob der RPC Request "req" NULL ist
 	if req == nil {
-		return &types.MultiError{ErrorValue: fmt.Errorf("EnterFunctionCall: req is null"), VmErrorValue: fmt.Errorf("request error")}
+		return utils.RPCFunctionCallNullRequest()
 	}
 
 	// Es wird geprüft ob das Req Objekt eine Verbindung besitzt
 	if !rpcrequest.ConnectionIsOpen(req) {
-		o.kernel.LogPrint("RPC", "Process aborted, connection closed")
-		return nil
+		//o.kernel.LogPrint("RPC", "Process aborted, connection closed")
+		return utils.MakeConnectionIsClosed()
 	}
 
 	// Es wird geprüft ob die Angeforderte Anzahl an Parametern vorhanden ist
 	if len(req.Parms) != len(o.signature.Params) {
-		return fmt.Errorf("EnterFunctionCall: invalid parameters")
+		return utils.MakeRPCFunctionCallParametersNumberUnequal(uint(len(o.signature.Params)), uint(len(req.Parms)))
 	}
 
 	// Es wird ein neues Request Objekt
-	request := newSharedFunctionRequestContext(o.kernel, o.signature.ReturnType, req)
+	request, err := newSharedFunctionRequestContext(o.kernel, o.signature.ReturnType, req)
+	if err != nil {
+		switch err := err.(type) {
+		case *types.SpecificError:
+			return err
+		default:
+			return fmt.Errorf("SharedFunction->EnterFunctionCall: " + err.Error())
+		}
+	}
 
 	// Es wird geprüft ob das Req Objekt eine Verbindung besitzt
 	if !rpcrequest.ConnectionIsOpen(req) {
-		o.kernel.LogPrint("RPC", "Process aborted, connection closed")
-		return nil
+		//o.kernel.LogPrint("RPC", "Process aborted, connection closed")
+		return utils.MakeConnectionIsClosed()
 	}
 
-	// Die Loop Aufgabe wird erzeugt
-	kernelLoopOperation := eventloop.NewKernelEventLoopFunctionOperation(func(_ *v8.Context, lopr types.KernelEventLoopContextInterface) {
+	// Diese Funktion wird als Event ausgeführt
+	event := func(_ *v8.Context, lopr types.KernelEventLoopContextInterface) {
 		// Es wird geprüft ob die Verbindung getrennt wurde
 		if !rpcrequest.ConnectionIsOpen(req) {
-			o.kernel.LogPrint("RPC", "Process aborted, connection closed")
+			//o.kernel.LogPrint("RPC", "Process aborted, connection closed")
 			return
 		}
 
@@ -112,11 +121,19 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) error {
 
 		// Es wird Signalisiert dass der Vorgang erfolgreich war
 		lopr.SetResult(nil)
-	})
+	}
+
+	// Die Loop Aufgabe wird erzeugt
+	kernelLoopOperation := eventloop.NewKernelEventLoopFunctionOperation(event)
 
 	// Die Funktion wird an den Eventloop des Kernels übergeben
 	if err := o.kernel.AddToEventLoop(kernelLoopOperation); err != nil {
-		return fmt.Errorf("EnterFunctionCall: " + err.Error())
+		switch err := err.(type) {
+		case *types.SpecificError:
+			return err
+		default:
+			return fmt.Errorf("SharedFunction->EnterFunctionCall: " + err.Error())
+		}
 	}
 
 	// Der Vorgang wird in einer neuen Goroutine durchgeführt

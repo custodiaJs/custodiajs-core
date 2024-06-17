@@ -33,6 +33,7 @@ func callInKernelEventLoopCheck(o *SharedFunction, ctx *v8.Context, prom *v8.Pro
 			o.kernel.AddToEventLoop(eventloopFunction)
 		}()
 	case v8.Rejected:
+		// PerformMicrotaskCheckpoint runs the default MicrotaskQueue until empty. This is used to make progress on Promises.
 		ctx.PerformMicrotaskCheckpoint()
 	}
 
@@ -58,7 +59,12 @@ func functionCallInEventloopFinall(o *SharedFunction, request *SharedFunctionReq
 
 	// Es wird geprüft ob ein Fehler aufgetreten ist
 	if err := o.kernel.AddToEventLoop(eventloopFunction); err != nil {
-		return fmt.Errorf("functionCallInEventloopFinall: " + err.Error())
+		switch err := err.(type) {
+		case *types.SpecificError:
+			return err
+		default:
+			return fmt.Errorf("functionCallInEventloopFinall: " + err.Error())
+		}
 	}
 
 	// Es ist kein Fehler aufgetreten
@@ -82,14 +88,21 @@ func functionCallInEventloopPromiseOperation(o *SharedFunction, request *SharedF
 			panic(err)
 		}
 
-		// Wird ausgeführt wenn die Funktion erfolgreich aufgerufen wurde
-		prom.Then(func(info *v8.FunctionCallbackInfo) *v8.Value {
+		// Wird ausgeführt wenn der Funktionsaufruf durchgeführt wurde
+		funcFinal := func(info *v8.FunctionCallbackInfo) *v8.Value {
 			request.functionCallFinal()
 			return v8.Undefined(info.Context().Isolate())
-		}, func(info *v8.FunctionCallbackInfo) *v8.Value {
+		}
+
+		// Wird ausgeführt wenn ein Throw durchgeführt wurde
+		throwProm := func(info *v8.FunctionCallbackInfo) *v8.Value {
 			request.functionCallException(info.Args()[0].String())
 			return v8.Undefined(info.Context().Isolate())
-		})
+		}
+
+		// Die Then und Catch funktionen werden festgelegt
+		prom = prom.Then(funcFinal, throwProm)
+		prom = prom.Catch(throwProm)
 
 		// Der 5. Schritt des Funktionsaufrufes wird durchgeführt
 		if err := functionCallInEventloopFinall(o, request, req, prom); err != nil {
@@ -102,7 +115,12 @@ func functionCallInEventloopPromiseOperation(o *SharedFunction, request *SharedF
 
 	// Es wird geprüft ob ein Fehler aufgetreten ist
 	if err := o.kernel.AddToEventLoop(eventloopFunction); err != nil {
-		return fmt.Errorf("functionCallInEventloopPromiseOperation: " + err.Error())
+		switch err := err.(type) {
+		case *types.SpecificError:
+			return err
+		default:
+			return fmt.Errorf("functionCallInEventloopFinall: " + err.Error())
+		}
 	}
 
 	// Es ist kein Fehler aufgetreten
@@ -132,7 +150,12 @@ func functionCallInEventloop(o *SharedFunction, request *SharedFunctionRequestCo
 
 	// Es wird geprüft ob ein Fehler aufgetreten ist
 	if err := o.kernel.AddToEventLoop(eventloopFunction); err != nil {
-		return fmt.Errorf("functionCallInEventloop: " + err.Error())
+		switch err := err.(type) {
+		case *types.SpecificError:
+			return err
+		default:
+			return fmt.Errorf("functionCallInEventloopFinall: " + err.Error())
+		}
 	}
 
 	// Es ist kein Fehler aufgetreten
@@ -185,7 +208,12 @@ func functionCallInEventloopProxyObjectPrepare(o *SharedFunction, request *Share
 
 	// Es wird geprüft ob ein Fehler aufgetreten ist
 	if err := o.kernel.AddToEventLoop(eventloopFunction); err != nil {
-		return fmt.Errorf("functionCallInEventloopProxyObjectPrepare: " + err.Error())
+		switch err := err.(type) {
+		case *types.SpecificError:
+			return err
+		default:
+			return fmt.Errorf("functionCallInEventloopFinall: " + err.Error())
+		}
 	}
 
 	// Es ist kein Fehler aufgetreten
@@ -222,7 +250,12 @@ func functionCallInEventloopInit(o *SharedFunction, request *SharedFunctionReque
 
 	// Es wird geprüft ob ein Fehler aufgetreten ist
 	if err := o.kernel.AddToEventLoop(eventloopFunction); err != nil {
-		return err
+		switch err := err.(type) {
+		case *types.SpecificError:
+			return err
+		default:
+			return fmt.Errorf("functionCallInEventloopFinall: " + err.Error())
+		}
 	}
 
 	// Es ist kein Fehler aufgetreten
@@ -311,18 +344,18 @@ func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequ
 
 	// Die Resolve Funktion wird festgelegt
 	if err := objTemplate.Set("Resolve", v8.NewFunctionTemplate(context.Isolate(), request.resolveFunctionCallbackV8)); err != nil {
-		return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
+		return nil, utils.V8ObjectWritingError()
 	}
 
 	// Die Reject Funktion wird festgelegt
 	if err := objTemplate.Set("Reject", v8.NewFunctionTemplate(context.Isolate(), request.rejectFunctionCallbackV8)); err != nil {
-		return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
+		return nil, utils.V8ObjectWritingError()
 	}
 
 	// Das Objekt wird erzeugt
 	obj, err := objTemplate.NewInstance(context)
 	if err != nil {
-		return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
+		return nil, utils.V8ObjectWritingError()
 	}
 
 	// Wird von V8 Verwendet um zu ermitteln ob die Verbindung mit der Anfragendenseite noch besteht
@@ -484,42 +517,42 @@ func v8makeProxyForRPCCall(context *v8.Context, request *SharedFunctionRequestCo
 
 	// Die Funktionen werden hinzugefügt
 	if err := obj.Set("proxyShieldConsoleLog", v8.NewFunctionTemplate(context.Isolate(), request.proxyShield_ConsoleLog)); err != nil {
-		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.V8ObjectWritingError()
 	}
 	if err := obj.Set("proxyShieldErrorLog", v8.NewFunctionTemplate(context.Isolate(), request.proxyShield_ErrorLog)); err != nil {
-		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.V8ObjectWritingError()
 	}
 	if err := obj.Set("clearInterval", v8.NewFunctionTemplate(context.Isolate(), request.proxyShield_ClearInterval)); err != nil {
-		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.V8ObjectWritingError()
 	}
 	if err := obj.Set("clearTimeout", v8.NewFunctionTemplate(context.Isolate(), request.proxyShield_ClearTimeout)); err != nil {
-		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.V8ObjectWritingError()
 	}
 	if err := obj.Set("setInterval", v8.NewFunctionTemplate(context.Isolate(), request.proxyShield_SetInterval)); err != nil {
-		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.V8ObjectWritingError()
 	}
 	if err := obj.Set("setTimeout", v8.NewFunctionTemplate(context.Isolate(), request.proxyShield_SetTimeout)); err != nil {
-		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.V8ObjectWritingError()
 	}
 	if err := obj.Set("resolve", v8.NewFunctionTemplate(context.Isolate(), request.resolveFunctionCallbackV8)); err != nil {
-		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.V8ObjectWritingError()
 	}
 	if err := obj.Set("reject", v8.NewFunctionTemplate(context.Isolate(), request.rejectFunctionCallbackV8)); err != nil {
-		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.V8ObjectWritingError()
 	}
 	if err := obj.Set("newPromise", v8.NewFunctionTemplate(context.Isolate(), request.proxyShield_NewPromise)); err != nil {
-		return nil, utils.MakeV8Error("v8makeProxyForRPCCall", err)
+		return nil, utils.V8ObjectWritingError()
 	}
 
 	// Die Testfunktionen werden hinzugefügt
 	if err := obj.Set("wait", v8.NewFunctionTemplate(context.Isolate(), request.testWait)); err != nil {
-		return nil, utils.MakeV8Error("v8makeProxyForRPCCall", err)
+		return nil, utils.V8ObjectWritingError()
 	}
 
 	// Das Finale Objekt wird erstellt
 	fobj, err := obj.NewInstance(context)
 	if err != nil {
-		return nil, utils.MakeV8Error("makeProxyForRPCCall", err)
+		return nil, utils.V8ObjectInstanceCreatingError()
 	}
 
 	// Rückgabe ohne Fehler

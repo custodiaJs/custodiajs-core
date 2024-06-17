@@ -55,20 +55,26 @@ func (o *SharedFunctionRequestContext) resolveFunctionCallbackV8(info *v8.Functi
 		}
 
 		// Rückgabe
-		return v8.Undefined(info.Context().Isolate())
+		return nil
 	}
 
 	// Es wird geprüft ob der Vorgang bereits beantwortet wurde,
 	// wenn ja wird ein Fehler zurückgegeben dass der Vorgang bereits beantwortet wurde
 	if o.wasResponsed() {
+		// Es wird ein V8 Throw erzeugt und ausgeführt
 		utils.V8ContextThrow(info.Context(), "")
+
+		// Es wird ein Nill zurückgegeben
 		return nil
 	}
 
 	// Die Argumente werden umgewandelt
 	convertedArguments, err := utils.ConvertV8DataToGoData(info.Args())
 	if err != nil {
+		// Es wird ein V8 Throw erzeugt und ausgeführt
 		utils.V8ContextThrow(info.Context(), err.Error())
+
+		// Es wird ein Nill zurückgegeben
 		return nil
 	}
 
@@ -96,7 +102,7 @@ func (o *SharedFunctionRequestContext) resolveFunctionCallbackV8(info *v8.Functi
 		}
 
 		// Rückgabe
-		return v8.Undefined(info.Context().Isolate())
+		return nil
 	}
 
 	// Die Antwort wird geschrieben
@@ -110,7 +116,7 @@ func (o *SharedFunctionRequestContext) resolveFunctionCallbackV8(info *v8.Functi
 	}
 
 	// Es ist kein Fehler aufgetreten
-	return v8.Undefined(info.Context().Isolate())
+	return nil
 }
 
 // Sendet eine Rejectantwort zurück
@@ -205,7 +211,7 @@ func (o *SharedFunctionRequestContext) clearAndDestroy() {
 }
 
 // Wird ausgeführt wenn die Funktion zuende aufgerufen wurde
-func (o *SharedFunctionRequestContext) functionCallFinal() {
+func (o *SharedFunctionRequestContext) functionCallFinal() error {
 	// Es wird geprüft ob das Objekt zerstört wurde
 	if requestContextIsClosedAndDestroyed(o) {
 		panic("destroyed object")
@@ -213,16 +219,24 @@ func (o *SharedFunctionRequestContext) functionCallFinal() {
 
 	// Es wird geprüft ob eine Antwort gesendet wurde
 	if !o.wasResponsed() {
-		// Der Timer zum abbrechen des Vorganges wird gestartet
-		o.startTimeoutTimer()
+		// Es wird geprüft ob ein Timeout angegeben wurde, wenn ja wird dieser gestartet
+		if o.hasTimeout() {
+			// Der Timeout Timer wird gestartet
+			if err := o.startTimeoutTimer(); err != nil {
+				return utils.TimeoutFunctionCallError()
+			}
+		}
 	}
 
 	// Kernel Log
 	o.kernel.LogPrint(fmt.Sprintf("RPC(%s)", o._rprequest.ProcessLog.GetID()), "function call finalized")
+
+	// Es ist kein Fehler aufgetreten
+	return nil
 }
 
 // Wird ausgeführt wenn ein Throw durch die Funktion ausgelöst wird
-func (o *SharedFunctionRequestContext) functionCallException(msg string) {
+func (o *SharedFunctionRequestContext) functionCallException(msg string) error {
 	// Es wird geprüft ob das Objekt zerstört wurde
 	if requestContextIsClosedAndDestroyed(o) {
 		panic("destroyed object")
@@ -230,8 +244,11 @@ func (o *SharedFunctionRequestContext) functionCallException(msg string) {
 
 	// Die Antwort wird zurückgesendet
 	if err := writeRequestReturnResponse(o, &types.FunctionCallState{Error: msg, State: "exception"}); err != nil {
-
+		return utils.MakeHttpRequestIsClosedBeforeException()
 	}
+
+	// Es ist kein Fehler aufgetreten
+	return nil
 }
 
 // Proxy Shielded, Set Timeout funktion
@@ -324,7 +341,13 @@ func (o *SharedFunctionRequestContext) wasResponsed() bool {
 }
 
 // Startet den Timer, welcher den Vorgang nach erreichen des Timeouts, abbricht
-func (o *SharedFunctionRequestContext) startTimeoutTimer() {
+func (o *SharedFunctionRequestContext) startTimeoutTimer() error {
+	return nil
+}
+
+// Gibt an ob der Request eine Timeout angabe hat
+func (po *SharedFunctionRequestContext) hasTimeout() bool {
+	return false
 }
 
 // Wird für Tests verwendet um den RPC aufruf zu stoppen bis die Verbindung geschlossen wurde
@@ -376,7 +399,7 @@ func (o *SharedFunctionRequestContext) testWait(info *v8.FunctionCallbackInfo) *
 }
 
 // Erstellt einen neuen SharedFunctionRequestContext
-func newSharedFunctionRequestContext(kernel types.KernelInterface, returnDatatype string, rpcRequest *types.RpcRequest) *SharedFunctionRequestContext {
+func newSharedFunctionRequestContext(kernel types.KernelInterface, returnDatatype string, rpcRequest *types.RpcRequest) (*SharedFunctionRequestContext, error) {
 	// Das Rückgabeobjekt wird erstellt
 	returnObject := &SharedFunctionRequestContext{
 		//resolveChan:     make(chan *types.FunctionCallState),
@@ -388,7 +411,7 @@ func newSharedFunctionRequestContext(kernel types.KernelInterface, returnDatatyp
 	}
 
 	// Das Objekt wird zurückgegeben
-	return returnObject
+	return returnObject, nil
 }
 
 // Gibt an ob das Objekt zerstört wurde

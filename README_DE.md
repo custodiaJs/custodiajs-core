@@ -1,10 +1,10 @@
-# vnh1
+# ScriptumVas-Core
 
 ( [EN](../main/README.md) | DE )
 
 ## Beschreibung
 
-**vnh1** bietet eine robuste Lösung für das sichere und isolierte Ausführen von Skripten durch die Kombination von Containerisierung und Sandboxing-Techniken. Mit vnh1 können V8go-Instanzen in separaten Prozessen und Containern ausgeführt werden, was eine starke Isolation und Sicherheit gewährleistet.
+**ScriptumVas-Core** bietet eine robuste Lösung für das sichere und isolierte Ausführen von Skripten durch die Kombination von Containerisierung und Sandboxing-Techniken. Mit ScriptumVas-Core können V8go-Instanzen in separaten Prozessen und Containern ausgeführt werden, was eine starke Isolation und Sicherheit gewährleistet.
 
 ## Features
 
@@ -15,16 +15,16 @@
 ### Containerisierung Details
 
 - **Linux**:
-  Unter Linux nutzt vnh1 Namespaces, um eine isolierte Containerumgebung für jede V8go-Instanz zu erstellen. Dies stellt sicher, dass jeder Container sein eigenes Set von Benutzern, Prozessen und Dateisystemen hat. Durch die Verwendung von Linux-Namespaces kann vnh1 ein hohes Maß an Sicherheit und Isolation bieten, wodurch jede Interferenz zwischen laufenden Skripten und dem Host-System effektiv verhindert wird.
+  Unter Linux nutzt ScriptumVas-Core Namespaces, um eine isolierte Containerumgebung für jede V8go-Instanz zu erstellen. Dies stellt sicher, dass jeder Container sein eigenes Set von Benutzern, Prozessen und Dateisystemen hat. Durch die Verwendung von Linux-Namespaces kann ScriptumVas-Core ein hohes Maß an Sicherheit und Isolation bieten, wodurch jede Interferenz zwischen laufenden Skripten und dem Host-System effektiv verhindert wird.
 
 - **macOS**:
-  Für macOS verwendet vnh1 launchd, um die Containerisierung der VM-Prozesse zu verwalten. Launchd ist ein Service-Management-Framework für macOS, das Daemons, Anwendungen, Prozesse und Skripte starten, stoppen und verwalten kann. Durch die Nutzung von launchd stellt vnh1 sicher, dass jeder VM-Prozess ordnungsgemäß isoliert und verwaltet wird, was eine sichere Umgebung für die Skriptausführung bietet.
+  Für macOS verwendet ScriptumVas-Core launchd, um die Containerisierung der VM-Prozesse zu verwalten. Launchd ist ein Service-Management-Framework für macOS, das Daemons, Anwendungen, Prozesse und Skripte starten, stoppen und verwalten kann. Durch die Nutzung von launchd stellt ScriptumVas-Core sicher, dass jeder VM-Prozess ordnungsgemäß isoliert und verwaltet wird, was eine sichere Umgebung für die Skriptausführung bietet.
 
 - **Windows**:
-  Unter Windows verwendet vnh1 keine traditionellen Containerisierungstechniken. Stattdessen wird jede V8go-Instanz als separater Prozess ausgeführt. Obwohl diese Prozesse voneinander isoliert sind, profitieren sie nicht von der zusätzlichen Sicherheitsschicht, die durch Containerisierung bereitgestellt wird. Das bedeutet, dass Ressourcen zwar unabhängig für jede VM verwaltet werden, aber nicht so sicher isoliert sind wie unter Linux oder macOS.
+  Unter Windows verwendet ScriptumVas-Core keine traditionellen Containerisierungstechniken. Stattdessen wird jede V8go-Instanz als separater Prozess ausgeführt. Obwohl diese Prozesse voneinander isoliert sind, profitieren sie nicht von der zusätzlichen Sicherheitsschicht, die durch Containerisierung bereitgestellt wird. Das bedeutet, dass Ressourcen zwar unabhängig für jede VM verwaltet werden, aber nicht so sicher isoliert sind wie unter Linux oder macOS.
 
 - **BSD**:
-  Für BSD-Systeme plant vnh1 die Implementierung einer Containerisierung, die der unter Linux ähnelt. BSD bietet mehrere Containerisierungstechnologien wie Jails, die eine Möglichkeit bieten, das Betriebssystem in mehrere unabhängige Mini-Systeme zu partitionieren. Jede Jail hat ihr eigenes Dateisystem, ihre eigenen Benutzer und Prozesse und gewährleistet so starke Isolation und Sicherheit. Durch die Nutzung von BSD Jails zielt vnh1 darauf ab, eine sichere und isolierte Umgebung für jede V8go-Instanz zu schaffen, ähnlich dem Ansatz, der unter Linux mit Namespaces verwendet wird.
+  Für BSD-Systeme plant ScriptumVas-Core die Implementierung einer Containerisierung, die der unter Linux ähnelt. BSD bietet mehrere Containerisierungstechnologien wie Jails, die eine Möglichkeit bieten, das Betriebssystem in mehrere unabhängige Mini-Systeme zu partitionieren. Jede Jail hat ihr eigenes Dateisystem, ihre eigenen Benutzer und Prozesse und gewährleistet so starke Isolation und Sicherheit. Durch die Nutzung von BSD Jails zielt ScriptumVas-Core darauf ab, eine sichere und isolierte Umgebung für jede V8go-Instanz zu schaffen, ähnlich dem Ansatz, der unter Linux mit Namespaces verwendet wird.
 
 ## Funktionalität
 
