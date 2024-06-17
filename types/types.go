@@ -19,7 +19,8 @@ import (
 	"crypto/tls"
 	"net/http"
 	"net/url"
-	"vnh1/utils/grsbool"
+
+	"github.com/CustodiaJS/custodiajs-core/utils/grsbool"
 )
 
 // VM und Core Status Typen sowie Repo Datentypen

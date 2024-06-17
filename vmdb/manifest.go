@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"vnh1/filesystem"
-	"vnh1/utils"
+
+	"github.com/CustodiaJS/custodiajs-core/filesystem"
+	"github.com/CustodiaJS/custodiajs-core/utils"
 
 	"github.com/gofrs/flock"
 )

@@ -2,11 +2,12 @@ package vm
 
 import (
 	"sync"
-	"vnh1/databaseservices/services"
-	"vnh1/kernel"
-	extmodules "vnh1/kernelmodules/extmodules"
-	"vnh1/types"
-	"vnh1/vmdb"
+
+	"github.com/CustodiaJS/custodiajs-core/databaseservices/services"
+	"github.com/CustodiaJS/custodiajs-core/kernel"
+	extmodules "github.com/CustodiaJS/custodiajs-core/kernelmodules/extmodules"
+	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/vmdb"
 )
 
 type CoreVM struct {

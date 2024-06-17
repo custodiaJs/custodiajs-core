@@ -7,7 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-	"vnh1/utils"
+
+	"github.com/CustodiaJS/custodiajs-core/utils"
 )
 
 type FileInfo struct {

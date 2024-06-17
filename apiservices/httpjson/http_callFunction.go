@@ -9,12 +9,13 @@ import (
 	"reflect"
 	"strings"
 	"time"
-	"vnh1/saftychan"
-	"vnh1/static"
-	"vnh1/types"
-	"vnh1/utils"
-	"vnh1/utils/grsbool"
-	"vnh1/utils/procslog"
+
+	"github.com/CustodiaJS/custodiajs-core/saftychan"
+	"github.com/CustodiaJS/custodiajs-core/static"
+	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/utils"
+	"github.com/CustodiaJS/custodiajs-core/utils/grsbool"
+	"github.com/CustodiaJS/custodiajs-core/utils/procslog"
 
 	"github.com/btcsuite/btcutil/base58"
 )

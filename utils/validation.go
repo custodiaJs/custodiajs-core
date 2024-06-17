@@ -4,7 +4,8 @@ import (
 	"encoding/hex"
 	"regexp"
 	"strings"
-	"vnh1/utils/parser"
+
+	"github.com/CustodiaJS/custodiajs-core/utils/parser"
 )
 
 func ValidateDatatypeString(dType string) bool {

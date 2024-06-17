@@ -1,6 +1,6 @@
 package utils
 
-import "vnh1/types"
+import "github.com/CustodiaJS/custodiajs-core/types"
 
 func MakeV8Error(errorByFunction string, Error error) *types.SpecificError {
 	return &types.SpecificError{}

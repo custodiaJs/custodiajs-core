@@ -1,4 +1,4 @@
-module vnh1
+module github.com/CustodiaJS/custodiajs-core
 
 go 1.21.3
 

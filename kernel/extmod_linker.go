@@ -2,10 +2,11 @@ package kernel
 
 import (
 	"fmt"
-	"vnh1/kernelmodules/extmodules"
-	cgowrapper "vnh1/kernelmodules/extmodules/cgo_wrapper"
-	"vnh1/types"
-	"vnh1/utils"
+
+	"github.com/CustodiaJS/custodiajs-core/kernelmodules/extmodules"
+	cgowrapper "github.com/CustodiaJS/custodiajs-core/kernelmodules/extmodules/cgo_wrapper"
+	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/utils"
 
 	v8 "rogchap.com/v8go"
 )

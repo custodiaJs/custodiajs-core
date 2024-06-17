@@ -17,8 +17,9 @@ package types
 
 import (
 	"sync"
-	"vnh1/consolecache"
-	"vnh1/databaseservices/services"
+
+	"github.com/CustodiaJS/custodiajs-core/consolecache"
+	"github.com/CustodiaJS/custodiajs-core/databaseservices/services"
 
 	v8 "rogchap.com/v8go"
 )

@@ -6,8 +6,9 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"vnh1/static"
-	"vnh1/utils/procslog"
+
+	"github.com/CustodiaJS/custodiajs-core/static"
+	"github.com/CustodiaJS/custodiajs-core/utils/procslog"
 )
 
 func (o *HttpApiService) indexHandler(w http.ResponseWriter, r *http.Request) {

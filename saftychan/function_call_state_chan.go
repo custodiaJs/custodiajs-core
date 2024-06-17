@@ -1,7 +1,7 @@
 package saftychan
 
 import (
-	"vnh1/types"
+	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 func (o *FunctionCallStateChan) Read() (*types.FunctionCallState, bool) {

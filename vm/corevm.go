@@ -5,14 +5,15 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"vnh1/consolecache"
-	"vnh1/databaseservices/services"
-	"vnh1/kernel"
-	extmodules "vnh1/kernelmodules/extmodules"
-	"vnh1/static"
-	"vnh1/types"
-	"vnh1/utils"
-	"vnh1/vmdb"
+
+	"github.com/CustodiaJS/custodiajs-core/consolecache"
+	"github.com/CustodiaJS/custodiajs-core/databaseservices/services"
+	"github.com/CustodiaJS/custodiajs-core/kernel"
+	extmodules "github.com/CustodiaJS/custodiajs-core/kernelmodules/extmodules"
+	"github.com/CustodiaJS/custodiajs-core/static"
+	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/utils"
+	"github.com/CustodiaJS/custodiajs-core/vmdb"
 )
 
 func (o *CoreVM) GetVMName() string {

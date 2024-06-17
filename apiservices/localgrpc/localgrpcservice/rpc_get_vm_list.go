@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"vnh1/localgrpcproto"
-	"vnh1/utils/procslog"
+
+	"github.com/CustodiaJS/custodiajs-core/localgrpcproto"
+	"github.com/CustodiaJS/custodiajs-core/utils/procslog"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )

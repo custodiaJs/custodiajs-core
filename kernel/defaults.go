@@ -1,13 +1,13 @@
 package kernel
 
 import (
-	kmoduleconsole "vnh1/kernelmodules/mainmodules/console"
-	kmodulecrypto "vnh1/kernelmodules/mainmodules/crypto"
-	kmoduledatabase "vnh1/kernelmodules/mainmodules/database"
-	kmodulehttp "vnh1/kernelmodules/mainmodules/http"
-	kmodulenet "vnh1/kernelmodules/mainmodules/network"
-	kmodulerpc "vnh1/kernelmodules/mainmodules/rpc"
-	"vnh1/types"
+	kmoduleconsole "github.com/CustodiaJS/custodiajs-core/kernelmodules/mainmodules/console"
+	kmodulecrypto "github.com/CustodiaJS/custodiajs-core/kernelmodules/mainmodules/crypto"
+	kmoduledatabase "github.com/CustodiaJS/custodiajs-core/kernelmodules/mainmodules/database"
+	kmodulehttp "github.com/CustodiaJS/custodiajs-core/kernelmodules/mainmodules/http"
+	kmodulenet "github.com/CustodiaJS/custodiajs-core/kernelmodules/mainmodules/network"
+	kmodulerpc "github.com/CustodiaJS/custodiajs-core/kernelmodules/mainmodules/rpc"
+	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 var DEFAULT_CONFIG = KernelConfig{

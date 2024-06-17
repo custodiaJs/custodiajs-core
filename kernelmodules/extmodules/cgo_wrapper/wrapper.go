@@ -10,8 +10,9 @@ import (
 	"fmt"
 	"strings"
 	"unsafe"
-	"vnh1/filesystem"
-	"vnh1/types"
+
+	"github.com/CustodiaJS/custodiajs-core/filesystem"
+	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 type CGOWrappedLibModuleFunction struct {

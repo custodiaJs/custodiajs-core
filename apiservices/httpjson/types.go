@@ -4,7 +4,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"net/http"
-	"vnh1/types"
+
+	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 type HttpApiService struct {

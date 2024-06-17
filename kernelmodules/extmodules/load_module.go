@@ -2,7 +2,8 @@ package extmodules
 
 import (
 	"fmt"
-	cgowrapper "vnh1/kernelmodules/extmodules/cgo_wrapper"
+
+	cgowrapper "github.com/CustodiaJS/custodiajs-core/kernelmodules/extmodules/cgo_wrapper"
 )
 
 // Lädt ein Libmodule

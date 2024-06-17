@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"vnh1/localgrpcproto"
-	"vnh1/static"
-	"vnh1/types"
-	"vnh1/utils"
+
+	"github.com/CustodiaJS/custodiajs-core/localgrpcproto"
+	"github.com/CustodiaJS/custodiajs-core/static"
+	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/utils"
 )
 
 func (s *CliGrpcServer) GetVMDetails(ctx context.Context, vmDetailParms *localgrpcproto.VmDetailsParms) (*localgrpcproto.VmDetailsResponse, error) {

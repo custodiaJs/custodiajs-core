@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
-	"vnh1/databaseservices/services"
+
+	"github.com/CustodiaJS/custodiajs-core/databaseservices/services"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

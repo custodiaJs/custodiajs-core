@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"vnh1/static"
-	"vnh1/types"
+
+	"github.com/CustodiaJS/custodiajs-core/static"
+	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 func createNewUnixSocket_NONE_ROOT_ADMIN(path string) (net.Listener, error) {

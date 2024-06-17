@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"vnh1/utils"
+
+	"github.com/CustodiaJS/custodiajs-core/utils"
 )
 
 func (o *VmDBEntry) GetManifest() *Manifest {

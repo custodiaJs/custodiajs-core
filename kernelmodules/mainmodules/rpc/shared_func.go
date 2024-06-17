@@ -17,10 +17,11 @@ package kmodulerpc
 
 import (
 	"fmt"
-	"vnh1/eventloop"
-	"vnh1/types"
-	"vnh1/utils"
-	rpcrequest "vnh1/utils/rpc_request"
+
+	"github.com/CustodiaJS/custodiajs-core/eventloop"
+	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/utils"
+	rpcrequest "github.com/CustodiaJS/custodiajs-core/utils/rpc_request"
 
 	v8 "rogchap.com/v8go"
 )

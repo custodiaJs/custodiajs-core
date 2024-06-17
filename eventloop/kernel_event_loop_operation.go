@@ -1,7 +1,7 @@
 package eventloop
 
 import (
-	"vnh1/types"
+	"github.com/CustodiaJS/custodiajs-core/types"
 
 	v8 "rogchap.com/v8go"
 )

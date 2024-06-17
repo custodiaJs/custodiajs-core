@@ -5,7 +5,8 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net/http"
-	"vnh1/static"
+
+	"github.com/CustodiaJS/custodiajs-core/static"
 )
 
 func NewLocalService(family string, localport uint32, localCert *tls.Certificate) (*HttpApiService, error) {

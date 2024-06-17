@@ -3,7 +3,8 @@ package filesystem
 import (
 	"fmt"
 	"path"
-	"vnh1/types"
+
+	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 func MakeLogDirForVM(rootdir types.LOG_DIR, vmName string) (types.LOG_DIR, error) {

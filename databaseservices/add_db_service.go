@@ -3,12 +3,13 @@ package databaseservices
 import (
 	"fmt"
 	"strings"
-	"vnh1/databaseservices/services"
-	"vnh1/databaseservices/services/mongodb"
-	"vnh1/databaseservices/services/mysql"
-	"vnh1/databaseservices/services/postgresql"
-	"vnh1/databaseservices/services/sqlite"
-	"vnh1/vmdb"
+
+	"github.com/CustodiaJS/custodiajs-core/databaseservices/services"
+	"github.com/CustodiaJS/custodiajs-core/databaseservices/services/mongodb"
+	"github.com/CustodiaJS/custodiajs-core/databaseservices/services/mysql"
+	"github.com/CustodiaJS/custodiajs-core/databaseservices/services/postgresql"
+	"github.com/CustodiaJS/custodiajs-core/databaseservices/services/sqlite"
+	"github.com/CustodiaJS/custodiajs-core/vmdb"
 )
 
 // Es wird ein neuer Datenbankdienst hinzugefügt

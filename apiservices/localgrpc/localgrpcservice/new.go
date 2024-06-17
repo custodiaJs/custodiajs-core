@@ -1,7 +1,7 @@
 package localgrpcservice
 
 import (
-	"vnh1/types"
+	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 func NewCliGrpcServer(core types.CoreInterface) *CliGrpcServer {

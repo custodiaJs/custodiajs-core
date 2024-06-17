@@ -3,7 +3,8 @@ package vmdb
 import (
 	"fmt"
 	"strings"
-	"vnh1/filesystem"
+
+	"github.com/CustodiaJS/custodiajs-core/filesystem"
 )
 
 // loadAllVirtualMachines lädt alle virtuellen Maschinen aus dem angegebenen Verzeichnis und speichert sie im VmDatabase-Objekt.

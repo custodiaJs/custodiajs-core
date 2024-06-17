@@ -3,10 +3,11 @@ package core
 import (
 	"crypto/tls"
 	"sync"
-	"vnh1/databaseservices"
-	"vnh1/identkeydatabase"
-	"vnh1/kernelmodules/extmodules"
-	"vnh1/types"
+
+	"github.com/CustodiaJS/custodiajs-core/databaseservices"
+	"github.com/CustodiaJS/custodiajs-core/identkeydatabase"
+	"github.com/CustodiaJS/custodiajs-core/kernelmodules/extmodules"
+	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 type Core struct {

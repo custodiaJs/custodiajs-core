@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"vnh1/types"
+
+	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 func ParseFunctionSignature(input string) (*types.FunctionSignature, error) {

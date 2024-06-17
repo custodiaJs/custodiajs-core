@@ -17,9 +17,10 @@ package kmodulerpc
 
 import (
 	"fmt"
-	"vnh1/static"
-	"vnh1/types"
-	"vnh1/utils"
+
+	"github.com/CustodiaJS/custodiajs-core/static"
+	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/utils"
 
 	v8 "rogchap.com/v8go"
 )

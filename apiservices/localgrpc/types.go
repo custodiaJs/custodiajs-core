@@ -2,7 +2,8 @@ package localgrpc
 
 import (
 	"net"
-	"vnh1/types"
+
+	"github.com/CustodiaJS/custodiajs-core/types"
 
 	"google.golang.org/grpc"
 )

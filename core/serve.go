@@ -3,8 +3,9 @@ package core
 import (
 	"fmt"
 	"sync"
-	"vnh1/static"
-	"vnh1/types"
+
+	"github.com/CustodiaJS/custodiajs-core/static"
+	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 func (o *Core) Serve() error {

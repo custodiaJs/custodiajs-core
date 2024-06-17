@@ -2,7 +2,8 @@ package httpjson
 
 import (
 	"fmt"
-	"vnh1/types"
+
+	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 func (o *HttpApiService) SetupCore(coreObj types.CoreInterface) error {

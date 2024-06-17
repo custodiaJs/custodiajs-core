@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"vnh1/utils"
+
+	"github.com/CustodiaJS/custodiajs-core/utils"
 )
 
 func LogPrint(text string) {

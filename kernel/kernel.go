@@ -5,11 +5,12 @@ import (
 	"log"
 	"strings"
 	"sync"
-	"vnh1/consolecache"
-	"vnh1/static"
-	"vnh1/types"
-	"vnh1/utils"
-	"vnh1/vmdb"
+
+	"github.com/CustodiaJS/custodiajs-core/consolecache"
+	"github.com/CustodiaJS/custodiajs-core/static"
+	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/utils"
+	"github.com/CustodiaJS/custodiajs-core/vmdb"
 
 	v8 "rogchap.com/v8go"
 )

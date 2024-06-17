@@ -1,6 +1,6 @@
 package kernel
 
-import "vnh1/types"
+import "github.com/CustodiaJS/custodiajs-core/types"
 
 func NewFromExist(existKernelConfig *KernelConfig, extModues ...types.KernelModuleInterface) *KernelConfig {
 	// Es wird eine neue Module Liste Erstellt

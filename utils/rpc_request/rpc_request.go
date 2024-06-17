@@ -1,6 +1,6 @@
 package rpcrequest
 
-import "vnh1/types"
+import "github.com/CustodiaJS/custodiajs-core/types"
 
 func IsHttpRequest(rpcreq *types.RpcRequest) bool {
 	if rpcreq == nil {

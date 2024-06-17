@@ -2,8 +2,9 @@ package localgrpc
 
 import (
 	"log"
-	"vnh1/apiservices/localgrpc/localgrpcservice"
-	"vnh1/localgrpcproto"
+
+	"github.com/CustodiaJS/custodiajs-core/apiservices/localgrpc/localgrpcservice"
+	"github.com/CustodiaJS/custodiajs-core/localgrpcproto"
 )
 
 func (o *HostCliService) Serve(closeSignal chan struct{}) error {

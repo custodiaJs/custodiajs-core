@@ -4,7 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"sync"
-	"vnh1/databaseservices/services"
+
+	"github.com/CustodiaJS/custodiajs-core/databaseservices/services"
 
 	_ "github.com/lib/pq"
 )

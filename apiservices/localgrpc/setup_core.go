@@ -1,7 +1,7 @@
 package localgrpc
 
 import (
-	"vnh1/types"
+	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 func (o *HostCliService) SetupCore(coreObj types.CoreInterface) error {

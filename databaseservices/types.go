@@ -2,7 +2,8 @@ package databaseservices
 
 import (
 	"sync"
-	"vnh1/databaseservices/services"
+
+	"github.com/CustodiaJS/custodiajs-core/databaseservices/services"
 )
 
 type DbService struct {

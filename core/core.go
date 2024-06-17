@@ -7,16 +7,17 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"vnh1/container"
-	"vnh1/databaseservices"
-	"vnh1/filesystem"
-	"vnh1/identkeydatabase"
-	extmodules "vnh1/kernelmodules/extmodules"
-	"vnh1/static"
-	"vnh1/types"
-	"vnh1/utils"
-	"vnh1/vm"
-	"vnh1/vmdb"
+
+	"github.com/CustodiaJS/custodiajs-core/container"
+	"github.com/CustodiaJS/custodiajs-core/databaseservices"
+	"github.com/CustodiaJS/custodiajs-core/filesystem"
+	"github.com/CustodiaJS/custodiajs-core/identkeydatabase"
+	extmodules "github.com/CustodiaJS/custodiajs-core/kernelmodules/extmodules"
+	"github.com/CustodiaJS/custodiajs-core/static"
+	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/utils"
+	"github.com/CustodiaJS/custodiajs-core/vm"
+	"github.com/CustodiaJS/custodiajs-core/vmdb"
 )
 
 // Fügt eine Externe Modul Lib dem Core hinzu

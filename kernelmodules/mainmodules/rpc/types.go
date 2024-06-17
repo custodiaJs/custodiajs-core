@@ -16,8 +16,8 @@
 package kmodulerpc
 
 import (
-	"vnh1/saftychan"
-	"vnh1/types"
+	"github.com/CustodiaJS/custodiajs-core/saftychan"
+	"github.com/CustodiaJS/custodiajs-core/types"
 
 	v8 "rogchap.com/v8go"
 )

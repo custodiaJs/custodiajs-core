@@ -2,7 +2,8 @@ package procslog
 
 import (
 	"fmt"
-	"vnh1/types"
+
+	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 func FormatConsoleText(consoleValue types.CONSOLE_TEXT, value ...string) string {

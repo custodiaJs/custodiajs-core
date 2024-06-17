@@ -1,6 +1,6 @@
 package static
 
-import "vnh1/types"
+import "github.com/CustodiaJS/custodiajs-core/types"
 
 const (
 	// Gibt den Status einer VM an
@@ -33,14 +33,14 @@ const (
 	C_VESION types.VERSION = 1000000000
 
 	// Die Repo wird festgelegt
-	C_REPO types.REPO = "https://github.com/DGPCorpSoftwares/vnh1"
+	C_REPO types.REPO = "https://github.com/CustodiaJS/custodiajs-core"
 
 	// Legt die Dateipfade für z.b Unix Sockets fest
-	NONE_ROOT_UNIX_SOCKET            types.SOCKET_PATH              = "/tmp/vnh1_none_root_sock"
-	ROOT_UNIX_SOCKET                 types.SOCKET_PATH              = "/tmp/vnh1_root_sock"
-	UNIX_ALTERNATIVE_SERVICES        types.ALTERNATIVE_SERVICE_PATH = "/var/lib/vnh1/alternativeservices"
-	UNIX_LINUX_LOGGING_DIR           types.LOG_DIR                  = "/var/log/vnh1"
-	UNIX_LINUX_LOGGING_DIR_NONE_ROOT types.LOG_DIR                  = "/tmp/vnh1"
+	NONE_ROOT_UNIX_SOCKET            types.SOCKET_PATH              = "/tmp/cusjs_none_root_sock"
+	ROOT_UNIX_SOCKET                 types.SOCKET_PATH              = "/tmp/cusjs_root_sock"
+	UNIX_ALTERNATIVE_SERVICES        types.ALTERNATIVE_SERVICE_PATH = "/var/lib/cusjs/alternativeservices"
+	UNIX_LINUX_LOGGING_DIR           types.LOG_DIR                  = "/var/log/cusjs"
+	UNIX_LINUX_LOGGING_DIR_NONE_ROOT types.LOG_DIR                  = "/tmp/cusjs"
 
 	// Gibt die Verfügabren Quellen eines Funktionsaufrufes an
 	LOCAL  types.RPCCallSource = 0
