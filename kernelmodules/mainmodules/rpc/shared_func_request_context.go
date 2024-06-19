@@ -23,6 +23,7 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/saftychan"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
+	"github.com/CustodiaJS/custodiajs-core/utils/grsbool"
 	rpcrequest "github.com/CustodiaJS/custodiajs-core/utils/rpc_request"
 
 	v8 "rogchap.com/v8go"
@@ -108,12 +109,7 @@ func (o *SharedFunctionRequestContext) resolveFunctionCallbackV8(info *v8.Functi
 
 	// Die Antwort wird geschrieben
 	if err := writeRequestReturnResponse(o, resolves); err != nil {
-		switch err := err.(type) {
-		case *types.SpecificError:
-			utils.V8ContextThrow(info.Context(), err.LocalJSVMError.Error())
-		default:
-			utils.V8ContextThrow(info.Context(), err.Error())
-		}
+		utils.V8ContextThrow(info.Context(), err.LocalJSVMError.Error())
 	}
 
 	// Es ist kein Fehler aufgetreten
@@ -278,7 +274,10 @@ func (o *SharedFunctionRequestContext) proxyShield_ClearInterval(info *v8.Functi
 
 // Signalisiert dass ein neuer Promises erzeugt wurde und gibt die Entsprechenden Funktionen zurück
 func (o *SharedFunctionRequestContext) proxyShield_NewPromise(info *v8.FunctionCallbackInfo) *v8.Value {
+	// Es wird ein neues V8 Objekt erzeugt
 	v8Object := v8.NewObjectTemplate(info.Context().Isolate())
+
+	// Die Proxy Resolve und Reject funktion wird ausgeführt
 	v8Object.Set("resolveProxy", v8.NewFunctionTemplate(info.Context().Isolate(), func(info *v8.FunctionCallbackInfo) *v8.Value {
 		o.kernel.LogPrint(fmt.Sprintf("RPC(%s)", o._rprequest.ProcessLog.GetID()), "Promise was resolved")
 		return nil
@@ -292,7 +291,10 @@ func (o *SharedFunctionRequestContext) proxyShield_NewPromise(info *v8.FunctionC
 	o.kernel.LogPrint(fmt.Sprintf("RPC(%s)", o._rprequest.ProcessLog.GetID()), "New Promise registrated")
 
 	// Das Objekt wird in ein Wert umgewandelt
-	obj, _ := v8Object.NewInstance(info.Context())
+	obj, err := v8Object.NewInstance(info.Context())
+	if err != nil {
+
+	}
 
 	// Das Objekt wird zurückgegeben
 	return obj.Value
@@ -303,7 +305,14 @@ func (o *SharedFunctionRequestContext) proxyShield_ConsoleLog(info *v8.FunctionC
 	// Es werden alle Stringwerte Extrahiert
 	extracted, err := utils.ConvertV8ValuesToString(info.Context(), info.Args())
 	if err != nil {
-		utils.V8ContextThrow(info.Context(), err.Error())
+		// Der Fehler wird erzeugt
+		err := utils.MakeV8ConvertValueToStringError("SharedFunctionRequestContext->proxyShield_ConsoleLog", err)
+
+		// Der Fehler wird als V8 Throw ausgeführt
+		utils.V8ContextThrow(info.Context(), err.LocalJSVMError.Error())
+
+		// Es wird ein Null zurückgegeben
+		return nil
 	}
 
 	// Es wird ein String aus der Ausgabe erzeugt
@@ -321,7 +330,13 @@ func (o *SharedFunctionRequestContext) proxyShield_ErrorLog(info *v8.FunctionCal
 	// Es werden alle Stringwerte Extrahiert
 	extracted, err := utils.ConvertV8ValuesToString(info.Context(), info.Args())
 	if err != nil {
-		utils.V8ContextThrow(info.Context(), err.Error())
+		// Der Fehler wird erzeugt
+		err := utils.MakeV8ConvertValueToStringError("SharedFunctionRequestContext->proxyShield_ErrorLog", err)
+
+		// Der Fehler wird als V8 Throw ausgeführt
+		utils.V8ContextThrow(info.Context(), err.LocalJSVMError.Error())
+
+		// Es wird ein Null zurückgegeben
 		return nil
 	}
 
@@ -337,8 +352,8 @@ func (o *SharedFunctionRequestContext) proxyShield_ErrorLog(info *v8.FunctionCal
 
 // Gibt an ob eine Antwort verfügbar ist
 func (o *SharedFunctionRequestContext) wasResponsed() bool {
-	// Der Mutex wird verwendet
-	return o._wasResponded
+	// Der Boolwert wird zurückgegeben
+	return o._wasResponded.Bool()
 }
 
 // Startet den Timer, welcher den Vorgang nach erreichen des Timeouts, abbricht
@@ -353,30 +368,92 @@ func (po *SharedFunctionRequestContext) hasTimeout() bool {
 
 // Wird für Tests verwendet um den RPC aufruf zu stoppen bis die Verbindung geschlossen wurde
 func (o *SharedFunctionRequestContext) testWait(info *v8.FunctionCallbackInfo) *v8.Value {
+	// Es wird geprüft ob das Info Objekt nicht null ist
+	if info == nil {
+		panic("SharedFunctionRequestContext->testWait: info is null")
+	}
+
+	// Es wird geprüft ob SharedFunctionRequestContext "o" NULL ist
+	if !validateSharedFunctionRequestContext(o) {
+		// Der Fehler wird erzeugt
+		err := utils.MakeSharedFunctionRequestContextError("SharedFunctionRequestContext->testWait")
+
+		// Der Fehler wird als V8 Throw ausgeführt
+		utils.V8ContextThrow(info.Context(), err.LocalJSVMError.Error())
+
+		// Es wird ein Null zurückgegeben
+		return nil
+	}
+
+	// Sollte es sich um eine Remote Verbindung handeln, wird geprüft ob diese Geschlossen wurde, wenn ja wird der Vorgang abgebrochen
+	if rpcrequest.IsRemoteConnection(o._rprequest) && !rpcrequest.ConnectionIsOpen(o._rprequest) {
+		// Der Fehler wird erzeugt
+		err := utils.MakeConnectionIsClosedError("SharedFunctionRequestContext->testWait")
+
+		// Der Fehler wird als V8 Throw ausgeführt
+		utils.V8ContextThrow(info.Context(), err.LocalJSVMError.Error())
+
+		// Es wird ein Null zurückgegeben
+		return nil
+	}
+
 	// Es wird ermittelt ob ein Argument angegeben wurde
 	if len(info.Args()) < 1 {
-		utils.V8ContextThrow(info.Context(), "to few arguments")
+		// Der Fehler wird erzeugt
+		err := utils.MakeV8MissingParameters("SharedFunctionRequestContext->testWait", 1, len(info.Args()))
+
+		// Der Fehler wird als V8 Throw ausgeführt
+		utils.V8ContextThrow(info.Context(), err.LocalJSVMError.Error())
+
+		// Es wird ein Null zurückgegeben
 		return nil
 	}
 	if len(info.Args()) > 1 {
-		utils.V8ContextThrow(info.Context(), "to many arguments")
+		// Der Fehler wird erzeugt
+		err := utils.MakeV8MissingParameters("SharedFunctionRequestContext->testWait", 1, len(info.Args()))
+
+		// Der Fehler wird als V8 Throw ausgeführt
+		utils.V8ContextThrow(info.Context(), err.LocalJSVMError.Error())
+
+		// Es wird ein Null zurückgegeben
 		return nil
 	}
 
 	// Es muss sich um ein uint32 handeln
 	if !info.Args()[0].IsUint32() {
-		utils.V8ContextThrow(info.Context(), "only integer allowed")
+		// Der Fehler wird erzeugt
+		err := utils.MakeV8InvalidParameterDatatype("SharedFunctionRequestContext->testWait", 0, "uint32")
+
+		// Der Fehler wird als V8 Throw ausgeführt
+		utils.V8ContextThrow(info.Context(), err.LocalJSVMError.Error())
+
+		// Es wird ein Null zurückgegeben
 		return nil
 	}
 
 	// Erstelle einen Promise Resolver
 	resolver, err := v8.NewPromiseResolver(info.Context())
 	if err != nil {
-		// Es wird Javascript Fehler ausgelöst
-		utils.V8ContextThrow(info.Context(), "Error attempting to create a promise 'rpcCall'")
+		// Der Fehler wird erzeugt
+		err := utils.MakeV8PromiseCreatingError("SharedFunctionRequestContext->testWait", err)
 
-		// Rückgabe
-		return v8.Undefined(info.Context().Isolate())
+		// Der Fehler wird als V8 Throw ausgeführt
+		utils.V8ContextThrow(info.Context(), err.LocalJSVMError.Error())
+
+		// Es wird ein Null zurückgegeben
+		return nil
+	}
+
+	// Sollte es sich um eine Remote Verbindung handeln, wird geprüft ob diese Geschlossen wurde, wenn ja wird der Vorgang abgebrochen
+	if rpcrequest.IsRemoteConnection(o._rprequest) && !rpcrequest.ConnectionIsOpen(o._rprequest) {
+		// Der Fehler wird erzeugt
+		err := utils.MakeConnectionIsClosedError("SharedFunctionRequestContext->testWait")
+
+		// Der Fehler wird als V8 Throw ausgeführt
+		utils.V8ContextThrow(info.Context(), err.LocalJSVMError.Error())
+
+		// Es wird ein Null zurückgegeben
+		return nil
 	}
 
 	// Es wird eine Goroutine ausgeführt, diese Wartet X Millisekunden
@@ -400,15 +477,41 @@ func (o *SharedFunctionRequestContext) testWait(info *v8.FunctionCallbackInfo) *
 }
 
 // Erstellt einen neuen SharedFunctionRequestContext
-func newSharedFunctionRequestContext(kernel types.KernelInterface, returnDatatype string, rpcRequest *types.RpcRequest) (*SharedFunctionRequestContext, error) {
+func newSharedFunctionRequestContext(kernel types.KernelInterface, returnDatatype string, rpcRequest *types.RpcRequest) (*SharedFunctionRequestContext, *types.SpecificError) {
+	// Es wird geprüft ob der Kernel nill ist
+	if kernel == nil {
+		return nil, utils.MakeNewRPCSharedFunctionContextKernelIsNullError("newSharedFunctionRequestContext")
+	}
+
+	// Es wird geprüft ob es sich bei dem ReturnDatatype um einen zulässigen Datentypen handelt
+	if !utils.ValidateDatatypeString(returnDatatype) {
+		return nil, utils.MakeNewRPCSharedFunctionContextReturnDatatypeStringIsInvalidError("newSharedFunctionRequestContext", returnDatatype)
+	}
+
+	// Es wird geprüft ob der rpcRequest nill ist
+	if rpcRequest == nil {
+		return nil, utils.MakeNewRPCSharedFunctionContextRPCRequestIsNullError("newSharedFunctionRequestContext")
+	}
+
+	// Sollte es sich um eine Remote Verbindung handeln, wird geprüft ob diese Geschlossen wurde, wenn ja wird der Vorgang abgebrochen
+	if rpcrequest.IsRemoteConnection(rpcRequest) && !rpcrequest.ConnectionIsOpen(rpcRequest) {
+		return nil, utils.MakeConnectionIsClosedError("newSharedFunctionRequestContext")
+	}
+
 	// Das Rückgabeobjekt wird erstellt
 	returnObject := &SharedFunctionRequestContext{
 		//resolveChan:     make(chan *types.FunctionCallState),
 		responseChan:    saftychan.NewFunctionCallStateChan(),
+		_wasResponded:   *grsbool.NewGrsbool(false),
+		_destroyed:      *grsbool.NewGrsbool(false),
 		_returnDataType: returnDatatype,
-		_wasResponded:   false,
 		_rprequest:      rpcRequest,
 		kernel:          kernel,
+	}
+
+	// Es wird geprüft ob es sich um ein gültiges ShareFunctionRecquestContext Objekt handelt
+	if !validateSharedFunctionRequestContext(returnObject) {
+		return nil, utils.MakeNewRPCSharedFunctionInvalidContextObjectError("newSharedFunctionRequestContext")
 	}
 
 	// Das Objekt wird zurückgegeben
@@ -417,11 +520,32 @@ func newSharedFunctionRequestContext(kernel types.KernelInterface, returnDatatyp
 
 // Gibt an ob das Objekt zerstört wurde
 func requestContextIsClosedAndDestroyed(o *SharedFunctionRequestContext) bool {
-	return o._destroyed
+	// Es wird geprüft ob SharedFunctionRequestContext "o" NULL ist
+	if !validateSharedFunctionRequestContext(o) {
+		panic("SharedFunctionRequestContext(o) is null")
+	}
+
+	// Der Wert wird zurückgegeben
+	return o._destroyed.Bool()
 }
 
 // Sendet die Antwort zurück und setzt den Vorgang auf erfolgreich
-func writeRequestReturnResponse(o *SharedFunctionRequestContext, returnv *types.FunctionCallState) error {
+func writeRequestReturnResponse(o *SharedFunctionRequestContext, returnv *types.FunctionCallState) *types.SpecificError {
+	// Es wird geprüft ob SharedFunctionRequestContext "o" NULL ist
+	if !validateSharedFunctionRequestContext(o) {
+		return utils.MakeSharedFunctionRequestContextError("writeRequestReturnResponse")
+	}
+
+	// Es wird geprüft ob der FunctionCallState NULL ist
+	if returnv == nil {
+		return utils.MakeSharedFunctionCallStateError("writeRequestReturnResponse")
+	}
+
+	// Sollte es sich um eine Remote Verbindung handeln, wird geprüft ob diese Geschlossen wurde, wenn ja wird der Vorgang abgebrochen
+	if rpcrequest.IsRemoteConnection(o._rprequest) && !rpcrequest.ConnectionIsOpen(o._rprequest) {
+		return utils.MakeConnectionIsClosedError("writeRequestReturnResponse")
+	}
+
 	// Diese Funktion wird aufgerufen, sobald die Antwort Übermittelt wurde
 	resolveTransmittedData := func() {
 		o.clearAndDestroy()
@@ -440,12 +564,11 @@ func writeRequestReturnResponse(o *SharedFunctionRequestContext, returnv *types.
 
 	// Die Antwort wird an den Eigentlichen Request zurückgegeben
 	if err := o._rprequest.Resolve(returnObject); err != nil {
-		switch err := err.(type) {
-		case *types.SpecificError:
-			return err
-		default:
-			return fmt.Errorf("writeRequestReturnResponse: " + err.Error())
-		}
+		// Die Funktion wir hinzugefügt
+		err.AddCallerFunctionToHistory("writeRequestReturnResponse")
+
+		// Der Fehler wird zurückgegeben
+		return err
 	}
 
 	// Es ist kein Fehler aufgetreten

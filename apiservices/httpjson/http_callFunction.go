@@ -324,7 +324,7 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 
 		// Es wird geprüft ob der Vorgang bereits abgeschlossen wurde
 		if saftyResponseChan.IsClosed() && isConnected.Bool() {
-			return utils.MakeHttpConnectionIsClosed()
+			return utils.MakeHttpConnectionIsClosedError()
 		} else if !isConnected.Bool() {
 			return utils.MakeAlreadyAnsweredRPCRequestError()
 		}

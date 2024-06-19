@@ -69,22 +69,25 @@ func (o *SharedFunction) GetReturnDatatype() string {
 func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) error {
 	// Es wird geprüft ob die Aktuelle SharedFunction "o" NULL ist
 	if o == nil {
+		// Es wird ein 'Null RPC Call' Fehler zurückgegeben
 		return utils.RPCFunctionCallNullSharedFunctionObject()
 	}
 
 	// Es wird geprüft ob der RPC Request "req" NULL ist
 	if req == nil {
+		// Es wird ein 'RPC Function is Null' Fehler zurückgegeben
 		return utils.RPCFunctionCallNullRequest()
 	}
 
 	// Es wird geprüft ob das Req Objekt eine Verbindung besitzt
 	if !rpcrequest.ConnectionIsOpen(req) {
-		//o.kernel.LogPrint("RPC", "Process aborted, connection closed")
-		return utils.MakeConnectionIsClosed()
+		// Es wird ein 'Connection closed' Fehler zurückgegeben
+		return utils.MakeConnectionIsClosedError()
 	}
 
 	// Es wird geprüft ob die Angeforderte Anzahl an Parametern vorhanden ist
 	if len(req.Parms) != len(o.signature.Params) {
+		// Es wird ein 'Parameters size invalid' Fehler zurückgegeben
 		return utils.MakeRPCFunctionCallParametersNumberUnequal(uint(len(o.signature.Params)), uint(len(req.Parms)))
 	}
 
@@ -93,6 +96,10 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) error {
 	if err != nil {
 		switch err := err.(type) {
 		case *types.SpecificError:
+			// Der Name der Aktuellen Funktion wird hinzugefügt
+			err.AddCallerFunctionToHistory("SharedFunction->EnterFunctionCall")
+
+			// Der Fehler wird zurückgegeben
 			return err
 		default:
 			return fmt.Errorf("SharedFunction->EnterFunctionCall: " + err.Error())
@@ -101,8 +108,8 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) error {
 
 	// Es wird geprüft ob das Req Objekt eine Verbindung besitzt
 	if !rpcrequest.ConnectionIsOpen(req) {
-		//o.kernel.LogPrint("RPC", "Process aborted, connection closed")
-		return utils.MakeConnectionIsClosed()
+		// Es wird ein 'Connection is closed' fehler zurückgegeben
+		return utils.MakeConnectionIsClosedError()
 	}
 
 	// Diese Funktion wird als Event ausgeführt
@@ -131,6 +138,10 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) error {
 	if err := o.kernel.AddToEventLoop(kernelLoopOperation); err != nil {
 		switch err := err.(type) {
 		case *types.SpecificError:
+			// Der Name der Aktuellen Funktion wird hinzugefügt
+			err.AddCallerFunctionToHistory("SharedFunction->EnterFunctionCall")
+
+			// Der Fehler wird zurückgegeben
 			return err
 		default:
 			return fmt.Errorf("SharedFunction->EnterFunctionCall: " + err.Error())

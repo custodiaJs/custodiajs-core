@@ -136,5 +136,5 @@ type RpcRequest struct {
 	Parms       []*FunctionParameterCapsle
 	RpcRequest  HttpJsonRequestData
 	//Resolve     chan *FunctionCallReturn
-	Resolve func(*FunctionCallReturn) error
+	Resolve func(*FunctionCallReturn) *SpecificError
 }

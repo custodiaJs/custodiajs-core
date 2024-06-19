@@ -29,3 +29,7 @@ func WaitOfConnectionStateChange(rpcreq *types.RpcRequest, cvalue bool) {
 		return
 	}
 }
+
+func IsRemoteConnection(rpcreq *types.RpcRequest) bool {
+	return false
+}

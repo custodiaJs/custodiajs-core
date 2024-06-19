@@ -17,7 +17,7 @@ const testJsProxySource = `(funct, proxyobject, ...parms) => {
 	Wait = (time) => proxyobject.wait(time);
 
 	// Promise Proxy
-	Promise = class vnh1Promise extends Promise {
+	Promise = class CustodiaJsPromise extends Promise {
 		constructor(executor) {
 			const {resolveProxy, rejectProxy} = proxyobject.newPromise();
 			const wrappedExecutor = (resolve, reject) => {

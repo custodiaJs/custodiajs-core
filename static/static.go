@@ -41,6 +41,7 @@ const (
 	UNIX_ALTERNATIVE_SERVICES        types.ALTERNATIVE_SERVICE_PATH = "/var/lib/cusjs/alternativeservices"
 	UNIX_LINUX_LOGGING_DIR           types.LOG_DIR                  = "/var/log/cusjs"
 	UNIX_LINUX_LOGGING_DIR_NONE_ROOT types.LOG_DIR                  = "/tmp/cusjs"
+	UNIX_VM_DATABASE_DIR             types.LOG_DIR                  = "/var/lib/custodiajs"
 
 	// Gibt die Verfügabren Quellen eines Funktionsaufrufes an
 	LOCAL  types.RPCCallSource = 0

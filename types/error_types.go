@@ -29,6 +29,7 @@ type SpecificError struct {
 	GoProcessError      error
 	LocalApiOrRpcError  error
 	RemoteApiOrRpcError error
+	History             []string
 }
 
 func (e *ExtModCGOPanic) Error() string {
@@ -41,4 +42,8 @@ func (e *ExtModFunctionCallError) Error() string {
 
 func (e *SpecificError) Error() string {
 	return e.GoProcessError.Error()
+}
+
+func (e *SpecificError) AddCallerFunctionToHistory(funcName string) {
+
 }

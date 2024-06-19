@@ -18,11 +18,11 @@ func MakeHttpRequestIsClosed() *types.SpecificError {
 	return &types.SpecificError{}
 }
 
-func MakeConnectionIsClosed() *types.SpecificError {
+func MakeConnectionIsClosedError(cfuncname string) *types.SpecificError {
 	return &types.SpecificError{}
 }
 
-func MakeHttpConnectionIsClosed() *types.SpecificError {
+func MakeHttpConnectionIsClosedError() *types.SpecificError {
 	return &types.SpecificError{}
 }
 
@@ -59,5 +59,45 @@ func RPCFunctionCallNullRequest() *types.SpecificError {
 }
 
 func MakeRPCFunctionCallParametersNumberUnequal(required uint, have uint) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeSharedFunctionRequestContextError(cfuncname string) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeSharedFunctionCallStateError(cfuncname string) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeV8MissingParameters(cfuncname string, need uint, have int) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeV8InvalidParameterDatatype(cfuncname string, hight uint, want string) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeV8PromiseCreatingError(cfuncname string, eError error) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeV8ConvertValueToStringError(cfuncname string, eError error) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeNewRPCSharedFunctionContextKernelIsNullError(cfuncname string) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeNewRPCSharedFunctionContextReturnDatatypeStringIsInvalidError(cfuncname string, hasType string) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeNewRPCSharedFunctionContextRPCRequestIsNullError(cfuncname string) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeNewRPCSharedFunctionInvalidContextObjectError(cfuncname string) *types.SpecificError {
 	return &types.SpecificError{}
 }

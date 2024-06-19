@@ -18,6 +18,7 @@ package kmodulerpc
 import (
 	"github.com/CustodiaJS/custodiajs-core/saftychan"
 	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/utils/grsbool"
 
 	v8 "rogchap.com/v8go"
 )
@@ -51,6 +52,6 @@ type SharedFunctionRequestContext struct {
 	kernel          types.KernelInterface
 	_rprequest      *types.RpcRequest
 	_returnDataType string
-	_wasResponded   bool
-	_destroyed      bool
+	_wasResponded   grsbool.Grsbool
+	_destroyed      grsbool.Grsbool
 }

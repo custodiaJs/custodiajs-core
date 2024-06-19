@@ -126,7 +126,7 @@ func (o *Core) AddNewVMInstance(vmDbEntry *vmdb.VmDBEntry) (types.VmInterface, e
 	}
 
 	// WARNUNG!
-	// Handelt es sich um ein Linux-System, werden die vnh1-Container vorbereitet.
+	// Handelt es sich um ein Linux-System, werden die CustodiaJS-Container vorbereitet.
 	// Alle Container und ihre Konfigurationen werden aus der Config-Datenbank ausgelesen.
 	// Handelt es sich um ein Windows- oder macOS-System, werden die Container mithilfe von Firewall und Benutzerrechten umgesetzt
 	var vmContainer *container.VmContainer
@@ -359,7 +359,7 @@ func setState(core *Core, state types.CoreState, useMutex bool) {
 	core.state = state
 }
 
-// Erstellt einen neuen vnh1 Core
+// Erstellt einen neuen CustodiaJS Core
 func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase.IdenKeyDatabase, dbService *databaseservices.DbService, logDIRPath types.LOG_DIR) (*Core, error) {
 	// Das Coreobjekt wird erstellt
 	coreObj := &Core{

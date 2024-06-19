@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/CustodiaJS/custodiajs-core/filesystem"
+	"github.com/CustodiaJS/custodiajs-core/static"
 )
 
 // loadAllVirtualMachines lädt alle virtuellen Maschinen aus dem angegebenen Verzeichnis und speichert sie im VmDatabase-Objekt.
@@ -70,7 +71,7 @@ func OpenFilebasedVmDatabase() (*VmDatabase, error) {
 	// Das VM Datenbankobjekt wird erstellt
 	resolv := &VmDatabase{
 		vmMap:     map[string]*VmDBEntry{},
-		vmRootDir: "/var/lib/vnh1",
+		vmRootDir: string(static.UNIX_VM_DATABASE_DIR),
 	}
 
 	// Es werden alle Virtuellen Machinen geladen und zwischengespeichert
