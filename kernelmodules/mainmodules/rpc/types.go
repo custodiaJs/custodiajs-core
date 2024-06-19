@@ -16,7 +16,6 @@
 package kmodulerpc
 
 import (
-	"github.com/CustodiaJS/custodiajs-core/saftychan"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils/grsbool"
 
@@ -47,11 +46,9 @@ type RequestResponseWaiter struct {
 }
 
 type SharedFunctionRequestContext struct {
-	//resolveChan     chan *types.FunctionCallState
-	responseChan    *saftychan.FunctionCallStateChan
 	kernel          types.KernelInterface
 	_rprequest      *types.RpcRequest
 	_returnDataType string
-	_wasResponded   grsbool.Grsbool
-	_destroyed      grsbool.Grsbool
+	_wasResponded   *grsbool.Grsbool
+	_destroyed      *grsbool.Grsbool
 }

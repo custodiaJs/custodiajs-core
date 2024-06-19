@@ -82,7 +82,7 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) error {
 	// Es wird geprüft ob das Req Objekt eine Verbindung besitzt
 	if !rpcrequest.ConnectionIsOpen(req) {
 		// Es wird ein 'Connection closed' Fehler zurückgegeben
-		return utils.MakeConnectionIsClosedError()
+		return utils.MakeConnectionIsClosedError("SharedFunction->EnterFunctionCall")
 	}
 
 	// Es wird geprüft ob die Angeforderte Anzahl an Parametern vorhanden ist
@@ -94,22 +94,17 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) error {
 	// Es wird ein neues Request Objekt
 	request, err := newSharedFunctionRequestContext(o.kernel, o.signature.ReturnType, req)
 	if err != nil {
-		switch err := err.(type) {
-		case *types.SpecificError:
-			// Der Name der Aktuellen Funktion wird hinzugefügt
-			err.AddCallerFunctionToHistory("SharedFunction->EnterFunctionCall")
+		// Der Name der Aktuellen Funktion wird hinzugefügt
+		err.AddCallerFunctionToHistory("SharedFunction->EnterFunctionCall")
 
-			// Der Fehler wird zurückgegeben
-			return err
-		default:
-			return fmt.Errorf("SharedFunction->EnterFunctionCall: " + err.Error())
-		}
+		// Der Fehler wird zurückgegeben
+		return err
 	}
 
 	// Es wird geprüft ob das Req Objekt eine Verbindung besitzt
 	if !rpcrequest.ConnectionIsOpen(req) {
 		// Es wird ein 'Connection is closed' fehler zurückgegeben
-		return utils.MakeConnectionIsClosedError()
+		return utils.MakeConnectionIsClosedError("SharedFunction->EnterFunctionCall")
 	}
 
 	// Diese Funktion wird als Event ausgeführt

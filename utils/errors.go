@@ -62,7 +62,7 @@ func MakeRPCFunctionCallParametersNumberUnequal(required uint, have uint) *types
 	return &types.SpecificError{}
 }
 
-func MakeSharedFunctionRequestContextError(cfuncname string) *types.SpecificError {
+func MakeSharedFunctionRequestContextObjectError(cfuncname string) *types.SpecificError {
 	return &types.SpecificError{}
 }
 
@@ -99,5 +99,29 @@ func MakeNewRPCSharedFunctionContextRPCRequestIsNullError(cfuncname string) *typ
 }
 
 func MakeNewRPCSharedFunctionInvalidContextObjectError(cfuncname string) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeNewRPCSharedFunctionNewV8ObjectInstanceError(cfuncname string, err error) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeRPCRequestAlwaysResponsedError(cfuncname string) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeV8FunctionCallbackInfoIsNullError(cfuncname string) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeV8ToGoConvertingError(cfuncname string) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeRPCRequestContextIsClosedAndDestroyed(cfuncname string) *types.SpecificError {
+	return &types.SpecificError{}
+}
+
+func MakeRPCResolvingDataError(cfuncname string) *types.SpecificError {
 	return &types.SpecificError{}
 }

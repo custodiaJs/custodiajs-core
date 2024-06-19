@@ -338,12 +338,12 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 
 	// Das Request Objekt wird erzeugt
 	requestObject := &types.RpcRequest{
-		Parms:       extractedValues,
-		RpcRequest:  request,
-		ProcessLog:  proc,
-		RequestType: static.HTTP_REQUEST,
-		HttpRequest: requestHttpObject,
-		Resolve:     resolveFunction,
+		Parms:         extractedValues,
+		RpcRequest:    request,
+		ProcessLog:    proc,
+		RequestType:   static.HTTP_REQUEST,
+		HttpRequest:   requestHttpObject,
+		WriteResponse: resolveFunction,
 	}
 
 	// Die Funktion wird aufgerufen

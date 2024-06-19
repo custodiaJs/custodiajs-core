@@ -323,14 +323,23 @@ func convertRequestParametersToV8Parameters(iso *v8.Isolate, parmTypes []string,
 }
 
 // Überprüft ob ein SharedFunctionRequestContext korrekt aufgebaut ist
-func validateSharedFunctionRequestContext(o *SharedFunctionRequestContext) bool {
+func validateSharedFunctionRequestContextObject(o *SharedFunctionRequestContext) bool {
 	// Sollte die SharedFunctionRequestContext "o" NULL sein, wird ein False zurückgegeben
 	if o == nil {
 		return false
 	}
 
-	// Es wird geprüft ob die Resolve Chain NULL ist
-	if o.responseChan == nil {
+	// Die Einzelnen Elemente werden geprüft
+	if o.kernel == nil {
+		return false
+	}
+	if o._rprequest == nil {
+		return false
+	}
+	if o._returnDataType == "" {
+		return false
+	}
+	if o._destroyed == nil {
 		return false
 	}
 

@@ -357,7 +357,7 @@ func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate) *v8.F
 		}
 
 		// Die Funktion wird ermittelt
-		function, foundFunction, err := __determineRPCFunction(kernel, funcSig)
+		_, foundFunction, err := __determineRPCFunction(kernel, funcSig)
 		if err != nil {
 			// Es wird Javascript Fehler ausgelöst
 			utils.V8ContextThrow(info.Context(), err.Error())
@@ -376,41 +376,6 @@ func (o *RPCModule) rpcCall(kernel types.KernelInterface, iso *v8.Isolate) *v8.F
 		}
 
 		panic("not implemantated")
-
-		// Die Funktion wird ausgeführt
-		go func() {
-			// Die Funktion wird aufgerufen
-			resultChan := make(chan *types.FunctionCallReturn)
-			err := function.EnterFunctionCall(&types.RpcRequest{Parms: exportedParameters, Resolve: nil})
-			if err != nil {
-				// Der V8 Throw wird erzeugt
-				val, _ := v8.NewValue(info.Context().Isolate(), fmt.Sprintf("function call throw:= %s", err.Error()))
-
-				// Der Fehler wird zurückgegeben
-				resolver.Reject(val)
-
-				// Rückgabe, Routine wird beendet
-				return
-			}
-
-			// Es wird auf das Ergebniss gewartet
-			resultState := <-resultChan
-
-			// Es wird geprüft ob ein Fehler aufgetreten ist
-			if resultState.Error != "" {
-				// Der V8 Throw wird erzeugt
-				val, _ := v8.NewValue(info.Context().Isolate(), resultState.Error)
-
-				// Der Fehler wird zurückgegeben
-				resolver.Reject(val)
-
-				// Rückgabe, Routine wird beendet
-				return
-			}
-
-			// Es wird geprüft ob der Datensatz welcher zurückgegeben wurde, passend ist
-			resolver.Resolve(v8.Undefined(info.Context().Isolate()))
-		}()
 
 		// Rückgabe
 		return resolver.Value
