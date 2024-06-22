@@ -120,3 +120,6 @@ type KernelEventLoopOperationInterface interface {
 	SetResult(*v8.Value)
 	SetError(error)
 }
+
+type CoreProcessManagmentUnitInterface interface {
+}

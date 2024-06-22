@@ -331,6 +331,11 @@ func (o *Core) SignalShutdown() {
 	close(o.holdOpenChan)
 }
 
+// Gibt die Prozess Managment Unit zurück
+func (o *Core) GetProcessManagmentUnit() types.CoreProcessManagmentUnitInterface {
+	return o.cpmu
+}
+
 // Signalisiert allen VM's dass sie beendet werden
 func (o *Core) signalVmsShutdown(wg *sync.WaitGroup) {
 	for _, item := range o.vms {
