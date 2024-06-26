@@ -332,7 +332,7 @@ func (o *Core) SignalShutdown() {
 }
 
 // Gibt die Prozess Managment Unit zurück
-func (o *Core) GetProcessManagmentUnit() types.CoreProcessManagmentUnitInterface {
+func (o *Core) GetCoreSessionManagmentUnit() types.CoreSessionManagmentUnitInterface {
 	return o.cpmu
 }
 

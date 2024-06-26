@@ -10,11 +10,11 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
-type CoreProcessManagmentUnit struct {
+type CoreSessionManagmentUnit struct {
 }
 
 type Core struct {
-	cpmu                 *CoreProcessManagmentUnit
+	cpmu                 *CoreSessionManagmentUnit
 	hostIdentKeyDatabase *identkeydatabase.IdenKeyDatabase
 	databaseService      *databaseservices.DbService
 	apiSockets           []types.APISocketInterface

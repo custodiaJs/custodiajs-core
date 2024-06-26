@@ -21,22 +21,13 @@ import (
 )
 
 func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request) {
-	// Es wird eine neue Process Log Session erzeugt
-	proc := procslog.NewProcLogSession()
-
-	// Holen Sie sich den Kontext der Anfrage
-	ctx := r.Context()
-
-	// Gibt an ob die Verbindung getrennt wurde
-	isConnected := grsbool.NewGrsbool(true)
-
-	// Der ResultChan wird erezugt
-	saftyResponseChan := saftychan.NewFunctionCallReturnChan()
+	// Die Basis Variabeln werden erzeugt
+	proc, isConnected, saftyResponseChan := procslog.NewProcLogSession(), grsbool.NewGrsbool(true), saftychan.NewFunctionCallReturnChan()
 
 	// Starte eine Go-Routine, um die Verbindung zu überwachen
 	go func() {
 		// Es wird darauf gewartet dass die Verbindung geschlossen wird
-		<-ctx.Done()
+		<-r.Context().Done()
 
 		// Es wird Signalisiert dass die Verbindung geschlossen wurde
 		isConnected.Set(false)
@@ -44,6 +35,16 @@ func (o *HttpApiService) httpCallFunction(w http.ResponseWriter, r *http.Request
 		// Das SaftyChan wird geschlossen
 		saftyResponseChan.Close()
 	}()
+
+	// Es wird ein neuer Prozess erstellt
+	cpmu := o.core.GetCoreSessionManagmentUnit()
+	if cpmu == nil {
+		// Der Fehler wird erzeugt
+		err := utils.MakeCoreSessionManagmentUnitIsNullError("httpCallFunction")
+
+		// Der Vorgang wird beendet
+		return
+	}
 
 	// Es wird geprüft ob es sich um die POST Methode handelt
 	procslog.ProcFormatConsoleText(proc, "HTTP-RPC", types.VALIDATE_INCOMMING_REMOTE_FUNCTION_CALL_REQUEST_FROM, r.RemoteAddr)

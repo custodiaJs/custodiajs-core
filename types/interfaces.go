@@ -29,6 +29,7 @@ type CoreInterface interface {
 	GetAllActiveScriptContainerIDs() []string
 	GetScriptContainerVMByID(vmid string) (VmInterface, bool, error)
 	GetScriptContainerByVMName(string) (VmInterface, error)
+	GetCoreSessionManagmentUnit() CoreSessionManagmentUnitInterface
 }
 
 type VmInterface interface {
@@ -121,5 +122,5 @@ type KernelEventLoopOperationInterface interface {
 	SetError(error)
 }
 
-type CoreProcessManagmentUnitInterface interface {
+type CoreSessionManagmentUnitInterface interface {
 }

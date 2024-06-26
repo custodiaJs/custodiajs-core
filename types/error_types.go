@@ -15,6 +15,9 @@
 
 package types
 
+type ApiError struct {
+}
+
 type ExtModCGOPanic struct {
 	ErrorValue error
 }
@@ -27,8 +30,8 @@ type SpecificError struct {
 	CliError            error
 	LocalJSVMError      error
 	GoProcessError      error
-	LocalApiOrRpcError  error
-	RemoteApiOrRpcError error
+	LocalApiOrRpcError  *ApiError
+	RemoteApiOrRpcError *ApiError
 	History             []string
 }
 

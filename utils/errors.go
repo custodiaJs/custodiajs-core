@@ -125,3 +125,7 @@ func MakeRPCRequestContextIsClosedAndDestroyed(cfuncname string) *types.Specific
 func MakeRPCResolvingDataError(cfuncname string) *types.SpecificError {
 	return &types.SpecificError{}
 }
+
+func MakeCoreSessionManagmentUnitIsNullError(cfuncname string) *types.SpecificError {
+	return &types.SpecificError{}
+}
