@@ -3,8 +3,9 @@ package kernel
 import (
 	"fmt"
 
-	"github.com/CustodiaJS/custodiajs-core/kernelmodules/extmodules"
-	cgowrapper "github.com/CustodiaJS/custodiajs-core/kernelmodules/extmodules/cgo_wrapper"
+	"github.com/CustodiaJS/custodiajs-core/kernel/external_modules"
+	extmodules "github.com/CustodiaJS/custodiajs-core/kernel/external_modules"
+	cgowrapper "github.com/CustodiaJS/custodiajs-core/kernel/external_modules/cgo_wrapper"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
 
@@ -96,7 +97,7 @@ func (o *ExtModuleLink) addGlobalFunc(extModFunc *cgowrapper.CGOWrappedLibModule
 	return nil
 }
 
-func (o *ExtModuleLink) addGlobalImport(extModImport *extmodules.ExternModuleImport, kernel types.KernelInterface) error {
+func (o *ExtModuleLink) addGlobalImport(extModImport *external_modules.ExternModuleImport, kernel types.KernelInterface) error {
 	_ = extModImport
 	_ = kernel
 	// Es ist kein Fehler aufgetreten

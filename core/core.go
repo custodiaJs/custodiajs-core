@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"fmt"
+	"net/http"
 	"runtime"
 	"strings"
 	"sync"
@@ -12,16 +13,21 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/databaseservices"
 	"github.com/CustodiaJS/custodiajs-core/filesystem"
 	"github.com/CustodiaJS/custodiajs-core/identkeydatabase"
-	extmodules "github.com/CustodiaJS/custodiajs-core/kernelmodules/extmodules"
+	"github.com/CustodiaJS/custodiajs-core/ipnetwork"
+	"github.com/CustodiaJS/custodiajs-core/kernel/external_modules"
+	"github.com/CustodiaJS/custodiajs-core/saftychan"
 	"github.com/CustodiaJS/custodiajs-core/static"
+	"github.com/CustodiaJS/custodiajs-core/static/errormsgs"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
+	"github.com/CustodiaJS/custodiajs-core/utils/grsbool"
+	"github.com/CustodiaJS/custodiajs-core/utils/procslog"
 	"github.com/CustodiaJS/custodiajs-core/vm"
 	"github.com/CustodiaJS/custodiajs-core/vmdb"
 )
 
 // Fügt eine Externe Modul Lib dem Core hinzu
-func (o *Core) AddExternalModuleLibrary(modLib *extmodules.ExternalModule) error {
+func (o *Core) AddExternalModuleLibrary(modLib *external_modules.ExternalModule) error {
 	// Es wird geprüft ob es sich um einen Zulässigen Module namen handelt
 	if val := utils.ValidateExternalModuleName(modLib.GetName()); !val {
 		return fmt.Errorf("Core->AddExternalModuleLibrary: Invalid module name, cant added module")
@@ -77,7 +83,7 @@ func (o *Core) AddNewVMInstance(vmDbEntry *vmdb.VmDBEntry) (types.VmInterface, e
 	}
 
 	// Es werden alle Externen Module herausgefiltertet
-	modList := make([]*extmodules.ExternalModule, 0)
+	modList := make([]*external_modules.ExternalModule, 0)
 	for _, item := range neededExternalModulesNameSlice {
 		for _, mitem := range o.extModules {
 			if item == mitem.GetName() {
@@ -238,10 +244,10 @@ func (o *Core) AddAPISocket(apiSocket types.APISocketInterface) error {
 }
 
 // Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
-func (o *Core) GetScriptContainerVMByID(vmid string) (types.VmInterface, bool, error) {
+func (o *Core) GetScriptContainerVMByID(vmid string) (types.VmInterface, bool, *types.SpecificError) {
 	// Es wird geprüft ob es sich um einen zulässigen vm Namen handelt
 	if !utils.ValidateVMIdString(vmid) {
-		return nil, false, fmt.Errorf("Core->GetScriptContainerVMByID: invalid vm container id")
+		return nil, false, nil //fmt.Errorf("Core->GetScriptContainerVMByID: invalid vm container id")
 	}
 
 	// Die ID wird lowercast
@@ -263,10 +269,10 @@ func (o *Core) GetScriptContainerVMByID(vmid string) (types.VmInterface, bool, e
 }
 
 // Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
-func (o *Core) GetScriptContainerByVMName(vmName string) (types.VmInterface, error) {
+func (o *Core) GetScriptContainerByVMName(vmName string) (types.VmInterface, bool, *types.SpecificError) {
 	// Es wird geprüft ob es sich um einen zulässigen Namen handelt
 	if !utils.ValidateVMName(vmName) {
-		return nil, fmt.Errorf("Core->GetScriptContainerByVMName: invalid vm container name")
+		return nil, false, nil //fmt.Errorf("Core->GetScriptContainerByVMName: invalid vm container name")
 	}
 
 	// Der Name wird lowercast
@@ -280,11 +286,11 @@ func (o *Core) GetScriptContainerByVMName(vmName string) (types.VmInterface, err
 	// Es wird geprüft ob die VM exestiert
 	vmObj, found := o.vmsByName[lowerCaseVmName]
 	if !found {
-		return nil, fmt.Errorf("Core->GetScriptContainerByVMName: unkown vm '%s'", lowerCaseVmName)
+		return nil, false, nil // fmt.Errorf("Core->GetScriptContainerByVMName: unkown vm '%s'", lowerCaseVmName)
 	}
 
 	// Das Objekt wird zurückgegeben
-	return vmObj, nil
+	return vmObj, true, nil
 }
 
 // Gibt die ID's der Aktiven VM-Container zurück
@@ -336,6 +342,50 @@ func (o *Core) GetCoreSessionManagmentUnit() types.CoreSessionManagmentUnitInter
 	return o.cpmu
 }
 
+// Erzeugt aus einer IP-Adresse eine Verified Core IP Address (LRSAP)
+func (o *Core) ConvertLagacyIPAddressToLRSAP(lagacyRemoteIPAddress string, lagacyLocalIPAddress string) (types.VerifiedCoreIPAddressInterface, *types.SpecificError) {
+	// Die Quell IP-Adresse wird eingelesen
+	sourceIp, errSourceIp := o.hostnetmanager.TryParseIp(lagacyRemoteIPAddress)
+	if errSourceIp != nil {
+		// Die Aktuelle Funktion wird dem Fehler hinzugefügt
+		errSourceIp.AddCallerFunctionToHistory("Core->ConvertLagacyIPAddressToLRSAP")
+
+		// Der Fehler wird zurückgegeben
+		return nil, errSourceIp
+	}
+
+	// Die Ziel IP-Adresse wird eingelesen
+	destinationIp, errDestIp := o.hostnetmanager.TryParseIp(lagacyLocalIPAddress)
+	if errDestIp != nil {
+		// Die Aktuelle Funktion wird dem Fehler hinzugefügt
+		errDestIp.AddCallerFunctionToHistory("Core->ConvertLagacyIPAddressToLRSAP")
+
+		// Der Fehler wird zurückgegeben
+		return nil, errDestIp
+	}
+
+	// Es wird versucht anhand der IP-Adresse das Zugehörige Lokale Netzwerk Interface zu ermitteln
+	localNetIfaceByDestinationIp := o.hostnetmanager.GetNetworkInterfaceByLocalIp(destinationIp)
+	if localNetIfaceByDestinationIp != nil {
+		return nil, errormsgs.CORE_CANT_RETRIVE_NETWORK_INTERFAC_BY_IP("Core->ConvertLagacyIPAddressToLRSAP", destinationIp)
+	}
+
+	// Es wird ein neues CoreLRSAP Struct erzeugt
+	coreLRSAP := &CoreLRSAP{
+		SourceAddress:           sourceIp,
+		LocalAddress:            destinationIp,
+		ConnectionOverInterface: localNetIfaceByDestinationIp,
+	}
+
+	// Das Objekt wird zurückgegeben, ohen Fehler
+	return coreLRSAP, nil
+}
+
+// Überprüft ob die Quelle zulässig ist
+func (o *Core) LRSAPSourceIsAllowed(LRSAP types.VerifiedCoreIPAddressInterface) bool {
+	return false
+}
+
 // Signalisiert allen VM's dass sie beendet werden
 func (o *Core) signalVmsShutdown(wg *sync.WaitGroup) {
 	for _, item := range o.vms {
@@ -345,6 +395,30 @@ func (o *Core) signalVmsShutdown(wg *sync.WaitGroup) {
 			wg.Done()
 		}(item)
 	}
+}
+
+// Erzeugt eine neue Web bases RPC Sitzung
+func (o *CoreSessionManagmentUnit) NewWebRequestBasedRPCSession(httpRequest *http.Request) (types.WebRequestBasedRPCSessionInterface, *types.SpecificError) {
+	// Die Basis Variabeln werden erzeugt
+	proc, isConnected, saftyResponseChan := procslog.NewProcLogSession(), grsbool.NewGrsbool(true), saftychan.NewFunctionCallReturnChan()
+
+	// Es wird eine Goroutine gestartet, welche prüft ob die Verbindung getrennt wurde
+	go func() {
+		// Es wird darauf gewartet dass die Verbindung geschlossen wird
+		<-httpRequest.Context().Done()
+
+		// Es wird Signalisiert dass die Verbindung geschlossen wurde
+		isConnected.Set(false)
+
+		// Das SaftyChan wird geschlossen
+		saftyResponseChan.Close()
+	}()
+
+	// Es wird ein neues Rückgabe Objekt erstellt
+	returnObject := &CoreWebRequestRPCSession{saftyResponseChan: saftyResponseChan, proc: proc, isConnected: isConnected}
+
+	// Das CoreWebRequestRPCSession Objekt wird ohne Fehler zurückgegeben
+	return returnObject, nil
 }
 
 // Legt den Core Status fest
@@ -365,7 +439,7 @@ func setState(core *Core, state types.CoreState, useMutex bool) {
 }
 
 // Erstellt einen neuen CustodiaJS Core
-func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase.IdenKeyDatabase, dbService *databaseservices.DbService, logDIRPath types.LOG_DIR) (*Core, error) {
+func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase.IdenKeyDatabase, dbService *databaseservices.DbService, logDIRPath types.LOG_DIR, ipnet *ipnetwork.HostNetworkManagmentUnit) (*Core, error) {
 	// Das Coreobjekt wird erstellt
 	coreObj := &Core{
 		vmsByID:         make(map[string]types.VmInterface),
@@ -376,7 +450,7 @@ func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase
 		hostTlsCert:     hostTlsCert,
 		databaseService: dbService,
 		state:           static.NEW,
-		extModules:      make(map[string]*extmodules.ExternalModule),
+		extModules:      make(map[string]*external_modules.ExternalModule),
 		// Chans
 		holdOpenChan:     make(chan struct{}),
 		serviceSignaling: make(chan struct{}),
@@ -388,6 +462,8 @@ func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase
 		objectMutex: &sync.Mutex{},
 		// Log
 		logDIR: logDIRPath,
+		// IP-Info Einheit
+		hostnetmanager: ipnet,
 	}
 
 	// Das Objekt wird zurückgegeben

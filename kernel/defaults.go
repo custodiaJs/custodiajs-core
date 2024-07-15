@@ -1,12 +1,12 @@
 package kernel
 
 import (
-	kmoduleconsole "github.com/CustodiaJS/custodiajs-core/kernelmodules/mainmodules/console"
-	kmodulecrypto "github.com/CustodiaJS/custodiajs-core/kernelmodules/mainmodules/crypto"
-	kmoduledatabase "github.com/CustodiaJS/custodiajs-core/kernelmodules/mainmodules/database"
-	kmodulehttp "github.com/CustodiaJS/custodiajs-core/kernelmodules/mainmodules/http"
-	kmodulenet "github.com/CustodiaJS/custodiajs-core/kernelmodules/mainmodules/network"
-	kmodulerpc "github.com/CustodiaJS/custodiajs-core/kernelmodules/mainmodules/rpc"
+	kmoduleconsole "github.com/CustodiaJS/custodiajs-core/kernel/base_modules/console"
+	kmodulecrypto "github.com/CustodiaJS/custodiajs-core/kernel/base_modules/crypto"
+	kmoduledatabase "github.com/CustodiaJS/custodiajs-core/kernel/base_modules/database"
+	kmodulehttp "github.com/CustodiaJS/custodiajs-core/kernel/base_modules/http"
+	kmodulenet "github.com/CustodiaJS/custodiajs-core/kernel/base_modules/network"
+	kmodulerpc "github.com/CustodiaJS/custodiajs-core/kernel/base_modules/rpc"
 	"github.com/CustodiaJS/custodiajs-core/types"
 )
 

@@ -16,6 +16,7 @@
 package types
 
 type ApiError struct {
+	ResponseMessageText string
 }
 
 type ExtModCGOPanic struct {
@@ -30,8 +31,8 @@ type SpecificError struct {
 	CliError            error
 	LocalJSVMError      error
 	GoProcessError      error
-	LocalApiOrRpcError  *ApiError
-	RemoteApiOrRpcError *ApiError
+	LocalApiOrRpcError  ApiError
+	RemoteApiOrRpcError ApiError
 	History             []string
 }
 
@@ -45,6 +46,18 @@ func (e *ExtModFunctionCallError) Error() string {
 
 func (e *SpecificError) Error() string {
 	return e.GoProcessError.Error()
+}
+
+func (e *SpecificError) GetRemoteApiOrRpcErrorMessage() string {
+	return ""
+}
+
+func (e *SpecificError) GetLocalApiOrRpcErrorMessage() string {
+	return ""
+}
+
+func (e *SpecificError) GetGoProcessErrorMessage() string {
+	return ""
 }
 
 func (e *SpecificError) AddCallerFunctionToHistory(funcName string) {

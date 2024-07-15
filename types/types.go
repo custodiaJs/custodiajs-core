@@ -19,8 +19,6 @@ import (
 	"crypto/tls"
 	"net/http"
 	"net/url"
-
-	"github.com/CustodiaJS/custodiajs-core/utils/grsbool"
 )
 
 // VM und Core Status Typen sowie Repo Datentypen
@@ -51,6 +49,12 @@ type KernelEventLoopOperationMethode uint8
 
 // Vererbte Structs
 type FunctionCallReturnData ExportedV8Value
+
+// Gibt die Indentifizierungsmethode an
+type RPCRequestVMIdentificationMethode uint8
+
+// Gibt an ob es sich bei einer IP um eine TOR IP-handelt
+type TorIpState bool
 
 type TransportWhitelistVmEntryData struct {
 	WildCardDomains []string
@@ -112,7 +116,7 @@ type HttpRpcRequestUserData struct {
 }
 
 type HttpRpcRequest struct {
-	IsConnected      *grsbool.Grsbool
+	IsConnected      func() bool
 	ContentLength    int64
 	PostForm         url.Values
 	Header           http.Header
@@ -137,4 +141,16 @@ type RpcRequest struct {
 	RpcRequest  HttpJsonRequestData
 	//Resolve     chan *FunctionCallReturn
 	WriteResponse func(*FunctionCallReturn) error
+}
+
+type RPCParmeterReadingError struct {
+	Pos       int
+	Has       string
+	Need      string
+	SpeficMsg string
+}
+
+type XRequestedWithData struct {
+	IsKnown bool
+	Value   string
 }

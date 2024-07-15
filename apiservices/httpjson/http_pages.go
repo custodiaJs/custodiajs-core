@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/CustodiaJS/custodiajs-core/static"
+	"github.com/CustodiaJS/custodiajs-core/static/errormsgs"
 	"github.com/CustodiaJS/custodiajs-core/utils/procslog"
 )
 
@@ -36,11 +37,35 @@ func (o *HttpApiService) indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (o *HttpApiService) vmInfo(w http.ResponseWriter, r *http.Request) {
+	// Es wird eine neue Webbasierte RPC Sitzung im Core Registriert
+	coreWebSession, csError := o.core.GetCoreSessionManagmentUnit().NewWebRequestBasedRPCSession(r)
+	if csError != nil {
+		// Der Fehler wird zurückgesendet
+		csError.AddCallerFunctionToHistory("HttpApiService->httpCallFunction")
+		coreWebSession.GetProcLogSession().LogPrint("HTTP-RPC", fmt.Sprintf("%s\n", csError.GetGoProcessErrorMessage()))
+		responseFrame := &ResponseCapsle{Error: csError.GetRemoteApiOrRpcErrorMessage()}
+
+		// Es wird geprüft ob die Verbindung getrennt wurde
+		if coreWebSession.IsConnected() {
+			// Es wird versucht den Fehler zurückzusenden
+			rwerr := responseWrite(static.HTTP_CONTENT_JSON, w, responseFrame)
+			if rwerr != nil {
+				rwerr.AddCallerFunctionToHistory("HttpApiService->vmInfo")
+				coreWebSession.GetProcLogSession().LogPrint("HTTP-RPC", fmt.Sprintf("%s\n", rwerr.GetGoProcessErrorMessage()))
+				coreWebSession.SignalsThatAnErrorHasOccurredWhenTheErrorIsSent(getResponseCapsleSize(responseFrame, static.HTTP_CONTENT_JSON), rwerr)
+				return
+			}
+		}
+
+		// Rückgabe
+		return
+	}
+
 	// Setze den Content-Type der Antwort auf application/json.
 	w.Header().Set("Content-Type", "application/json")
 
 	// Es wird geprüft ob es sich um eine Zulässige GET Anfrage handelt
-	request, err := validateGETRequestAndGetRequestData(r)
+	request, err := validateGETRequestAndGetRequestData(r, o.core)
 	if err != nil {
 		// Set the 'Allow' header to indicate that only POST is allowed
 		w.Header().Set("Allow", "POST")
@@ -53,7 +78,7 @@ func (o *HttpApiService) vmInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Es wird geprüft ob es sich um eine bekannte VM handelt
-	foundedVM, foundVm, err := o.core.GetScriptContainerVMByID(request.VmId)
+	foundedVM, foundVm, err := o.core.GetScriptContainerVMByID(request.VmNameOrID)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusBadRequest)
 		return
@@ -64,12 +89,31 @@ func (o *HttpApiService) vmInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Es wird geprüft ob es sich um eine WebRequest aus einem Webbrowser handelt,
-	// wenn ja wird ermittelt ob es sich um eine Zulässige Quelle handelt
-	requestHttpSource := getRefererOrXRequestedWith(request)
-	if hasRefererOrXRequestedWith(request) && !foundedVM.ValidateRPCRequestSource(requestHttpSource) {
-		// Der Vorgang wird abgebrochen, es handelt sich nicht nicht um eine zulässige Quelle
-		http.Error(w, "Unzulässige Quelle", http.StatusBadRequest)
-		return
+	// wenn ja wird ermittelt ob es sich um eine Zulässige Quelle handelt,
+	// wenn es sich nicht um eine zulässige Quelle handelt, wird der Vorgang abgebrochen.
+	if request.XRequestedWith != nil {
+		if request.XRequestedWith != EMPTY_X_REQUEST_WITH {
+			if !foundedVM.IsAllowedXRequested(request.XRequestedWith) {
+				responeError := errormsgs.HTTP_REQUEST_NOT_AUTHORIZED_X_SOURCE("HttpApiService->httpCallFunction", request.XRequestedWith)
+				coreWebSession.GetProcLogSession().LogPrint("HTTP-RPC", fmt.Sprintf("%s\n", responeError.GetGoProcessErrorMessage()))
+				responseFrame := &ResponseCapsle{Error: responeError.GetRemoteApiOrRpcErrorMessage()}
+
+				// Es wird geprüft ob die Verbindung getrennt wurde
+				if coreWebSession.IsConnected() {
+					// Es wird versucht den Fehler zurückzusenden
+					rwerr := responseWrite(static.HTTP_CONTENT_JSON, w, responseFrame)
+					if rwerr != nil {
+						rwerr.AddCallerFunctionToHistory("HttpApiService->vmInfo")
+						coreWebSession.GetProcLogSession().LogPrint("HTTP-RPC", fmt.Sprintf("%s\n", rwerr.GetGoProcessErrorMessage()))
+						coreWebSession.SignalsThatAnErrorHasOccurredWhenTheErrorIsSent(getResponseCapsleSize(responseFrame, static.HTTP_CONTENT_JSON), rwerr)
+						return
+					}
+				}
+
+				// Rückgabe
+				return
+			}
+		}
 	}
 
 	// Die Lokalen Funktionen welche geteilt wurden, werden extrahiert
@@ -109,5 +153,5 @@ func (o *HttpApiService) vmInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Log
-	procslog.LogPrint(fmt.Sprintf("HTTP-API: retrive vm '%s' informations\n", strings.ToUpper(request.VmId)))
+	procslog.LogPrint(fmt.Sprintf("HTTP-API: retrive vm '%s' informations\n", strings.ToUpper(request.VmNameOrID)))
 }

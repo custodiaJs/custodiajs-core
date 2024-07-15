@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"net/http"
+	"net/url"
 
 	"github.com/CustodiaJS/custodiajs-core/types"
 )
@@ -24,15 +25,16 @@ type LocalAddress struct {
 }
 
 type RequestData struct {
-	TransportProtocol types.RpcCallTransportProtocol
-	ContentType       types.HttpRequestContentType
-	XRequestedWith    string
-	Referer           string
-	Source            string
-	VmId              string
-	Origin            string
-	TLS               *tls.ConnectionState
-	Cookies           []*http.Cookie
+	VmIdentificationMethode types.RPCRequestVMIdentificationMethode
+	TransportProtocol       types.RpcCallTransportProtocol
+	ContentType             types.HttpRequestContentType
+	Source                  types.VerifiedCoreIPAddressInterface
+	XRequestedWith          *types.XRequestedWithData
+	Referer                 *url.URL
+	Origin                  *url.URL
+	VmNameOrID              string
+	TLS                     *tls.ConnectionState
+	Cookies                 []*http.Cookie
 }
 
 type ResponseCapsle struct {

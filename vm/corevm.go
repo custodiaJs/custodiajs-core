@@ -9,7 +9,7 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/consolecache"
 	"github.com/CustodiaJS/custodiajs-core/databaseservices/services"
 	"github.com/CustodiaJS/custodiajs-core/kernel"
-	extmodules "github.com/CustodiaJS/custodiajs-core/kernelmodules/extmodules"
+	extmodules "github.com/CustodiaJS/custodiajs-core/kernel/external_modules"
 	"github.com/CustodiaJS/custodiajs-core/static"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
@@ -256,7 +256,7 @@ func (o *CoreVM) GetAllSharedFunctions() []types.SharedFunctionInterface {
 	return extracted
 }
 
-func (o *CoreVM) GetSharedFunctionBySignature(sourceType types.RPCCallSource, funcSignature *types.FunctionSignature) (types.SharedFunctionInterface, bool, error) {
+func (o *CoreVM) GetSharedFunctionBySignature(sourceType types.RPCCallSource, funcSignature *types.FunctionSignature) (types.SharedFunctionInterface, bool, *types.SpecificError) {
 	// Es wird versucht die RPC Tabelle zu lesen
 	var table interface{}
 	if sourceType == static.LOCAL {
@@ -318,6 +318,10 @@ func (o *CoreVM) SignalShutdown() {
 
 func (o *CoreVM) eventloopForRunner() bool {
 	return !o.hasCloseSignal() && !o.Kernel.IsClosed()
+}
+
+func (o *CoreVM) IsAllowedXRequested(xrd *types.XRequestedWithData) bool {
+	return false
 }
 
 func NewCoreVM(core types.CoreInterface, vmDb *vmdb.VmDBEntry, extModules []*extmodules.ExternalModule, loggingPath types.LOG_DIR) (*CoreVM, error) {

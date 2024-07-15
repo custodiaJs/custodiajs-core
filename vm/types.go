@@ -5,7 +5,7 @@ import (
 
 	"github.com/CustodiaJS/custodiajs-core/databaseservices/services"
 	"github.com/CustodiaJS/custodiajs-core/kernel"
-	extmodules "github.com/CustodiaJS/custodiajs-core/kernelmodules/extmodules"
+	extmodules "github.com/CustodiaJS/custodiajs-core/kernel/external_modules"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/vmdb"
 )

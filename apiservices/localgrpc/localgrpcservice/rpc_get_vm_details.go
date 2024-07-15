@@ -32,7 +32,7 @@ func (s *CliGrpcServer) GetVMDetails(ctx context.Context, vmDetailParms *localgr
 		}
 
 		// Es wird versucht die VM mittels ihres Namens zu Extrahieren
-		foundedVM, err = s.core.GetScriptContainerByVMName(vmDetailParms.GetName())
+		foundedVM, _, err = s.core.GetScriptContainerByVMName(vmDetailParms.GetName())
 		if foundedVM != nil {
 			foundVM = true
 		}

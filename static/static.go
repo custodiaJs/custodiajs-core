@@ -55,4 +55,11 @@ const (
 	// Gibt die Verfügabren EventLoop Methoden an
 	KERNEL_EVENT_LOOP_FUNCTION    types.KernelEventLoopOperationMethode = 0
 	KERNEL_EVENT_LOOP_SOURCE_CODE types.KernelEventLoopOperationMethode = 1
+
+	// Legt die Verfügbaren RPC VM Identifikations Methoden fest
+	RPC_REQUEST_METHODE_VM_IDENT_ID   types.RPCRequestVMIdentificationMethode = 0
+	RPC_REQUEST_METHODE_VM_IDENT_NAME types.RPCRequestVMIdentificationMethode = 1
+
+	// Gibt an, dass nicht ermittelt werden konnte, ob es sich um eine Tor IP handelt
+	UNKOWN_TOR_IP_STATE types.TorIpState = false
 )

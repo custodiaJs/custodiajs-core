@@ -16,6 +16,7 @@
 package types
 
 import (
+	"net/http"
 	"sync"
 
 	"github.com/CustodiaJS/custodiajs-core/consolecache"
@@ -24,21 +25,27 @@ import (
 	v8 "rogchap.com/v8go"
 )
 
+type VerifiedCoreIPAddressInterface interface {
+}
+
 type CoreInterface interface {
 	GetAllVMs() []VmInterface
 	GetAllActiveScriptContainerIDs() []string
-	GetScriptContainerVMByID(vmid string) (VmInterface, bool, error)
-	GetScriptContainerByVMName(string) (VmInterface, error)
+	ConvertLagacyIPAddressToLRSAP(lagacyRemoteIPAddress string, lagacyLocalIPAddress string) (VerifiedCoreIPAddressInterface, *SpecificError)
+	GetScriptContainerVMByID(vmid string) (VmInterface, bool, *SpecificError)
+	GetScriptContainerByVMName(string) (VmInterface, bool, *SpecificError)
 	GetCoreSessionManagmentUnit() CoreSessionManagmentUnitInterface
+	LRSAPSourceIsAllowed(LRSAP VerifiedCoreIPAddressInterface) bool
 }
 
 type VmInterface interface {
 	GetVMName() string
+	IsAllowedXRequested(xrd *XRequestedWithData) bool
 	GetFingerprint() CoreVMFingerprint
 	GetConsoleOutputWatcher() WatcherInterface
 	GetAllSharedFunctions() []SharedFunctionInterface
 	Serve(*sync.WaitGroup) error
-	GetSharedFunctionBySignature(RPCCallSource, *FunctionSignature) (SharedFunctionInterface, bool, error)
+	GetSharedFunctionBySignature(RPCCallSource, *FunctionSignature) (SharedFunctionInterface, bool, *SpecificError)
 	GetWhitelist() []*TransportWhitelistVmEntryData
 	ValidateRPCRequestSource(soruce string) bool
 	GetDatabaseServices() []*VMEntryBaseData
@@ -62,7 +69,8 @@ type SharedFunctionInterface interface {
 	GetName() string
 	GetParmTypes() []string
 	GetReturnDatatype() string
-	EnterFunctionCall(*RpcRequest) error
+	EnterFunctionCall(*RpcRequest) *SpecificError
+	GetScriptVM() VmInterface
 }
 
 type WatcherInterface interface {
@@ -122,5 +130,37 @@ type KernelEventLoopOperationInterface interface {
 	SetError(error)
 }
 
+type FunctionCallReturnChanInterface interface {
+	WriteAndClose(value *FunctionCallReturn)
+	Read() (*FunctionCallReturn, bool)
+	IsClosed() bool
+	Close()
+}
+
+type FunctionCallStateChanInterface interface {
+	Read() (*FunctionCallReturn, bool)
+	WriteAndClose(*FunctionCallReturn)
+}
+
+type GrsboolInterface interface {
+	Set(bval bool)
+	Bool() bool
+	WaitOfChange(waitOfState bool)
+}
+
+type WebRequestBasedRPCSessionInterface interface {
+	SignalTheErrorSignalCouldNotBeTransmittedTheConnectionWasLost(size int, error *SpecificError)
+	SignalsThatAnErrorHasOccurredWhenTheErrorIsSent(size int, err *SpecificError)
+	SignalTheResponseWasTransmittedSuccessfully(size int, packageHash string)
+	SignalTheResponseCouldNotBeSent(size int, error *SpecificError)
+	SignalThatTheErrorWasSuccessfullyTransmitted(size int)
+	GetReturnChan() FunctionCallReturnChanInterface
+	GetProcLogSession() ProcessLogSessionInterface
+	CloseBecauseFunctionReturned()
+	IsConnected() bool
+	Done()
+}
+
 type CoreSessionManagmentUnitInterface interface {
+	NewWebRequestBasedRPCSession(*http.Request) (WebRequestBasedRPCSessionInterface, *SpecificError)
 }

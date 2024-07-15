@@ -15,18 +15,9 @@ func IsHttpRequest(rpcreq *types.RpcRequest) bool {
 func ConnectionIsOpen(rpcreq *types.RpcRequest) bool {
 	switch {
 	case IsHttpRequest(rpcreq):
-		return rpcreq.HttpRequest.IsConnected.Bool()
+		return rpcreq.HttpRequest.IsConnected()
 	default:
 		return false
-	}
-}
-
-func WaitOfConnectionStateChange(rpcreq *types.RpcRequest, cvalue bool) {
-	switch {
-	case IsHttpRequest(rpcreq):
-		rpcreq.HttpRequest.IsConnected.WaitOfChange(cvalue)
-	default:
-		return
 	}
 }
 
