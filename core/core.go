@@ -14,7 +14,6 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/filesystem"
 	"github.com/CustodiaJS/custodiajs-core/identkeydatabase"
 	"github.com/CustodiaJS/custodiajs-core/ipnetwork"
-	"github.com/CustodiaJS/custodiajs-core/kernel/external_modules"
 	"github.com/CustodiaJS/custodiajs-core/saftychan"
 	"github.com/CustodiaJS/custodiajs-core/static"
 	"github.com/CustodiaJS/custodiajs-core/static/errormsgs"
@@ -26,8 +25,8 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/vmdb"
 )
 
-// Fügt eine Externe Modul Lib dem Core hinzu
-func (o *Core) AddExternalModuleLibrary(modLib *external_modules.ExternalModule) error {
+/* Fügt eine Externe Modul Lib dem Core hinzu
+func (o *Core) AddExternalModuleLibrary(modLib *external_module.ExternalModule) error {
 	// Es wird geprüft ob es sich um einen Zulässigen Module namen handelt
 	if val := utils.ValidateExternalModuleName(modLib.GetName()); !val {
 		return fmt.Errorf("Core->AddExternalModuleLibrary: Invalid module name, cant added module")
@@ -51,6 +50,7 @@ func (o *Core) AddExternalModuleLibrary(modLib *external_modules.ExternalModule)
 	// Es ist kein Fehler aufgetreten
 	return nil
 }
+*/
 
 // Erstellt eine neue VM Instanz
 func (o *Core) AddNewVMInstance(vmDbEntry *vmdb.VmDBEntry) (types.VmInterface, error) {
@@ -82,39 +82,42 @@ func (o *Core) AddNewVMInstance(vmDbEntry *vmdb.VmDBEntry) (types.VmInterface, e
 		neededExternalModulesNameSlice = append(neededExternalModulesNameSlice, item.Name)
 	}
 
-	// Es werden alle Externen Module herausgefiltertet
-	modList := make([]*external_modules.ExternalModule, 0)
-	for _, item := range neededExternalModulesNameSlice {
-		for _, mitem := range o.extModules {
-			if item == mitem.GetName() {
-				modList = append(modList, mitem)
-			}
-		}
-	}
-
-	// Es wird geprüft ob die benötigten Module gefunden wurden
-	notFoundExtModules := make([]string, 0)
-	for _, item := range vmDbEntry.GetAllExternalServices() {
-		if item.Required {
-			found := false
-			for _, xtem := range modList {
-				if xtem.GetName() == item.Name {
-					if xtem.GetVersion() >= uint64(item.MinVersion) {
-						found = true
-						break
-					}
+	/*
+		// Es werden alle Externen Module herausgefiltertet
+		modList := make([]*external_modules.ExternalModule, 0)
+		for _, item := range neededExternalModulesNameSlice {
+			for _, mitem := range o.extModules {
+				if item == mitem.GetName() {
+					modList = append(modList, mitem)
 				}
 			}
-			if !found {
-				notFoundExtModules = append(notFoundExtModules, item.Name)
+		}
+
+		// Es wird geprüft ob die benötigten Module gefunden wurden
+		notFoundExtModules := make([]string, 0)
+		for _, item := range vmDbEntry.GetAllExternalServices() {
+			if item.Required {
+				found := false
+				for _, xtem := range modList {
+					if xtem.GetName() == item.Name {
+						if xtem.GetVersion() >= uint64(item.MinVersion) {
+							found = true
+							break
+						}
+					}
+				}
+				if !found {
+					notFoundExtModules = append(notFoundExtModules, item.Name)
+				}
 			}
 		}
-	}
 
-	// Es wird ein Fehler ausgelöst wenn ein benötigtes Modul nicht gefunden wurde
-	if len(notFoundExtModules) != 0 {
-		return nil, fmt.Errorf("Core->AddNewVMInstance: external modules '%s' not found", strings.Join(neededExternalModulesNameSlice, ","))
-	}
+
+		// Es wird ein Fehler ausgelöst wenn ein benötigtes Modul nicht gefunden wurde
+		if len(notFoundExtModules) != 0 {
+			return nil, fmt.Errorf("Core->AddNewVMInstance: external modules '%s' not found", strings.Join(neededExternalModulesNameSlice, ","))
+		}
+	*/
 
 	// Das Logging Verzeichniss wird erstellt
 	logPath, err := filesystem.MakeLogDirForVM(o.logDIR, vmDbEntry.GetVMName())
@@ -177,10 +180,10 @@ func (o *Core) AddNewVMInstance(vmDbEntry *vmdb.VmDBEntry) (types.VmInterface, e
 		} else if runAsProcess {
 			panic("not implemented")
 		} else {
-			vmInstance, vmInstanceErr = vm.NewCoreVM(o, vmDbEntry, modList, logPath)
+			vmInstance, vmInstanceErr = vm.NewCoreVM(o, vmDbEntry, logPath)
 		}
 	} else {
-		vmInstance, vmInstanceErr = vm.NewCoreVM(o, vmDbEntry, modList, logPath)
+		vmInstance, vmInstanceErr = vm.NewCoreVM(o, vmDbEntry, logPath)
 	}
 
 	// Es wird geprüft ob ein Fehler beim erstellen der VM aufgetreten ist
@@ -450,7 +453,7 @@ func NewCore(hostTlsCert *tls.Certificate, hostIdenKeyDatabase *identkeydatabase
 		hostTlsCert:     hostTlsCert,
 		databaseService: dbService,
 		state:           static.NEW,
-		extModules:      make(map[string]*external_modules.ExternalModule),
+		//extModules:      make(map[string]*external_modules.ExternalModule),
 		// Chans
 		holdOpenChan:     make(chan struct{}),
 		serviceSignaling: make(chan struct{}),

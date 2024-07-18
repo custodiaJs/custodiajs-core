@@ -7,7 +7,6 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/databaseservices"
 	"github.com/CustodiaJS/custodiajs-core/identkeydatabase"
 	"github.com/CustodiaJS/custodiajs-core/ipnetwork"
-	"github.com/CustodiaJS/custodiajs-core/kernel/external_modules"
 	"github.com/CustodiaJS/custodiajs-core/saftychan"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils/grsbool"
@@ -35,13 +34,13 @@ type Core struct {
 	vmSyncWaitGroup      sync.WaitGroup
 	apiSyncWaitGroup     sync.WaitGroup
 	state                types.CoreState
-	extModules           map[string]*external_modules.ExternalModule
-	serviceSignaling     chan struct{}
-	holdOpenChan         chan struct{}
-	logDIR               types.LOG_DIR
-	objectMutex          *sync.Mutex
-	vms                  []types.VmInterface
-	hostnetmanager       *ipnetwork.HostNetworkManagmentUnit
+	//extModules           map[string]*external_modules.ExternalModule
+	serviceSignaling chan struct{}
+	holdOpenChan     chan struct{}
+	logDIR           types.LOG_DIR
+	objectMutex      *sync.Mutex
+	vms              []types.VmInterface
+	hostnetmanager   *ipnetwork.HostNetworkManagmentUnit
 }
 
 type CoreFirewall struct {

@@ -19,7 +19,6 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/filesystem"
 	"github.com/CustodiaJS/custodiajs-core/identkeydatabase"
 	"github.com/CustodiaJS/custodiajs-core/ipnetwork"
-	"github.com/CustodiaJS/custodiajs-core/kernel/external_modules"
 	"github.com/CustodiaJS/custodiajs-core/static"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
@@ -144,10 +143,8 @@ func main() {
 		panic(err)
 	}
 
-	// Speichert alle Abgerufen Libs ab
+	/* Speichert alle Abgerufen Libs ab
 	extModuleLibs := make([]*external_modules.ExternalModule, 0)
-
-	/*
 		lib1, err := external_modules.LoadModuleLib("/home/fluffelbuff/Schreibtisch/lib1.so")
 		if err != nil {
 			panic(err)
@@ -190,7 +187,7 @@ func main() {
 		panic(err)
 	}
 
-	// Die Externen Module libs werden hinzugefügt
+	/* Die Externen Module libs werden hinzugefügt
 	for _, item := range extModuleLibs {
 		// Es wird versucht das Externe Modul Lib zu laden
 		if err := core.AddExternalModuleLibrary(item); err != nil {
@@ -200,6 +197,7 @@ func main() {
 		// LOG
 		fmt.Printf("External module lib '%s' version %d loaded\n", item.GetName(), item.GetVersion())
 	}
+	*/
 
 	// Die CLI Terminals werden erzeugt
 	noneRootCLI, err := localgrpc.NewTestTCP("/home/fluffelbuff/Schreibtisch/localhost.crt", "/home/fluffelbuff/Schreibtisch/localhost.pem", static.NONE_ROOT_ADMIN)
@@ -302,8 +300,9 @@ func main() {
 	// Es wird gewartet bis der Core beendet wurde
 	waitGroupForServing.Wait()
 
-	// Die Externen Module Libs werden entladen
+	/* Die Externen Module Libs werden entladen
 	for _, item := range extModuleLibs {
 		item.Unload()
 	}
+	*/
 }

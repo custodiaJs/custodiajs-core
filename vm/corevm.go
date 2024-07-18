@@ -9,7 +9,6 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/consolecache"
 	"github.com/CustodiaJS/custodiajs-core/databaseservices/services"
 	"github.com/CustodiaJS/custodiajs-core/kernel"
-	extmodules "github.com/CustodiaJS/custodiajs-core/kernel/external_modules"
 	"github.com/CustodiaJS/custodiajs-core/static"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
@@ -324,33 +323,37 @@ func (o *CoreVM) IsAllowedXRequested(xrd *types.XRequestedWithData) bool {
 	return false
 }
 
-func NewCoreVM(core types.CoreInterface, vmDb *vmdb.VmDBEntry, extModules []*extmodules.ExternalModule, loggingPath types.LOG_DIR) (*CoreVM, error) {
+func NewCoreVM(core types.CoreInterface, vmDb *vmdb.VmDBEntry, loggingPath types.LOG_DIR) (*CoreVM, error) {
 	// Es wird ein neuer Konsolen Stream erzeugt
 	consoleStream, err := consolecache.NewConsoleOutputCache(string(loggingPath))
 	if err != nil {
 		return nil, fmt.Errorf("CoreVM->newCoreVM: " + err.Error())
 	}
 
-	// Es werden alle Externen Module geladen
-	extMods := make([]types.KernelModuleInterface, 0)
-	for _, item := range extModules {
-		// Es wird versucht das Modul zu bauen
-		extMod, err := kernel.LinkWithExternalModule(item)
-		if err != nil {
-			return nil, fmt.Errorf("newCoreVM: " + err.Error())
+	/*
+		// Es werden alle Externen Module geladen
+		extMods := make([]types.KernelModuleInterface, 0)
+		for _, item := range extModules {
+			// Es wird versucht das Modul zu bauen
+			extMod, err := kernel.LinkWithExternalModule(item)
+			if err != nil {
+				return nil, fmt.Errorf("newCoreVM: " + err.Error())
+			}
+
+			// Die Daten werden abgespeichert
+			extMods = append(extMods, extMod)
 		}
 
-		// Die Daten werden abgespeichert
-		extMods = append(extMods, extMod)
-	}
-
-	// Die KernelModule werden Initalisiert
-	var kernelConfig *kernel.KernelConfig
-	if len(extMods) > 0 {
-		kernelConfig = kernel.NewFromExist(&kernel.DEFAULT_CONFIG, extMods...)
-	} else {
-		kernelConfig = &kernel.DEFAULT_CONFIG
-	}
+		// Die KernelModule werden Initalisiert
+		var kernelConfig *kernel.KernelConfig
+		if len(extMods) > 0 {
+			kernelConfig = kernel.NewFromExist(&kernel.DEFAULT_CONFIG, extMods...)
+		} else {
+			kernelConfig = &kernel.DEFAULT_CONFIG
+		}
+	*/
+	// Die Kernel Configurationen werden bereigestellt
+	kernelConfig := &kernel.DEFAULT_CONFIG
 
 	// Es wird ein neuer Kernel erzeugt
 	vmKernel, err := kernel.NewKernel(consoleStream, kernelConfig, vmDb, core)
@@ -360,14 +363,14 @@ func NewCoreVM(core types.CoreInterface, vmDb *vmdb.VmDBEntry, extModules []*ext
 
 	// Das Core Objekt wird erstellt
 	coreObject := &CoreVM{
-		Kernel:          vmKernel,
-		core:            core,
-		vmDbEntry:       vmDb,
-		externalModules: extModules,
-		objectMutex:     &sync.Mutex{},
-		vmState:         static.StillWait,
-		dbServiceLinks:  make([]services.DbServiceLinkinterface, 0),
-		_signal_CLOSE:   false,
+		Kernel:    vmKernel,
+		core:      core,
+		vmDbEntry: vmDb,
+		//externalModules: extModules,
+		objectMutex:    &sync.Mutex{},
+		vmState:        static.StillWait,
+		dbServiceLinks: make([]services.DbServiceLinkinterface, 0),
+		_signal_CLOSE:  false,
 	}
 
 	// Es wird versucht die VM mit dem Kernel zu verlinken
