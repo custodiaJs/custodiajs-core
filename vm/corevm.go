@@ -10,6 +10,7 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/databaseservices/services"
 	"github.com/CustodiaJS/custodiajs-core/kernel"
 	"github.com/CustodiaJS/custodiajs-core/static"
+	"github.com/CustodiaJS/custodiajs-core/static/errormsgs"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
 	"github.com/CustodiaJS/custodiajs-core/vmdb"
@@ -266,13 +267,13 @@ func (o *CoreVM) GetSharedFunctionBySignature(sourceType types.RPCCallSource, fu
 
 	// Es wird ermittelt ob die Tabelle gefunden wurde
 	if table == nil {
-		return nil, false, fmt.Errorf("rpc register reading error")
+		return nil, false, errormsgs.VM_GET_FUNCTION_BY_SIGNATURE_TABLE_NULL_ERROR("GetSharedFunctionBySignature")
 	}
 
 	// Es wird versucht die Tabelle richtig einzulesen
 	ctable, istable := table.(map[string]types.SharedFunctionInterface)
 	if !istable {
-		return nil, false, fmt.Errorf("rpc register reading error")
+		return nil, false, errormsgs.VM_GET_FUNCTION_RPC_REIGSTER_ERROR("GetSharedFunctionBySignature")
 	}
 
 	// Es wird geprüft ob in der Tabelle eine Eintrag für die Funktion vorhanden ist
