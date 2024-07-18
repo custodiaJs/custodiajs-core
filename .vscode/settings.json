@@ -1,5 +1,8 @@
 {
     "editor.defaultFoldingRangeProvider": "golang.go",
     "editor.foldingHighlight": false,
-    "editor.foldingStrategy": "auto"
+    "editor.foldingStrategy": "auto",
+    "files.associations": {
+        "stdint.h": "c"
+    }
 }

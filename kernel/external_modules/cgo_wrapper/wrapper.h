@@ -1,5 +1,7 @@
 // wrapper.h
 #include "lib_bridge.h"
+#include <stdint.h>
+#include <stdlib.h>
 
 typedef struct {
     void* lib;
@@ -9,7 +11,7 @@ typedef struct {
 typedef struct {
     const char* err;
     const char* name;
-    uint version;
+    uint32_t version;
     CWrappedModuleLib* moduleLib;
 } STARTUP_RESULT;
 

@@ -1,11 +1,11 @@
 package kmodulerpc
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/CustodiaJS/custodiajs-core/eventloop"
 	"github.com/CustodiaJS/custodiajs-core/static"
+	"github.com/CustodiaJS/custodiajs-core/static/errormsgs"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
 	rpcrequest "github.com/CustodiaJS/custodiajs-core/utils/rpc_request"
@@ -16,7 +16,7 @@ import (
 // callInKernelEventLoopCheck überprüft den Status eines Promises in der Kernel-Eventschleife.
 // Bei einem Pending-Promise plant es die nächste Überprüfung ohne aktives Warten.
 // Bei einem Rejected-Promise führt es einen Microtask-Checkpoint durch.
-func callInKernelEventLoopCheck(o *SharedFunction, ctx *v8.Context, prom *v8.Promise, request *SharedFunctionRequestContext, req *types.RpcRequest) error {
+func callInKernelEventLoopCheck(o *SharedFunction, ctx *v8.Context, prom *v8.Promise, request *SharedFunctionRequestContext, req *types.RpcRequest) *types.SpecificError {
 	// Der Stauts des Objektes wird ermittelt
 	switch prom.State() {
 	case v8.Pending:
@@ -45,7 +45,7 @@ func callInKernelEventLoopCheck(o *SharedFunction, ctx *v8.Context, prom *v8.Pro
 // functionCallInEventloopFinall führt den abschließenden Schritt eines Funktionsaufrufs durch.
 // Es fügt einen neuen Eintrag zur Eventschleife hinzu, prüft den Promise-Status und behandelt etwaige Fehler.
 // Bei Erfolg wird das Ergebnis der Operation signalisiert.
-func functionCallInEventloopFinall(o *SharedFunction, request *SharedFunctionRequestContext, req *types.RpcRequest, prom *v8.Promise) error {
+func functionCallInEventloopFinall(o *SharedFunction, request *SharedFunctionRequestContext, req *types.RpcRequest, prom *v8.Promise) *types.SpecificError {
 	// Die Eventloop Funktion wird erzeugt
 	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
 		err := callInKernelEventLoopCheck(o, ctx, prom, request, req)
@@ -60,12 +60,7 @@ func functionCallInEventloopFinall(o *SharedFunction, request *SharedFunctionReq
 
 	// Es wird geprüft ob ein Fehler aufgetreten ist
 	if err := o.kernel.AddToEventLoop(eventloopFunction); err != nil {
-		switch err := err.(type) {
-		case *types.SpecificError:
-			return err
-		default:
-			return fmt.Errorf("functionCallInEventloopFinall: " + err.Error())
-		}
+		return err.AddCallerFunctionToHistory("functionCallInEventloopFinall")
 	}
 
 	// Es ist kein Fehler aufgetreten
@@ -75,7 +70,7 @@ func functionCallInEventloopFinall(o *SharedFunction, request *SharedFunctionReq
 // functionCallInEventloopPromiseOperation verarbeitet das Ergebnis eines Funktionsaufrufs, der ein Promise zurückgibt.
 // Es prüft, ob die Verbindung noch besteht, behandelt das Promise und führt die finalen Schritte des Funktionsaufrufs durch.
 // Bei Erfolg wird das Ergebnis der Operation signalisiert.
-func functionCallInEventloopPromiseOperation(o *SharedFunction, request *SharedFunctionRequestContext, req *types.RpcRequest, result *v8.Value) error {
+func functionCallInEventloopPromiseOperation(o *SharedFunction, request *SharedFunctionRequestContext, req *types.RpcRequest, result *v8.Value) *types.SpecificError {
 	// Die Eventloop Funktion wird erzeugt
 	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
 		// Es wird geprüft ob es sich um ein Promises handelt
@@ -116,12 +111,7 @@ func functionCallInEventloopPromiseOperation(o *SharedFunction, request *SharedF
 
 	// Es wird geprüft ob ein Fehler aufgetreten ist
 	if err := o.kernel.AddToEventLoop(eventloopFunction); err != nil {
-		switch err := err.(type) {
-		case *types.SpecificError:
-			return err
-		default:
-			return fmt.Errorf("functionCallInEventloopFinall: " + err.Error())
-		}
+		return err.AddCallerFunctionToHistory("functionCallInEventloopPromiseOperation")
 	}
 
 	// Es ist kein Fehler aufgetreten
@@ -131,7 +121,7 @@ func functionCallInEventloopPromiseOperation(o *SharedFunction, request *SharedF
 // functionCallInEventloop führt den vorbereiteten Funktionsaufruf innerhalb der Eventschleife aus.
 // Es prüft, ob die Verbindung noch besteht, führt die Funktion aus und behandelt das Ergebnis.
 // Bei Erfolg wird das Ergebnis der Operation signalisiert.
-func functionCallInEventloop(o *SharedFunction, request *SharedFunctionRequestContext, req *types.RpcRequest, proxFunction *v8.Function, proxArguments []v8.Valuer) error {
+func functionCallInEventloop(o *SharedFunction, request *SharedFunctionRequestContext, req *types.RpcRequest, proxFunction *v8.Function, proxArguments []v8.Valuer) *types.SpecificError {
 	// Die Eventloop Funktion wird erzeugt
 	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
 		// Die Funktion wird ausgeführt
@@ -151,12 +141,7 @@ func functionCallInEventloop(o *SharedFunction, request *SharedFunctionRequestCo
 
 	// Es wird geprüft ob ein Fehler aufgetreten ist
 	if err := o.kernel.AddToEventLoop(eventloopFunction); err != nil {
-		switch err := err.(type) {
-		case *types.SpecificError:
-			return err
-		default:
-			return fmt.Errorf("functionCallInEventloopFinall: " + err.Error())
-		}
+		return err.AddCallerFunctionToHistory("functionCallInEventloop")
 	}
 
 	// Es ist kein Fehler aufgetreten
@@ -167,7 +152,7 @@ func functionCallInEventloop(o *SharedFunction, request *SharedFunctionRequestCo
 // Es erstellt die finalen Argumente, setzt den JavaScript-Code für den Proxy-Wrap,
 // führt die Funktion in der Eventschleife aus und behandelt mögliche Fehler.
 // Bei Erfolg wird das Ergebnis der Operation signalisiert.
-func functionCallInEventloopProxyObjectPrepare(o *SharedFunction, request *SharedFunctionRequestContext, req *types.RpcRequest, requestObj *v8.Object, convertedValues []v8.Valuer) error {
+func functionCallInEventloopProxyObjectPrepare(o *SharedFunction, request *SharedFunctionRequestContext, req *types.RpcRequest, requestObj *v8.Object, convertedValues []v8.Valuer) *types.SpecificError {
 	// Die Eventloop Funktion wird erzeugt
 	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
 		// Die Finalen Argumente werden erstellt
@@ -209,12 +194,7 @@ func functionCallInEventloopProxyObjectPrepare(o *SharedFunction, request *Share
 
 	// Es wird geprüft ob ein Fehler aufgetreten ist
 	if err := o.kernel.AddToEventLoop(eventloopFunction); err != nil {
-		switch err := err.(type) {
-		case *types.SpecificError:
-			return err
-		default:
-			return fmt.Errorf("functionCallInEventloopFinall: " + err.Error())
-		}
+		return err.AddCallerFunctionToHistory("functionCallInEventloopProxyObjectPrepare")
 	}
 
 	// Es ist kein Fehler aufgetreten
@@ -225,7 +205,7 @@ func functionCallInEventloopProxyObjectPrepare(o *SharedFunction, request *Share
 // Es prüft, ob die Verbindung besteht, wandelt die Parameter um, erstellt ein Request-Objekt,
 // und führt die vorbereitenden Schritte des Funktionsaufrufs durch.
 // Die Funktion wird zur Eventschleife hinzugefügt und das Ergebnis des Aufrufs wird verarbeitet.
-func functionCallInEventloopInit(o *SharedFunction, request *SharedFunctionRequestContext, req *types.RpcRequest) error {
+func functionCallInEventloopInit(o *SharedFunction, request *SharedFunctionRequestContext, req *types.RpcRequest) *types.SpecificError {
 	// Die Eventloop Funktion wird erzeugt
 	eventloopFunction := eventloop.NewKernelEventLoopFunctionOperation(func(ctx *v8.Context, klopr types.KernelEventLoopContextInterface) {
 		// Die Parameter werden umgewandelt
@@ -251,12 +231,7 @@ func functionCallInEventloopInit(o *SharedFunction, request *SharedFunctionReque
 
 	// Es wird geprüft ob ein Fehler aufgetreten ist
 	if err := o.kernel.AddToEventLoop(eventloopFunction); err != nil {
-		switch err := err.(type) {
-		case *types.SpecificError:
-			return err
-		default:
-			return fmt.Errorf("functionCallInEventloopFinall: " + err.Error())
-		}
+		return err.AddCallerFunctionToHistory("functionCallInEventloopInit")
 	}
 
 	// Es ist kein Fehler aufgetreten
@@ -266,13 +241,13 @@ func functionCallInEventloopInit(o *SharedFunction, request *SharedFunctionReque
 // convertRequestParametersToV8Parameters wandelt die RPC-Argumente in V8-Argumente für den aktuellen Kontext um.
 // Es überprüft die Datentypen und konvertiert sie in die entsprechenden V8-Typen.
 // Bei einem Fehler wird eine entsprechende Fehlermeldung zurückgegeben.
-func convertRequestParametersToV8Parameters(iso *v8.Isolate, parmTypes []string, reqparms []*types.FunctionParameterCapsle) ([]v8.Valuer, error) {
+func convertRequestParametersToV8Parameters(iso *v8.Isolate, parmTypes []string, reqparms []*types.FunctionParameterCapsle) ([]v8.Valuer, *types.SpecificError) {
 	// Es wird versucht die Paraemter in den Richtigen v8 Datentypen umzuwandeln
 	convertedValues := make([]v8.Valuer, 0)
 	for hight, item := range reqparms {
 		// Es wird geprüft ob der Datentyp gewünscht ist
 		if item.CType != parmTypes[hight] {
-			return nil, fmt.Errorf("convertRequestParametersToV8Parameters: not same parameter")
+			return nil, errormsgs.KMDOULE_RPC_SHARED_FUNCTION_FUNCTION_REQUEST_CONVERTING_PARM_INVALID_DTYPE_ERROR("convertRequestParametersToV8Parameters", hight, item.CType, parmTypes[hight])
 		}
 
 		// Es wird geprüft ob es sich um einen Zulässigen Datentypen handelt
@@ -280,41 +255,41 @@ func convertRequestParametersToV8Parameters(iso *v8.Isolate, parmTypes []string,
 		case "boolean":
 			val, err := v8.NewValue(iso, item.Value)
 			if err != nil {
-				return nil, fmt.Errorf("convertRequestParametersToV8Parameters: " + err.Error())
+				return nil, errormsgs.KMDOULE_RPC_SHARED_FUNCTION_REQUEST_CONVERTING_ERROR("convertRequestParametersToV8Parameters", hight, err, "boolean")
 			}
 			convertedValues = append(convertedValues, val)
 		case "number":
 			val, err := v8.NewValue(iso, item.Value)
 			if err != nil {
-				return nil, fmt.Errorf("convertRequestParametersToV8Parameters: " + err.Error())
+				return nil, errormsgs.KMDOULE_RPC_SHARED_FUNCTION_REQUEST_CONVERTING_ERROR("convertRequestParametersToV8Parameters", hight, err, "number")
 			}
 			convertedValues = append(convertedValues, val)
 		case "string":
 			val, err := v8.NewValue(iso, item.Value)
 			if err != nil {
-				return nil, fmt.Errorf("convertRequestParametersToV8Parameters: " + err.Error())
+				return nil, errormsgs.KMDOULE_RPC_SHARED_FUNCTION_REQUEST_CONVERTING_ERROR("convertRequestParametersToV8Parameters", hight, err, "string")
 			}
 			convertedValues = append(convertedValues, val)
 		case "array":
 			val, err := v8.NewValue(iso, item.Value)
 			if err != nil {
-				return nil, fmt.Errorf("convertRequestParametersToV8Parameters: " + err.Error())
+				return nil, errormsgs.KMDOULE_RPC_SHARED_FUNCTION_REQUEST_CONVERTING_ERROR("convertRequestParametersToV8Parameters", hight, err, "array")
 			}
 			convertedValues = append(convertedValues, val)
 		case "object":
 			val, err := v8.NewValue(iso, item.Value)
 			if err != nil {
-				return nil, fmt.Errorf("convertRequestParametersToV8Parameters: " + err.Error())
+				return nil, errormsgs.KMDOULE_RPC_SHARED_FUNCTION_REQUEST_CONVERTING_ERROR("convertRequestParametersToV8Parameters", hight, err, "object")
 			}
 			convertedValues = append(convertedValues, val)
 		case "bytes":
 			val, err := v8.NewValue(iso, item.Value)
 			if err != nil {
-				return nil, fmt.Errorf("convertRequestParametersToV8Parameters: " + err.Error())
+				return nil, errormsgs.KMDOULE_RPC_SHARED_FUNCTION_REQUEST_CONVERTING_ERROR("convertRequestParametersToV8Parameters", hight, err, "bytes")
 			}
 			convertedValues = append(convertedValues, val)
 		default:
-			return nil, fmt.Errorf("convertRequestParametersToV8Parameters: unsuported datatype")
+			return nil, errormsgs.KMDOULE_RPC_SHARED_FUNCTION_REQUEST_UNKOWN_DATATYPE("convertRequestParametersToV8Parameters", hight)
 		}
 	}
 
@@ -348,7 +323,7 @@ func validateSharedFunctionRequestContextObject(o *SharedFunctionRequestContext)
 }
 
 // Die Funktion wird erstellt
-func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequestContext, rrpcrequest *types.RpcRequest) (*v8.Object, error) {
+func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequestContext, rrpcrequest *types.RpcRequest) (*v8.Object, *types.SpecificError) {
 	// Das Requestobjekt wird ersellt
 	objTemplate := v8.NewObjectTemplate(context.Isolate())
 

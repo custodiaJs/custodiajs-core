@@ -4,6 +4,7 @@
 #define LIBRARY_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 /*
     Stellt die Basisfunktionen dar
@@ -37,7 +38,7 @@ typedef struct {
     bool bool_data;
     void* object_data;
     void* array_data;
-    uint uint_data;
+    uint32_t uint_data;
     void* callback_data;
 } CFunctionReturnData;
 

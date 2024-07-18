@@ -60,6 +60,6 @@ func (e *SpecificError) GetGoProcessErrorMessage() string {
 	return ""
 }
 
-func (e *SpecificError) AddCallerFunctionToHistory(funcName string) {
-
+func (e *SpecificError) AddCallerFunctionToHistory(funcName string) *SpecificError {
+	return nil
 }

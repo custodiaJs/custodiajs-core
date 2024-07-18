@@ -54,6 +54,7 @@ func (o *HostNetworkManagmentUnit) TryParseIp(ipaddr string) (*IpAddress, *types
 
 	// Es wird geprüft ob es sich um eine Lokale Adresse handelt
 	addressIsLocalhostAddress := o.isLoclhostIp(rIpAdr)
+	_ = addressIsLocalhostAddress
 
 	// Es wird geprüft ob es sich um ein Privates Subbnet handelt,
 	// wenn nicht wird geprüft ob es sich bei der Adresse um ein Tor Exit Node handelt.

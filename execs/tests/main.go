@@ -147,17 +147,19 @@ func main() {
 	// Speichert alle Abgerufen Libs ab
 	extModuleLibs := make([]*external_modules.ExternalModule, 0)
 
-	lib1, err := external_modules.LoadModuleLib("/home/fluffelbuff/Schreibtisch/lib1.so")
-	if err != nil {
-		panic(err)
-	}
-	lib2, err := external_modules.LoadModuleLib("/home/fluffelbuff/Schreibtisch/lib2.so")
-	if err != nil {
-		panic(err)
-	}
+	/*
+		lib1, err := external_modules.LoadModuleLib("/home/fluffelbuff/Schreibtisch/lib1.so")
+		if err != nil {
+			panic(err)
+		}
+		lib2, err := external_modules.LoadModuleLib("/home/fluffelbuff/Schreibtisch/lib2.so")
+		if err != nil {
+			panic(err)
+		}
 
-	extModuleLibs = append(extModuleLibs, lib1)
-	extModuleLibs = append(extModuleLibs, lib2)
+		extModuleLibs = append(extModuleLibs, lib1)
+		extModuleLibs = append(extModuleLibs, lib2)
+	*/
 
 	// Die Metadaten des Host Zertifikates werden angezeigt
 	printLocalHostTlsMetaData(hostCert)

@@ -94,7 +94,7 @@ type KernelInterface interface {
 	GloablRegisterRead(string) interface{}
 	GetNewIsolateContext() (*v8.Isolate, *v8.Context, error)
 	GetCAMembershipCerts() []VmCaMembershipCertInterface
-	AddToEventLoop(KernelEventLoopOperationInterface) error
+	AddToEventLoop(KernelEventLoopOperationInterface) *SpecificError
 	GetFingerprint() KernelFingerprint
 	AsCoreVM() VmInterface
 	GetCAMembershipIDs() []string

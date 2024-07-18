@@ -16,8 +16,6 @@
 package kmodulerpc
 
 import (
-	"fmt"
-
 	"github.com/CustodiaJS/custodiajs-core/eventloop"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
@@ -131,16 +129,11 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) *types.Specifi
 
 	// Die Funktion wird an den Eventloop des Kernels übergeben
 	if err := o.kernel.AddToEventLoop(kernelLoopOperation); err != nil {
-		switch err := err.(type) {
-		case *types.SpecificError:
-			// Der Name der Aktuellen Funktion wird hinzugefügt
-			err.AddCallerFunctionToHistory("SharedFunction->EnterFunctionCall")
+		// Der Name der Aktuellen Funktion wird hinzugefügt
+		err.AddCallerFunctionToHistory("SharedFunction->EnterFunctionCall")
 
-			// Der Fehler wird zurückgegeben
-			return err
-		default:
-			return fmt.Errorf("SharedFunction->EnterFunctionCall: " + err.Error())
-		}
+		// Der Fehler wird zurückgegeben
+		return err
 	}
 
 	// Der Vorgang wird in einer neuen Goroutine durchgeführt
