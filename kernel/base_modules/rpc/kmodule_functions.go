@@ -247,6 +247,12 @@ func (o *RPCModule) __rpcNewShareFunction(addPublic bool, kernel types.KernelInt
 				// Der Vorgang wird beendet
 				return v8.Undefined(info.Context().Isolate())
 			}
+
+			// Es wird ein Kernel Signal verwendet um zu Signalisieren das eine neue geteilte RPC Funktion vorhanden ist
+			kernel.Signal("rpc/global/add_share", funcSig)
+		} else {
+			// Es wird ein Kernel Signal verwendet um zu Signalisieren das eine neue geteilte RPC Funktion vorhanden ist
+			kernel.Signal("rpc/local/add_share", funcSig)
 		}
 
 		// LOG

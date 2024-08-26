@@ -3,12 +3,10 @@ package kmodulerpc
 import (
 	"time"
 
-	"github.com/CustodiaJS/custodiajs-core/eventloop"
-	"github.com/CustodiaJS/custodiajs-core/static"
+	"github.com/CustodiaJS/custodiajs-core/kernel/eventloop"
 	"github.com/CustodiaJS/custodiajs-core/static/errormsgs"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
-	rpcrequest "github.com/CustodiaJS/custodiajs-core/utils/rpc_request"
 
 	v8 "rogchap.com/v8go"
 )
@@ -346,7 +344,7 @@ func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequ
 	// Wird von V8 Verwendet um zu ermitteln ob die Verbindung mit der Anfragendenseite noch besteht
 	isConnected := func(info *v8.FunctionCallbackInfo) *v8.Value {
 		// Es wird versucht den Boolwert einzulesen
-		value, err := v8.NewValue(context.Isolate(), rrpcrequest.HttpRequest.IsConnected())
+		value, err := v8.NewValue(context.Isolate(), rrpcrequest.Context.IsConnected())
 		if err != nil {
 			// Der RPC Vorgang wird aufgrund eines Engine Fehlers abgebrochen
 			writeRequestReturnResponse(request, &types.FunctionCallState{Error: "javascript engine error", State: "aborted"})
@@ -364,19 +362,14 @@ func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequ
 
 	// Es wird ein neues Objekt erzeugt, dieses Objekt wird verwendet um den Aktuellen Request Darzustellen
 	var rpcConnectionType string
-	switch rrpcrequest.RequestType {
-	case static.HTTP_REQUEST:
-		// Es wird geprüft ob der http Request vorhanden ist
-		if !rpcrequest.IsHttpRequest(rrpcrequest) {
-			return nil, utils.MakeRequestTypeIsNotHttpRequest("v8makeSharedFunctionObject")
-		}
-
+	switch reqobj := rrpcrequest.Request.(type) {
+	case types.HttpContext:
 		// Der Type der Verbindung wird definiert
 		rpcConnectionType = "http"
 
 		// Die Cookies werden Extrahiert
 		cookies := v8.NewObjectTemplate(context.Isolate())
-		for _, item := range rrpcrequest.HttpRequest.Cookies {
+		for _, item := range reqobj.Cookies {
 			// Es wird ein neues Objekt erzeugt
 			cookieObject := v8.NewObjectTemplate(context.Isolate())
 			cookieObject.Set("Value", item.Value)
@@ -398,7 +391,7 @@ func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequ
 		}
 
 		// Die Header werden extrahiert
-		for k, v := range rrpcrequest.HttpRequest.Header {
+		for k, v := range reqobj.Header {
 			// Es wird ein neues Slices erzeugt
 			sliceV8, err := context.RunScript("(function() { return []; })();", "slice.js")
 			if err != nil {
@@ -436,19 +429,19 @@ func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequ
 		if err := httpObj.Set("IsConnected", v8.NewFunctionTemplate(context.Isolate(), isConnected)); err != nil {
 			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
-		if err := httpObj.Set("ContentLength", float64(rrpcrequest.HttpRequest.ContentLength)); err != nil {
+		if err := httpObj.Set("ContentLength", float64(reqobj.ContentLength)); err != nil {
 			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
-		if err := httpObj.Set("Host", rrpcrequest.HttpRequest.Host); err != nil {
+		if err := httpObj.Set("Host", reqobj.Host); err != nil {
 			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
-		if err := httpObj.Set("Proto", rrpcrequest.HttpRequest.Proto); err != nil {
+		if err := httpObj.Set("Proto", reqobj.Proto); err != nil {
 			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
-		if err := httpObj.Set("RemoteAddr", rrpcrequest.HttpRequest.RemoteAddr); err != nil {
+		if err := httpObj.Set("RemoteAddr", reqobj.RemoteAddr); err != nil {
 			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
-		if err := httpObj.Set("RequestURI", rrpcrequest.HttpRequest.RequestURI); err != nil {
+		if err := httpObj.Set("RequestURI", reqobj.RequestURI); err != nil {
 			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
 		if err := httpObj.Set("Cookies", cookies); err != nil {
@@ -470,12 +463,6 @@ func v8makeSharedFunctionObject(context *v8.Context, request *SharedFunctionRequ
 		if err := obj.Set("http", http); err != nil {
 			return nil, utils.MakeV8Error("v8makeSharedFunctionObject", err)
 		}
-	case static.WEBSOCKET_REQUEST:
-		// Der Type wird Signalisiert
-		rpcConnectionType = "ws"
-	case static.IPC_REQUEST:
-		// Der Type wird Signalisiert
-		rpcConnectionType = "ipc"
 	default:
 		return nil, utils.MakeUnkownMethodeError("v8makeSharedFunctionObject")
 	}

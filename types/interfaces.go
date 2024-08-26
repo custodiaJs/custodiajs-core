@@ -16,26 +16,22 @@
 package types
 
 import (
+	"crypto/x509"
 	"net/http"
+	"net/url"
 	"sync"
 
-	"github.com/CustodiaJS/custodiajs-core/consolecache"
-	"github.com/CustodiaJS/custodiajs-core/databaseservices/services"
+	"github.com/CustodiaJS/custodiajs-core/core/consolecache"
 
 	v8 "rogchap.com/v8go"
 )
 
-type VerifiedCoreIPAddressInterface interface {
-}
-
 type CoreInterface interface {
 	GetAllVMs() []VmInterface
-	GetAllActiveScriptContainerIDs() []string
-	ConvertLagacyIPAddressToLRSAP(lagacyRemoteIPAddress string, lagacyLocalIPAddress string) (VerifiedCoreIPAddressInterface, *SpecificError)
+	GetAllActiveScriptContainerIDs(processLog ProcessLogSessionInterface) []string
 	GetScriptContainerVMByID(vmid string) (VmInterface, bool, *SpecificError)
 	GetScriptContainerByVMName(string) (VmInterface, bool, *SpecificError)
-	GetCoreSessionManagmentUnit() CoreSessionManagmentUnitInterface
-	LRSAPSourceIsAllowed(LRSAP VerifiedCoreIPAddressInterface) bool
+	GetCoreSessionManagmentUnit() ContextManagmentUnitInterface
 }
 
 type VmInterface interface {
@@ -46,18 +42,12 @@ type VmInterface interface {
 	GetAllSharedFunctions() []SharedFunctionInterface
 	Serve(*sync.WaitGroup) error
 	GetSharedFunctionBySignature(RPCCallSource, *FunctionSignature) (SharedFunctionInterface, bool, *SpecificError)
-	GetWhitelist() []*TransportWhitelistVmEntryData
-	ValidateRPCRequestSource(soruce string) bool
-	GetDatabaseServices() []*VMEntryBaseData
-	AddDatabaseServiceLink(dbserviceLink services.DbServiceLinkinterface) error
-	GetRootMemberIDS() []*CAMemberData
 	GetStartingTimestamp() uint64
 	GetKId() KernelID
 	SignalShutdown()
 	GetState() VmState
 	GetOwner() string
 	GetRepoURL() string
-	GetMode() string
 }
 
 type APISocketInterface interface {
@@ -77,7 +67,7 @@ type WatcherInterface interface {
 	Read() string
 }
 
-type HttpJsonRequestData interface {
+type RpcRequestInterface interface {
 }
 
 type AlternativeServiceInterface interface {
@@ -96,6 +86,7 @@ type KernelInterface interface {
 	GetCAMembershipCerts() []VmCaMembershipCertInterface
 	AddToEventLoop(KernelEventLoopOperationInterface) *SpecificError
 	GetFingerprint() KernelFingerprint
+	Signal(id string, value interface{})
 	AsCoreVM() VmInterface
 	GetCAMembershipIDs() []string
 	GetCore() CoreInterface
@@ -109,6 +100,9 @@ type KernelModuleInterface interface {
 }
 
 type ProcessLogSessionInterface interface {
+	GetChildLog(header string) ProcessLogSessionInterface
+	Log(format string, value ...interface{})
+	Debug(format string, value ...interface{})
 	LogPrint(string, string, ...interface{})
 	LogPrintSuccs(string, ...interface{})
 	LogPrintError(string, ...interface{})
@@ -148,19 +142,44 @@ type GrsboolInterface interface {
 	WaitOfChange(waitOfState bool)
 }
 
-type WebRequestBasedRPCSessionInterface interface {
+type CoreContextInterface interface {
+	GetChildProcessLog(header string) ProcessLogSessionInterface
+	GetProcessLog() ProcessLogSessionInterface
+	IsConnected() bool
+	Close()
+	Done()
+}
+
+type CoreHttpContextInterface interface {
+	CoreContextInterface
+	SetMethod(method HTTP_METHOD)
+	SetContentType(HttpRequestContentType)
+	SetXRequestedWith(*XRequestedWithData)
+	SetReferer(refererURL *url.URL)
+	SetOrigin(originURL *url.URL)
+	SetTLSCertificate(tlsCert []*x509.Certificate)
+	AddSearchedFunctionSignature(fncs *FunctionSignature)
+	GetSearchedFunctionSignature() *FunctionSignature
+	GetMethod() HTTP_METHOD
+	GetContentType() HttpRequestContentType
+	GetXRequestedWith() *XRequestedWithData
+	GetReferer() *url.URL
+	GetOrigin() *url.URL
+	GetTLSCertificate() []*x509.Certificate
+
 	SignalTheErrorSignalCouldNotBeTransmittedTheConnectionWasLost(size int, error *SpecificError)
 	SignalsThatAnErrorHasOccurredWhenTheErrorIsSent(size int, err *SpecificError)
 	SignalTheResponseWasTransmittedSuccessfully(size int, packageHash string)
 	SignalTheResponseCouldNotBeSent(size int, error *SpecificError)
 	SignalThatTheErrorWasSuccessfullyTransmitted(size int)
 	GetReturnChan() FunctionCallReturnChanInterface
-	GetProcLogSession() ProcessLogSessionInterface
 	CloseBecauseFunctionReturned()
-	IsConnected() bool
-	Done()
 }
 
-type CoreSessionManagmentUnitInterface interface {
-	NewWebRequestBasedRPCSession(*http.Request) (WebRequestBasedRPCSessionInterface, *SpecificError)
+type ContextManagmentUnitInterface interface {
+	NewHTTPBasesSession(r *http.Request) (CoreHttpContextInterface, *SpecificError)
+}
+
+type CustodiaJSNetworkHypervisorInterface interface {
+	Start() *SpecificError
 }

@@ -23,7 +23,6 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
 	"github.com/CustodiaJS/custodiajs-core/utils/grsbool"
-	rpcrequest "github.com/CustodiaJS/custodiajs-core/utils/rpc_request"
 
 	v8 "rogchap.com/v8go"
 )
@@ -88,8 +87,6 @@ func (o *SharedFunctionRequestContext) resolveFunctionCallbackV8(info *v8.Functi
 	}
 
 	// Es wird geprüft ob es sich um eine Remote Verbindung handelt
-	if rpcrequest.IsRemoteConnection(o._rprequest) && !rpcrequest.ConnectionIsOpen(o._rprequest) {
-	}
 
 	// Die Argumente werden umgewandelt
 	convertedArguments, err := utils.ConvertV8DataToGoData(info.Args())
@@ -366,18 +363,6 @@ func (o *SharedFunctionRequestContext) testWait(info *v8.FunctionCallbackInfo) *
 		return nil
 	}
 
-	// Sollte es sich um eine Remote Verbindung handeln, wird geprüft ob diese Geschlossen wurde, wenn ja wird der Vorgang abgebrochen
-	if rpcrequest.IsRemoteConnection(o._rprequest) && !rpcrequest.ConnectionIsOpen(o._rprequest) {
-		// Der Fehler wird erzeugt
-		err := utils.MakeConnectionIsClosedError("SharedFunctionRequestContext->testWait")
-
-		// Der Fehler wird als V8 Throw ausgeführt
-		utils.V8ContextThrow(info.Context(), err.LocalJSVMError.Error())
-
-		// Es wird ein Null zurückgegeben
-		return nil
-	}
-
 	// Es wird ermittelt ob ein Argument angegeben wurde
 	if len(info.Args()) < 1 {
 		// Der Fehler wird erzeugt
@@ -424,19 +409,6 @@ func (o *SharedFunctionRequestContext) testWait(info *v8.FunctionCallbackInfo) *
 		// Es wird ein Null zurückgegeben
 		return nil
 	}
-
-	// Sollte es sich um eine Remote Verbindung handeln, wird geprüft ob diese Geschlossen wurde, wenn ja wird der Vorgang abgebrochen
-	if rpcrequest.IsRemoteConnection(o._rprequest) && !rpcrequest.ConnectionIsOpen(o._rprequest) {
-		// Der Fehler wird erzeugt
-		err := utils.MakeConnectionIsClosedError("SharedFunctionRequestContext->testWait")
-
-		// Der Fehler wird als V8 Throw ausgeführt
-		utils.V8ContextThrow(info.Context(), err.LocalJSVMError.Error())
-
-		// Es wird ein Null zurückgegeben
-		return nil
-	}
-
 	// Es wird eine Goroutine ausgeführt, diese Wartet X Millisekunden
 	go func(res *v8.PromiseResolver, wtime uint32, iso *v8.Isolate) {
 		// Es wird 'wtime' * Millisecond gewartet
@@ -475,7 +447,7 @@ func newSharedFunctionRequestContext(kernel types.KernelInterface, returnDatatyp
 	}
 
 	// Sollte es sich um eine Remote Verbindung handeln, wird geprüft ob diese Geschlossen wurde, wenn ja wird der Vorgang abgebrochen
-	if rpcrequest.IsRemoteConnection(rpcRequest) && !rpcrequest.ConnectionIsOpen(rpcRequest) {
+	if !rpcRequest.Context.IsConnected() {
 		return nil, utils.MakeConnectionIsClosedError("newSharedFunctionRequestContext")
 	}
 
@@ -532,7 +504,7 @@ func writeRequestReturnResponse(o *SharedFunctionRequestContext, returnv *types.
 	}
 
 	// Sollte es sich um eine Remote Verbindung handeln, wird geprüft ob diese Geschlossen wurde, wenn ja wird der Vorgang abgebrochen
-	if rpcrequest.IsRemoteConnection(o._rprequest) && !rpcrequest.ConnectionIsOpen(o._rprequest) {
+	if !o._rprequest.Context.IsConnected() {
 		return utils.MakeConnectionIsClosedError("writeRequestReturnResponse")
 	}
 

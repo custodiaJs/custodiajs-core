@@ -8,7 +8,8 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
-func (o *Core) Serve() error {
+// Wird verwendet um den Core geöffnet zu halten
+func (o *Core) Serve() {
 	// Der Mutex wird angewendet
 	o.objectMutex.Lock()
 
@@ -17,15 +18,15 @@ func (o *Core) Serve() error {
 	defer setState(o, static.SHUTDOWN, true)
 
 	// Es werden alle Socketservices gestartet
-	for _, item := range o.apiSockets {
+	for hight, item := range o.apiSockets {
 		// Die API Sockets werden ausgeführt
 		o.apiSyncWaitGroup.Add(1)
-		go func(pitem types.APISocketInterface) {
+		go func(hight int, pitem types.APISocketInterface) {
 			if err := pitem.Serve(o.serviceSignaling); err != nil {
-				fmt.Println("Core:Serve: " + err.Error())
+				fmt.Printf("API error:: %s\n", err.Error())
 			}
 			o.apiSyncWaitGroup.Done()
-		}(item)
+		}(hight, item)
 	}
 
 	// Es werden alle Virtual Machines gestartet
@@ -34,9 +35,10 @@ func (o *Core) Serve() error {
 		o.vmSyncWaitGroup.Add(1)
 
 		// Die VM wird ausgeführt
-		if err := item.Serve(&o.vmSyncWaitGroup); err != nil {
-			return fmt.Errorf("Serve: " + err.Error())
-		}
+		item.Serve(&o.vmSyncWaitGroup)
+		/*if err := item.Serve(&o.vmSyncWaitGroup); err != nil {
+
+		}*/
 	}
 
 	// Der Mutex wird freigegeben
@@ -55,7 +57,7 @@ func (o *Core) Serve() error {
 	setState(o, static.SHUTDOWN, false)
 
 	// Der Beenden wird vorbereitet
-	o.signalVmsShutdown(waiter)
+	closeAllVirtualMachines(o, waiter)
 
 	// Der Objekt Mutex wird freigegeben
 	o.objectMutex.Unlock()
@@ -68,7 +70,4 @@ func (o *Core) Serve() error {
 
 	// Log
 	fmt.Println("Core closed, by.")
-
-	// Der Vorgang wurde ohne Fehöer durchgeführt
-	return nil
 }

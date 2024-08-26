@@ -109,11 +109,8 @@ func ScanVmDir(rpath string) ([]string, error) {
 	// Liste, um die Pfade der gefundenen Verzeichnisse zu speichern
 	var dirs []string
 
-	// Pfad zum Startverzeichnis
-	startDir := filepath.Join(rpath, "vms")
-
 	// Lese den Inhalt des Startverzeichnisses
-	files, err := os.ReadDir(startDir)
+	files, err := os.ReadDir(rpath)
 	if err != nil {
 		return nil, fmt.Errorf("ScanVmDir: %w", err)
 	}
@@ -123,7 +120,7 @@ func ScanVmDir(rpath string) ([]string, error) {
 		// Überprüfen, ob es sich um ein Verzeichnis handelt
 		if file.IsDir() {
 			// Füge den Pfad des Verzeichnisses zur Liste hinzu
-			dirs = append(dirs, filepath.Join(startDir, file.Name()))
+			dirs = append(dirs, filepath.Join(rpath, file.Name()))
 		}
 	}
 

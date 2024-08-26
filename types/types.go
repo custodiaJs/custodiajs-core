@@ -22,14 +22,22 @@ import (
 )
 
 // VM und Core Status Typen sowie Repo Datentypen
-type ALTERNATIVE_SERVICE_PATH string // Alternativer Socket Path
-type VmState uint8                   // VM Status
-type CoreState uint8                 // Core Status
-type CLIUserRight uint8              // CLI Benutzerrecht
-type VERSION uint32                  // Version des Hauptpgrogrammes
-type REPO string                     // URL der Sourccode Qeulle
-type SOCKET_PATH string              // Gibt einen Socket Path an
-type LOG_DIR string                  // Gibt den Path des Log Dir's unter
+type ALTERNATIVE_SERVICE_PATH string        // Alternativer Socket Path
+type VmState uint8                          // VM Status
+type CoreState uint8                        // Core Status
+type IPCRight uint8                         // CLI Benutzerrecht
+type VERSION uint32                         // Version des Hauptpgrogrammes
+type REPO string                            // URL der Sourccode Qeulle
+type SOCKET_PATH string                     // Gibt einen Socket Path an
+type LOG_DIR string                         // Gibt den Path des Log Dir's unter
+type VM_DB_DIR_PATH string                  // Gibt den Path des VM-Datenbank Verzeichniss an
+type HOST_CRYPTOSTORE_WATCH_DIR_PATH string // Gibt den Ordner an, in dem sich alle Zertifikate und Schlüssel des Hosts befinden
+type HOST_CONFIG_FILE_PATH string           // Gibt den Pfad der Config Datei an
+type HOST_CONFIG_PATH string
+type CNH_FIRMWARE_PATH string
+type CHN_CORE_SOCKET_PATH string
+type CONTEXT_KEY string
+type HTTP_METHOD string
 
 // RPC Transport & Call Typen
 type RpcCallTransportProtocol uint8 // RPC Transport Protokoll
@@ -62,22 +70,6 @@ type TransportWhitelistVmEntryData struct {
 	Methods         []string
 	IPv4List        []string
 	Ipv6List        []string
-}
-
-type CAMemberData struct {
-	Fingerprint string
-	Type        string
-	ID          string
-}
-
-type VMEntryBaseData struct {
-	Type     string
-	Host     string
-	Port     int
-	Username string
-	Password string
-	Database string
-	Alias    string
 }
 
 type FunctionCallState struct {
@@ -115,7 +107,7 @@ type HttpRpcRequestUserData struct {
 	Password string
 }
 
-type HttpRpcRequest struct {
+type HttpContext struct {
 	IsConnected      func() bool
 	ContentLength    int64
 	PostForm         url.Values
@@ -134,13 +126,12 @@ type HttpRpcRequest struct {
 }
 
 type RpcRequest struct {
-	RequestType RpcRequestMethode
-	HttpRequest *HttpRpcRequest
-	ProcessLog  ProcessLogSessionInterface
-	Parms       []*FunctionParameterCapsle
-	RpcRequest  HttpJsonRequestData
-	//Resolve     chan *FunctionCallReturn
+	RequestType   RpcRequestMethode
+	ProcessLog    ProcessLogSessionInterface
+	Parms         []*FunctionParameterCapsle
+	Request       RpcRequestInterface
 	WriteResponse func(*FunctionCallReturn) error
+	Context       CoreContextInterface
 }
 
 type RPCParmeterReadingError struct {
@@ -153,4 +144,26 @@ type RPCParmeterReadingError struct {
 type XRequestedWithData struct {
 	IsKnown bool
 	Value   string
+}
+
+type HttpRpcResponseCapsle struct {
+	Data  []*RPCResponseData
+	Error string
+}
+
+type HostKeyCert struct {
+	Algorithm string
+	FilePath  string
+	Alias     string
+}
+
+type CoreVMProcessParameters struct {
+	VMImageFilePath   string
+	VMWorkingDir      string
+	HostKeyCerts      []HostKeyCert
+	DisableCoreCrypto bool
+}
+
+type CoreVmInstanceConfig struct {
+	VmProcessParameters *CoreVMProcessParameters
 }

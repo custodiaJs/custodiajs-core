@@ -3,7 +3,6 @@ package localgrpcservice
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/CustodiaJS/custodiajs-core/localgrpcproto"
 	"github.com/CustodiaJS/custodiajs-core/static"
@@ -48,40 +47,6 @@ func (s *CliGrpcServer) GetVMDetails(ctx context.Context, vmDetailParms *localgr
 	// Es wird geprüft ob die VM gefunden wurde
 	if !foundVM {
 		return nil, fmt.Errorf("unkown vm")
-	}
-
-	// Die Whitelist wird extrahiert
-	extractedWhitelist := make([]*localgrpcproto.VmDetailWhitelistEntry, 0)
-	for _, item := range foundedVM.GetWhitelist() {
-		extractedWhitelist = append(extractedWhitelist, &localgrpcproto.VmDetailWhitelistEntry{
-			WildCardDomains: item.WildCardDomains,
-			ExactDomains:    item.ExactDomains,
-			Methods:         item.Methods,
-			IPv4List:        item.IPv4List,
-			Ipv6List:        item.Ipv6List,
-		})
-	}
-
-	// Die HostCA Members werden abgerufen
-	extractedHostCAList := make([]*localgrpcproto.VmDetailHostCAMemberEntry, 0)
-	for _, item := range foundedVM.GetRootMemberIDS() {
-		extractedHostCAList = append(extractedHostCAList, &localgrpcproto.VmDetailHostCAMemberEntry{
-			Type:        1,
-			Fingerprint: strings.ToUpper(item.Fingerprint),
-		})
-	}
-
-	// Die Datenbanken werden extrahiert
-	extractedDBList := make([]*localgrpcproto.VmDetailDatabaseEntry, 0)
-	for _, item := range foundedVM.GetDatabaseServices() {
-		extractedDBList = append(extractedDBList, &localgrpcproto.VmDetailDatabaseEntry{
-			Type:     item.Type,
-			Host:     item.Host,
-			Port:     uint32(item.Port),
-			Username: item.Username,
-			Database: item.Database,
-			Alias:    item.Alias,
-		})
 	}
 
 	// Die geteilten Funktionen werden abgerufen
@@ -137,12 +102,8 @@ func (s *CliGrpcServer) GetVMDetails(ctx context.Context, vmDetailParms *localgr
 		Version:         10000000000000000000,
 		Owner:           foundedVM.GetOwner(),
 		Repourl:         foundedVM.GetRepoURL(),
-		Mode:            foundedVM.GetMode(),
 		State:           stateStr,
 		StartTimestamp:  foundedVM.GetStartingTimestamp(),
-		Whitelist:       extractedWhitelist,
-		Hostcamember:    extractedHostCAList,
-		Databases:       extractedDBList,
 		SharedFunctions: sharedFunctions,
 	}
 

@@ -6,14 +6,6 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
-func FormatConsoleText(consoleValue types.CONSOLE_TEXT, value ...string) string {
-	anyValues := make([]any, 0)
-	for _, item := range value {
-		anyValues = append(anyValues, item)
-	}
-	return fmt.Sprintf(string(consoleValue), anyValues...)
-}
-
 func ProcFormatConsoleText(procLog types.ProcessLogSessionInterface, header string, consoleValue types.CONSOLE_TEXT, value ...string) {
 	anyValues := make([]any, 0)
 	for _, item := range value {

@@ -16,10 +16,9 @@
 package kmodulerpc
 
 import (
-	"github.com/CustodiaJS/custodiajs-core/eventloop"
+	"github.com/CustodiaJS/custodiajs-core/kernel/eventloop"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
-	rpcrequest "github.com/CustodiaJS/custodiajs-core/utils/rpc_request"
 
 	v8 "rogchap.com/v8go"
 )
@@ -78,7 +77,7 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) *types.Specifi
 	}
 
 	// Es wird geprüft ob das Req Objekt eine Verbindung besitzt
-	if !rpcrequest.ConnectionIsOpen(req) {
+	if !req.Context.IsConnected() {
 		// Es wird ein 'Connection closed' Fehler zurückgegeben
 		return utils.MakeConnectionIsClosedError("SharedFunction->EnterFunctionCall")
 	}
@@ -100,7 +99,7 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) *types.Specifi
 	}
 
 	// Es wird geprüft ob das Req Objekt eine Verbindung besitzt
-	if !rpcrequest.ConnectionIsOpen(req) {
+	if !req.Context.IsConnected() {
 		// Es wird ein 'Connection is closed' fehler zurückgegeben
 		return utils.MakeConnectionIsClosedError("SharedFunction->EnterFunctionCall")
 	}
@@ -108,7 +107,7 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) *types.Specifi
 	// Diese Funktion wird als Event ausgeführt
 	event := func(_ *v8.Context, lopr types.KernelEventLoopContextInterface) {
 		// Es wird geprüft ob die Verbindung getrennt wurde
-		if !rpcrequest.ConnectionIsOpen(req) {
+		if !req.Context.IsConnected() {
 			//o.kernel.LogPrint("RPC", "Process aborted, connection closed")
 			return
 		}

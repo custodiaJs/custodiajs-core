@@ -3,14 +3,12 @@ package kernel
 import (
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 
-	"github.com/CustodiaJS/custodiajs-core/consolecache"
+	"github.com/CustodiaJS/custodiajs-core/core/consolecache"
 	"github.com/CustodiaJS/custodiajs-core/static"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
-	"github.com/CustodiaJS/custodiajs-core/vmdb"
 
 	v8 "rogchap.com/v8go"
 )
@@ -39,7 +37,7 @@ func (o *Kernel) ContextV8() *v8.Context {
 }
 
 func (o *Kernel) GetFingerprint() types.KernelFingerprint {
-	return types.KernelFingerprint(strings.ToLower(o.dbEntry.GetVMContainerMerkleHash()))
+	panic("not implementated")
 }
 
 func (o *Kernel) GloablRegisterRead(name_id string) interface{} {
@@ -113,11 +111,14 @@ func (o *Kernel) GetKId() types.KernelID {
 }
 
 func (o *Kernel) GetCAMembershipIDs() []string {
-	membIds := make([]string, 0)
-	for _, item := range o.dbEntry.GetRootMemberIDS() {
-		membIds = append(membIds, item.Fingerprint)
-	}
-	return membIds
+	/*
+		membIds := make([]string, 0)
+		for _, item := range o.dbEntry.GetRootMemberIDS() {
+			membIds = append(membIds, item.Fingerprint)
+		}
+		return membIds
+	*/
+	panic("not implemented")
 }
 
 func (o *Kernel) GetCore() types.CoreInterface {
@@ -249,6 +250,10 @@ func (o *Kernel) Close() {
 	o.ContextV8().Close()
 }
 
+func (o *Kernel) Signal(id string, value interface{}) {
+
+}
+
 func makeIsolationAndContext(kernel *Kernel, isMain bool) (*v8.Isolate, *v8.Context, error) {
 	// Die Isolation wird erezrugt
 	iso := v8.NewIsolate()
@@ -275,7 +280,7 @@ func makeIsolationAndContext(kernel *Kernel, isMain bool) (*v8.Isolate, *v8.Cont
 	return iso, context, nil
 }
 
-func NewKernel(consoleCache *consolecache.ConsoleOutputCache, kernelConfig *KernelConfig, dbEntry *vmdb.VmDBEntry, coreIface types.CoreInterface) (*Kernel, error) {
+func NewKernel(consoleCache *consolecache.ConsoleOutputCache, kernelConfig *KernelConfig, coreIface types.CoreInterface) (*Kernel, error) {
 	// Die KernelID wird erzeugt
 	kid, err := utils.RandomHex(6)
 	if err != nil {
@@ -287,15 +292,15 @@ func NewKernel(consoleCache *consolecache.ConsoleOutputCache, kernelConfig *Kern
 
 	// Das Kernelobjekt wird erzeugt
 	kernelObj := &Kernel{
-		Context:           nil,
-		id:                types.KernelID(kid),
-		register:          make(map[string]interface{}),
-		mutex:             mutex,
-		console:           consoleCache,
-		config:            kernelConfig,
-		core:              coreIface,
-		vmImports:         make(map[string]*v8.Value),
-		dbEntry:           dbEntry,
+		Context:   nil,
+		id:        types.KernelID(kid),
+		register:  make(map[string]interface{}),
+		mutex:     mutex,
+		console:   consoleCache,
+		config:    kernelConfig,
+		core:      coreIface,
+		vmImports: make(map[string]*v8.Value),
+		//dbEntry:           dbEntry,
 		eventLoopStack:    make([]types.KernelEventLoopOperationInterface, 0),
 		eventLoopLockCond: sync.NewCond(mutex),
 		hasCloseSignal:    false,

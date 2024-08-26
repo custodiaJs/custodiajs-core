@@ -90,3 +90,9 @@ func VerifyAppleMacOSSystem() error {
 func VerifyBSDSystem() error {
 	return nil
 }
+
+// checkAdmin überprüft, ob das Programm mit Administrator-Rechten ausgeführt wird
+func CheckAdmin() bool {
+	// Für Unix-basierte Systeme (Linux, macOS)
+	return os.Geteuid() == 0
+}

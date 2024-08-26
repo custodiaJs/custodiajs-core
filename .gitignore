@@ -13,3 +13,4 @@ api/vm/client/*.js
 
 # Ignore TypeScript build output directory
 dist/
+build/

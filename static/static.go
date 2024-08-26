@@ -1,6 +1,8 @@
 package static
 
-import "github.com/CustodiaJS/custodiajs-core/types"
+import (
+	"github.com/CustodiaJS/custodiajs-core/types"
+)
 
 const (
 	// Gibt den Status einer VM an
@@ -10,10 +12,10 @@ const (
 	StillWait types.VmState = 0
 
 	// Gibt die Notwendigen Nutzerrechte an
-	NONE_ROOT_ADMIN           types.CLIUserRight = 1
-	ROOT_ADMIN                types.CLIUserRight = 2
-	CONTAINER_NONE_ROOT_ADMIN types.CLIUserRight = 3
-	CONAINER_ROOT_ADMIN       types.CLIUserRight = 4
+	NONE_ROOT_ADMIN           types.IPCRight = 1
+	ROOT_ADMIN                types.IPCRight = 2
+	CONTAINER_NONE_ROOT_ADMIN types.IPCRight = 3
+	CONAINER_ROOT_ADMIN       types.IPCRight = 4
 
 	// Gibt den Status des Core Osbjektes an
 	NEW      types.CoreState = 1
@@ -35,14 +37,6 @@ const (
 	// Die Repo wird festgelegt
 	C_REPO types.REPO = "https://github.com/CustodiaJS/custodiajs-core"
 
-	// Legt die Dateipfade für z.b Unix Sockets fest
-	NONE_ROOT_UNIX_SOCKET            types.SOCKET_PATH              = "/tmp/cusjs_none_root_sock"
-	ROOT_UNIX_SOCKET                 types.SOCKET_PATH              = "/tmp/cusjs_root_sock"
-	UNIX_ALTERNATIVE_SERVICES        types.ALTERNATIVE_SERVICE_PATH = "/var/lib/cusjs/alternativeservices"
-	UNIX_LINUX_LOGGING_DIR           types.LOG_DIR                  = "/var/log/cusjs"
-	UNIX_LINUX_LOGGING_DIR_NONE_ROOT types.LOG_DIR                  = "/tmp/cusjs"
-	UNIX_VM_DATABASE_DIR             types.LOG_DIR                  = "/var/lib/custodiajs"
-
 	// Gibt die Verfügabren Quellen eines Funktionsaufrufes an
 	LOCAL  types.RPCCallSource = 0
 	REMOTE types.RPCCallSource = 1
@@ -62,4 +56,19 @@ const (
 
 	// Gibt an, dass nicht ermittelt werden konnte, ob es sich um eine Tor IP handelt
 	UNKOWN_TOR_IP_STATE types.TorIpState = false
+
+	// Definiert alle HTTP Methoden
+	GET       types.HTTP_METHOD = "GET"
+	POST      types.HTTP_METHOD = "POST"
+	PUT       types.HTTP_METHOD = "PUT"
+	DELETE    types.HTTP_METHOD = "DELETE"
+	PATCH     types.HTTP_METHOD = "PATCH"
+	HEAD      types.HTTP_METHOD = "HEAD"
+	OPTIONS   types.HTTP_METHOD = "OPTIONS"
+	CONNECT   types.HTTP_METHOD = "CONNECT"
+	TRACE     types.HTTP_METHOD = "TRACE"
+	WEBSOCKET types.HTTP_METHOD = "WEBSOCKET"
+
+	// Gibt den Key für das Core Objekt an
+	CORE_SESSION_CONTEXT_KEY types.CONTEXT_KEY = types.CONTEXT_KEY("CoreSession")
 )

@@ -1,7 +1,7 @@
 package errormsgs
 
 import (
-	"github.com/CustodiaJS/custodiajs-core/ipnetwork"
+	"github.com/CustodiaJS/custodiajs-core/core/ipnetwork"
 	"github.com/CustodiaJS/custodiajs-core/types"
 )
 

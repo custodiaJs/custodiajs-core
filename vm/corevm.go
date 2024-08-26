@@ -2,22 +2,20 @@ package vm
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/CustodiaJS/custodiajs-core/consolecache"
-	"github.com/CustodiaJS/custodiajs-core/databaseservices/services"
+	"github.com/CustodiaJS/custodiajs-core/core/consolecache"
 	"github.com/CustodiaJS/custodiajs-core/kernel"
 	"github.com/CustodiaJS/custodiajs-core/static"
 	"github.com/CustodiaJS/custodiajs-core/static/errormsgs"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
-	"github.com/CustodiaJS/custodiajs-core/vmdb"
+	"github.com/CustodiaJS/custodiajs-core/vmimage"
 )
 
 func (o *CoreVM) GetVMName() string {
-	return o.vmDbEntry.GetVMName()
+	return o.vmImage.GetManifest().Name
 }
 
 func (o *CoreVM) GetFingerprint() types.CoreVMFingerprint {
@@ -25,15 +23,11 @@ func (o *CoreVM) GetFingerprint() types.CoreVMFingerprint {
 }
 
 func (o *CoreVM) GetOwner() string {
-	return o.vmDbEntry.GetOwner()
+	return o.vmImage.GetManifest().Owner
 }
 
 func (o *CoreVM) GetRepoURL() string {
-	return o.vmDbEntry.GetRepoURL()
-}
-
-func (o *CoreVM) GetMode() string {
-	return o.vmDbEntry.GetMode()
+	return o.vmImage.GetManifest().RepoURL
 }
 
 func (o *CoreVM) _routine(scriptContent []byte) {
@@ -108,19 +102,10 @@ func (o *CoreVM) Serve(syncWaitGroup *sync.WaitGroup) error {
 	// Die VM wird als Startend Markiert
 	o.vmState = static.Starting
 
-	// Es wird versucht den MainCode einzulesen
-	mainCode := o.vmDbEntry.GetMainCodeFile()
-
-	// Es wird versucht den Inhalt der Datei zu laden
-	scriptContent, err := mainCode.GetContent()
-	if err != nil {
-		return fmt.Errorf("CoreVM->serveGorutine: " + err.Error())
-	}
-
 	// Diese Funktion wird als Goroutine ausgeführt
 	go func() {
 		// Die VM wird am leben Erhalten
-		o._routine([]byte(scriptContent))
+		o._routine([]byte(o.vmImage.GetMain().Content()))
 
 		// Sollte der Kernel nicht geschlossen sein, wird er beendet
 		if !o.Kernel.IsClosed() {
@@ -142,76 +127,8 @@ func (o *CoreVM) GetState() types.VmState {
 	return o.vmState
 }
 
-func (o *CoreVM) GetWhitelist() []*types.TransportWhitelistVmEntryData {
-	returnList := make([]*types.TransportWhitelistVmEntryData, 0)
-	for _, item := range o.vmDbEntry.GetWhitelist() {
-		returnList = append(returnList, &types.TransportWhitelistVmEntryData{
-			WildCardDomains: item.Endpoint.Domain.Wildcards,
-			ExactDomains:    item.Endpoint.Domain.Exact,
-			Methods:         item.Methods,
-			IPv4List:        item.Endpoint.IPv4List,
-			Ipv6List:        item.Endpoint.IPv6List,
-		})
-	}
-	return returnList
-}
-
-func (o *CoreVM) GetRootMemberIDS() []*types.CAMemberData {
-	ret := make([]*types.CAMemberData, 0)
-	for _, item := range o.vmDbEntry.GetRootMemberIDS() {
-		ret = append(ret, &types.CAMemberData{
-			Fingerprint: item.Fingerprint,
-			Type:        item.Type,
-			ID:          item.ID,
-		})
-	}
-	return ret
-}
-
-func (o *CoreVM) GetDatabaseServices() []*types.VMEntryBaseData {
-	vmdlist := make([]*types.VMEntryBaseData, 0)
-	for _, item := range o.vmDbEntry.GetAllDatabaseServices() {
-		vmdlist = append(vmdlist, &types.VMEntryBaseData{
-			Type:     item.Type,
-			Host:     item.Host,
-			Port:     item.Port,
-			Username: item.Username,
-			Password: item.Password,
-			Database: item.Database,
-			Alias:    item.Alias,
-		})
-	}
-	return vmdlist
-}
-
-func (o *CoreVM) ValidateRPCRequestSource(soruce string) bool {
-	// Es wird geprüft ob es es einen Global Wildcard eintrag gib
-	if _, hasWildCard := o.vmDbEntry.GetAllowedHttpSources()["*"]; hasWildCard {
-		return true
-	}
-
-	// Es wird geprüft ob es für diesen Host einen Eintrag gibt
-	if _, checkresult := o.vmDbEntry.GetAllowedHttpSources()[strings.ToLower(soruce)]; checkresult {
-		return true
-	}
-
-	// Es wird eine mögliche Whitelist erstellt
-	whitelist := make([]string, 0)
-	for item := range o.vmDbEntry.GetAllowedHttpSources() {
-		whitelist = append(whitelist, item)
-	}
-
-	// Es wird geprüft ob die Quelldomain sich durch die Whitelist bestätigen lässt, das ergebniss wird zurückgegeben
-	return utils.CheckHostInWhitelist(strings.ToLower(soruce), whitelist)
-}
-
 func (o *CoreVM) GetConsoleOutputWatcher() types.WatcherInterface {
 	return o.Kernel.Console().GetOutputStream()
-}
-
-func (o *CoreVM) AddDatabaseServiceLink(dbserviceLink services.DbServiceLinkinterface) error {
-	o.dbServiceLinks = append(o.dbServiceLinks, dbserviceLink)
-	return nil
 }
 
 func (o *CoreVM) GetStartingTimestamp() uint64 {
@@ -324,54 +241,30 @@ func (o *CoreVM) IsAllowedXRequested(xrd *types.XRequestedWithData) bool {
 	return false
 }
 
-func NewCoreVM(core types.CoreInterface, vmDb *vmdb.VmDBEntry, loggingPath types.LOG_DIR) (*CoreVM, error) {
+func NewCoreVM(core types.CoreInterface, workingDir string, vmImage *vmimage.VmImage, loggingPath types.LOG_DIR) (*CoreVM, error) {
 	// Es wird ein neuer Konsolen Stream erzeugt
 	consoleStream, err := consolecache.NewConsoleOutputCache(string(loggingPath))
 	if err != nil {
 		return nil, fmt.Errorf("CoreVM->newCoreVM: " + err.Error())
 	}
 
-	/*
-		// Es werden alle Externen Module geladen
-		extMods := make([]types.KernelModuleInterface, 0)
-		for _, item := range extModules {
-			// Es wird versucht das Modul zu bauen
-			extMod, err := kernel.LinkWithExternalModule(item)
-			if err != nil {
-				return nil, fmt.Errorf("newCoreVM: " + err.Error())
-			}
-
-			// Die Daten werden abgespeichert
-			extMods = append(extMods, extMod)
-		}
-
-		// Die KernelModule werden Initalisiert
-		var kernelConfig *kernel.KernelConfig
-		if len(extMods) > 0 {
-			kernelConfig = kernel.NewFromExist(&kernel.DEFAULT_CONFIG, extMods...)
-		} else {
-			kernelConfig = &kernel.DEFAULT_CONFIG
-		}
-	*/
 	// Die Kernel Configurationen werden bereigestellt
 	kernelConfig := &kernel.DEFAULT_CONFIG
 
 	// Es wird ein neuer Kernel erzeugt
-	vmKernel, err := kernel.NewKernel(consoleStream, kernelConfig, vmDb, core)
+	vmKernel, err := kernel.NewKernel(consoleStream, kernelConfig, core)
 	if err != nil {
 		return nil, fmt.Errorf("newCoreVM: " + err.Error())
 	}
 
 	// Das Core Objekt wird erstellt
 	coreObject := &CoreVM{
-		Kernel:    vmKernel,
-		core:      core,
-		vmDbEntry: vmDb,
-		//externalModules: extModules,
-		objectMutex:    &sync.Mutex{},
-		vmState:        static.StillWait,
-		dbServiceLinks: make([]services.DbServiceLinkinterface, 0),
-		_signal_CLOSE:  false,
+		Kernel:        vmKernel,
+		core:          core,
+		vmImage:       vmImage,
+		objectMutex:   &sync.Mutex{},
+		vmState:       static.StillWait,
+		_signal_CLOSE: false,
 	}
 
 	// Es wird versucht die VM mit dem Kernel zu verlinken

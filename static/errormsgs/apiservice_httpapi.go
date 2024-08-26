@@ -4,6 +4,18 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
+func HTTP_API_RPC_VM_NOT_RUNNING(funcname string) *types.SpecificError {
+	return &types.SpecificError{CliError: nil, LocalJSVMError: nil, GoProcessError: nil, LocalApiOrRpcError: types.ApiError{}, RemoteApiOrRpcError: types.ApiError{}, History: []string{funcname}}
+}
+
+func HTTP_API_CORE_CONTEXT_EXTRACTION_ERROR(funcname string) *types.SpecificError {
+	return &types.SpecificError{CliError: nil, LocalJSVMError: nil, GoProcessError: nil, LocalApiOrRpcError: types.ApiError{}, RemoteApiOrRpcError: types.ApiError{}, History: []string{funcname}}
+}
+
+func HTTP_API_SERVICE_UNKOWN_METHODE(funcname string, hasMethode string) *types.SpecificError {
+	return &types.SpecificError{CliError: nil, LocalJSVMError: nil, GoProcessError: nil, LocalApiOrRpcError: types.ApiError{}, RemoteApiOrRpcError: types.ApiError{}, History: []string{funcname}}
+}
+
 func HTTP_API_SERVICE_INVALID_METHODE(funcname string, hasMethode string, needMethode string) *types.SpecificError {
 	return &types.SpecificError{CliError: nil, LocalJSVMError: nil, GoProcessError: nil, LocalApiOrRpcError: types.ApiError{}, RemoteApiOrRpcError: types.ApiError{}, History: []string{funcname}}
 }
@@ -133,5 +145,9 @@ func HTTP_API_SERVICE_ORIGIN_READING_ERROR(funcname string, refererurl string) *
 }
 
 func HTTP_API_SERVICE_LOCAL_IP_READING_ERROR(funcname string, ipadr string) *types.SpecificError {
+	return &types.SpecificError{CliError: nil, LocalJSVMError: nil, GoProcessError: nil, LocalApiOrRpcError: types.ApiError{}, RemoteApiOrRpcError: types.ApiError{}, History: []string{funcname}}
+}
+
+func HTTP_API_SERVICE_REQUESR_HAS_NOT_ALLOWED_PROTOCOL_SHEME_ERROR(funcname string, used_sheme string, needed_sheme string) *types.SpecificError {
 	return &types.SpecificError{CliError: nil, LocalJSVMError: nil, GoProcessError: nil, LocalApiOrRpcError: types.ApiError{}, RemoteApiOrRpcError: types.ApiError{}, History: []string{funcname}}
 }
