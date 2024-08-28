@@ -5,8 +5,33 @@ option go_package = "/localgrpcproto;localgrpcproto";
 
 import "google/protobuf/empty.proto";
 
+enum ClientType {
+  CLI = 0;
+  VM = 1;
+  API = 2;
+}
+
+enum ClientMethode {
+  SYSTEM = 0;
+  USER = 1;
+}
+
+message ProcessInfo {
+  bool run_in_container = 1;
+  uint32 user_id = 2;
+  uint32 process_id = 3;
+}
+
+message VMClient {
+  string manifest = 1;
+}
+
 message ClientWelcomeRequest {
   uint64 version = 1;
+  ClientType client_type = 2;
+  ClientMethode client_methode = 3;
+  optional ProcessInfo unix_proc_info = 4;
+  optional VMClient vm_client = 5;
 }
 
 message ClientWelcomeResponse {

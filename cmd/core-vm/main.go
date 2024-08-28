@@ -65,7 +65,7 @@ func main() {
 	cryptoStore := crypto.NewCoreVmCryptoStore()
 
 	// Es wird versucht eine Verbindung mit dem Host Controller aufzubauen
-	coreVmProcessInstance, instanceError := vmprocessio.NewCoreVmClientProcess(false, coreServiceSocketPath, cryptoStore)
+	coreVmProcessInstance, instanceError := vmprocessio.NewCoreVmClientProcess(false, coreServiceSocketPath, cryptoStore, vmImageInstance.GetManifest())
 	if instanceError != nil {
 		fmt.Println(instanceError)
 		os.Exit(1)
