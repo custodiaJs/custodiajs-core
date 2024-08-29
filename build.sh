@@ -2,10 +2,10 @@
 
 # Setze die Variablen
 BUILD_DIR="./build"
-MAIN1="cmd/core-service/main.go"
-MAIN2="cmd/core-vm/main.go"
-OUTPUT1="core-service"
-OUTPUT2="core-vm"
+CORE_MAIN="cmd/core-service/main.go"
+VM_MAIN="cmd/vm/"
+OUTPUT1="coresrvce"
+OUTPUT2="vm"
 
 # Farbe für Ausgaben
 GREEN='\033[0;32m'
@@ -28,15 +28,26 @@ clean() {
 
 # Kompilieren der Go-Programme
 build() {
-    echo -e "${GREEN}Kompiliere $MAIN1...${NC}"
-    go build -tags NoLocalhostSSLCheck -o $BUILD_DIR/$OUTPUT1 $MAIN1 || error_exit "Kompilierung von $MAIN1 fehlgeschlagen."
+    echo -e "${GREEN}Kompiliere $CORE_MAIN für macOS...${NC}"
+    if ! go build -tags NoLocalhostSSLCheck -o $BUILD_DIR/$OUTPUT1 $CORE_MAIN; then
+        error_exit "Fehler bei der Kompilierung von $CORE_MAIN für macOS: $(go build -tags NoLocalhostSSLCheck -o $BUILD_DIR/$OUTPUT1 $CORE_MAIN 2>&1)"
+    fi
     chmod +x $BUILD_DIR/$OUTPUT1
 
-    echo -e "${GREEN}Kompiliere $MAIN2...${NC}"
-    go build -tags NoLocalhostSSLCheck -o $BUILD_DIR/$OUTPUT2 $MAIN2 || error_exit "Kompilierung von $MAIN2 fehlgeschlagen."
-    chmod +x $BUILD_DIR/$OUTPUT2
+    cd $VM_MAIN
+    echo -e "${GREEN}Kompiliere das Verzeichnis $VM_MAIN für macOS...${NC}"
+    if ! go build -tags NoLocalhostSSLCheck -o ../../$BUILD_DIR/$OUTPUT2; then
+        error_exit "Fehler bei der Kompilierung des Verzeichnisses $VM_MAIN für macOS: $(go build -tags NoLocalhostSSLCheck -o $BUILD_DIR/$OUTPUT2 $VM_MAIN 2>&1)"
+    fi
+    chmod +x ../../$BUILD_DIR/$OUTPUT2
+    cd ..
     
-    echo "Kompilierung abgeschlossen."
+    echo "Kompilierung für macOS abgeschlossen."
+}
+
+error_exit() {
+    echo "$1" 1>&2
+    exit 1
 }
 
 # Hilfe anzeigen

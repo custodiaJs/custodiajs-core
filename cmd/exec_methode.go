@@ -13,6 +13,7 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/api/localgrpc"
 	"github.com/CustodiaJS/custodiajs-core/core"
 	"github.com/CustodiaJS/custodiajs-core/filesystem"
+	"github.com/CustodiaJS/custodiajs-core/global/paths"
 	"github.com/CustodiaJS/custodiajs-core/global/static"
 	"github.com/CustodiaJS/custodiajs-core/global/types"
 	"github.com/CustodiaJS/custodiajs-core/global/utils"
@@ -20,37 +21,23 @@ import (
 
 // Wird verwendet alle Verzeichnisse zu ermitteln
 func GetPathsAndDirs() (types.HOST_CRYPTOSTORE_WATCH_DIR_PATH, types.VM_DB_DIR_PATH, types.LOG_DIR, types.HOST_CONFIG_FILE_PATH, types.HOST_CONFIG_PATH) {
-	switch gos := runtime.GOOS; gos {
-	case "darwin":
-		// Erzeugt den Cryptostore Path
-		cryptoStorePath := types.HOST_CRYPTOSTORE_WATCH_DIR_PATH(path.Join(string(static.DARWIN_HOST_CONFIG_DIR_PATH), "crypstore"))
+	// Erzeugt den Cryptostore Path
+	cryptoStorePath := types.HOST_CRYPTOSTORE_WATCH_DIR_PATH(path.Join(string(paths.HOST_CONFIG_DIR_PATH), "crypstore"))
 
-		// Erzeugt den Host Config File Path
-		hostConfigFilePath := types.HOST_CONFIG_FILE_PATH(path.Join(string(static.DARWIN_HOST_CONFIG_DIR_PATH), "config.json"))
+	// Erzeugt den Host Config File Path
+	hostConfigFilePath := types.HOST_CONFIG_FILE_PATH(path.Join(string(paths.HOST_CONFIG_DIR_PATH), "config.json"))
 
-		// Gibt die Pfade zurück
-		return cryptoStorePath, static.DARWIN_DEFAULT_HOST_VM_DB_DIR_PATH, static.DARWIN_DEFAULT_LOGGING_DIR_PATH, hostConfigFilePath, static.DARWIN_HOST_CONFIG_DIR_PATH
-	case "linux":
-		// Erzeugt den Cryptostore Path
-		cryptoStorePath := types.HOST_CRYPTOSTORE_WATCH_DIR_PATH(path.Join(string(static.LINUX_HOST_CONFIG_DIR_PATH), "crypstore"))
-
-		// Erzeugt den Host Config File Path
-		hostConfigFilePath := types.HOST_CONFIG_FILE_PATH(path.Join(string(static.LINUX_HOST_CONFIG_DIR_PATH), "config.json"))
-
-		// Gibt die Pfade zurück
-		return cryptoStorePath, static.LINUX_DEFAULT_HOST_VM_DB_DIR_PATH, static.LINUX_DEFAULT_LOGGING_DIR_PATH, hostConfigFilePath, static.LINUX_HOST_CONFIG_DIR_PATH
-	default:
-		panic("LoadHostKeyPair: unsupported os")
-	}
+	// Gibt die Pfade zurück
+	return cryptoStorePath, paths.DEFAULT_HOST_VM_DB_DIR_PATH, paths.DEFAULT_LOGGING_DIR_PATH, hostConfigFilePath, paths.HOST_CONFIG_DIR_PATH
 }
 
 // Gibt den Pfad für die UnixSockets bzw Named Pipes zurück
 func GetSocketOrPipeNameOrAddress(root bool) types.SOCKET_PATH {
 	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" || runtime.GOOS == "freebsd" || runtime.GOOS == "openbsd" || runtime.GOOS == "netbsd" {
 		if !root {
-			return types.SOCKET_PATH(static.NONE_ROOT_UNIX_SOCKET)
+			return types.SOCKET_PATH(paths.NONE_ROOT_UNIX_SOCKET)
 		} else {
-			return types.SOCKET_PATH(static.ROOT_UNIX_SOCKET)
+			return types.SOCKET_PATH(paths.ROOT_UNIX_SOCKET)
 		}
 	} else {
 		return ""
