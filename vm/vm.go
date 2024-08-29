@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/CustodiaJS/custodiajs-core/core/consolecache"
-	"github.com/CustodiaJS/custodiajs-core/static"
-	"github.com/CustodiaJS/custodiajs-core/static/errormsgs"
-	"github.com/CustodiaJS/custodiajs-core/types"
-	"github.com/CustodiaJS/custodiajs-core/utils"
+	"github.com/CustodiaJS/custodiajs-core/global/static"
+	"github.com/CustodiaJS/custodiajs-core/global/static/errormsgs"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
+	"github.com/CustodiaJS/custodiajs-core/global/utils"
 	"github.com/CustodiaJS/custodiajs-core/vm/image"
 	"github.com/CustodiaJS/custodiajs-core/vm/kernel"
 )

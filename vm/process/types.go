@@ -1,9 +1,9 @@
 package process
 
 import (
+	"github.com/CustodiaJS/custodiajs-core/global/procslog"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
 	"github.com/CustodiaJS/custodiajs-core/localgrpcproto"
-	"github.com/CustodiaJS/custodiajs-core/procslog"
-	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 type VmProcess struct {

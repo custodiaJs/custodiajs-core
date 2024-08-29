@@ -3,7 +3,7 @@ package kernel
 import (
 	"fmt"
 
-	"github.com/CustodiaJS/custodiajs-core/utils"
+	"github.com/CustodiaJS/custodiajs-core/global/utils"
 
 	v8 "rogchap.com/v8go"
 )

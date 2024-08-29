@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/CustodiaJS/custodiajs-core/static"
-	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/global/static"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
 )
 
 // Wird verwendet um den Core geöffnet zu halten

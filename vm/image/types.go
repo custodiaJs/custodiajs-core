@@ -1,6 +1,6 @@
 package image
 
-import "github.com/CustodiaJS/custodiajs-core/types"
+import "github.com/CustodiaJS/custodiajs-core/global/types"
 
 type VMEntryBaseData struct {
 	Type     string

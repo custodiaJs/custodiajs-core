@@ -8,8 +8,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/CustodiaJS/custodiajs-core/types"
-	"github.com/CustodiaJS/custodiajs-core/utils"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
+	"github.com/CustodiaJS/custodiajs-core/global/utils"
 	"golang.org/x/crypto/sha3"
 )
 

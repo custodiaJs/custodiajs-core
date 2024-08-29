@@ -3,10 +3,10 @@ package core
 import (
 	"sync"
 
-	"github.com/CustodiaJS/custodiajs-core/apiservices/http/context"
+	"github.com/CustodiaJS/custodiajs-core/api/http/context"
 	"github.com/CustodiaJS/custodiajs-core/core/ipnetwork"
 	"github.com/CustodiaJS/custodiajs-core/crypto"
-	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
 )
 
 type Core struct {

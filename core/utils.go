@@ -3,7 +3,7 @@ package core
 import (
 	"sync"
 
-	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
 )
 
 // Legt den Core Status fest

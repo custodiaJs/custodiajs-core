@@ -16,8 +16,8 @@
 package kmodulerpc
 
 import (
-	"github.com/CustodiaJS/custodiajs-core/types"
-	"github.com/CustodiaJS/custodiajs-core/utils/grsbool"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
+	"github.com/CustodiaJS/custodiajs-core/global/utils/grsbool"
 
 	v8 "rogchap.com/v8go"
 )

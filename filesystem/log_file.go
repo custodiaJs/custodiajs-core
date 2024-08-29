@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
 )
 
 func MakeLogDirForVM(rootdir types.LOG_DIR, vmName string) (types.LOG_DIR, error) {

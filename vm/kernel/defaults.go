@@ -1,7 +1,7 @@
 package kernel
 
 import (
-	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
 	kmoduleconsole "github.com/CustodiaJS/custodiajs-core/vm/kernel/base_modules/console"
 	kmodulecrypto "github.com/CustodiaJS/custodiajs-core/vm/kernel/base_modules/crypto"
 	kmoduledatabase "github.com/CustodiaJS/custodiajs-core/vm/kernel/base_modules/database"

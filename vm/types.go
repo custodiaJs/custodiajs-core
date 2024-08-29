@@ -3,7 +3,7 @@ package vm
 import (
 	"sync"
 
-	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
 	"github.com/CustodiaJS/custodiajs-core/vm/image"
 	"github.com/CustodiaJS/custodiajs-core/vm/kernel"
 )

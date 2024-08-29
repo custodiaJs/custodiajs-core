@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/CustodiaJS/custodiajs-core/crypto"
+	"github.com/CustodiaJS/custodiajs-core/global/procslog"
+	"github.com/CustodiaJS/custodiajs-core/global/static"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
 	"github.com/CustodiaJS/custodiajs-core/ipc"
 	"github.com/CustodiaJS/custodiajs-core/localgrpcproto"
-	"github.com/CustodiaJS/custodiajs-core/procslog"
-	"github.com/CustodiaJS/custodiajs-core/static"
-	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 func (o *VmProcess) AddVMInstance(vmInstance types.VmInterface, plog_a types.ProcessLogSessionInterface) error {

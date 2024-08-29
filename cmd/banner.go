@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/CustodiaJS/custodiajs-core/static"
-	"github.com/CustodiaJS/custodiajs-core/utils"
+	"github.com/CustodiaJS/custodiajs-core/global/static"
+	"github.com/CustodiaJS/custodiajs-core/global/utils"
 )
 
 // Welcome Banner

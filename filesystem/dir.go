@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/CustodiaJS/custodiajs-core/utils"
+	"github.com/CustodiaJS/custodiajs-core/global/utils"
 )
 
 type FileInfo struct {

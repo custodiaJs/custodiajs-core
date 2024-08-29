@@ -53,7 +53,7 @@ func main() {
 	}
 
 	// Die API's werden vorbereitet
-	if apiSocketsError := cmd.SetupHostAPIServices(coreInstance); apiSocketsError != nil {
+	if apiSocketsError := cmd.SetupHostapi(coreInstance); apiSocketsError != nil {
 		panic(apiSocketsError)
 	}
 

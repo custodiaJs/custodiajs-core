@@ -6,8 +6,8 @@ import (
 	"net"
 	"os"
 
-	"github.com/CustodiaJS/custodiajs-core/static"
-	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/global/static"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

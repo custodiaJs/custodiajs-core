@@ -6,7 +6,7 @@ import (
 	"path"
 
 	"github.com/CustodiaJS/custodiajs-core/filesystem"
-	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
 )
 
 func TryToLoad(hostCryptoStoreDirPath types.HOST_CRYPTOSTORE_WATCH_DIR_PATH) (*CryptoStore, error) {

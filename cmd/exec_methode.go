@@ -9,13 +9,13 @@ import (
 	"runtime"
 	"strings"
 
-	http "github.com/CustodiaJS/custodiajs-core/apiservices/http"
-	"github.com/CustodiaJS/custodiajs-core/apiservices/localgrpc"
+	http "github.com/CustodiaJS/custodiajs-core/api/http"
+	"github.com/CustodiaJS/custodiajs-core/api/localgrpc"
 	"github.com/CustodiaJS/custodiajs-core/core"
 	"github.com/CustodiaJS/custodiajs-core/filesystem"
-	"github.com/CustodiaJS/custodiajs-core/static"
-	"github.com/CustodiaJS/custodiajs-core/types"
-	"github.com/CustodiaJS/custodiajs-core/utils"
+	"github.com/CustodiaJS/custodiajs-core/global/static"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
+	"github.com/CustodiaJS/custodiajs-core/global/utils"
 )
 
 // Wird verwendet alle Verzeichnisse zu ermitteln
@@ -92,7 +92,7 @@ func NewCLIHostSockets(withRoot bool) ([]*localgrpc.HostAPIService, error) {
 }
 
 // Wird verwendet um die Host API Services bereizustellen
-func SetupHostAPIServices(coreinst *core.Core) error {
+func SetupHostapi(coreinst *core.Core) error {
 	// Der Lokale Crypto Store wird abgerufen
 	localhostAPICert := coreinst.GetLocalhostCryptoStore(nil)
 

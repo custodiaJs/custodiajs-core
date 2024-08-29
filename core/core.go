@@ -5,14 +5,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/CustodiaJS/custodiajs-core/apiservices/http/context"
+	"github.com/CustodiaJS/custodiajs-core/api/http/context"
 	"github.com/CustodiaJS/custodiajs-core/core/ipnetwork"
 
 	"github.com/CustodiaJS/custodiajs-core/crypto"
-	"github.com/CustodiaJS/custodiajs-core/procslog"
-	"github.com/CustodiaJS/custodiajs-core/static"
-	"github.com/CustodiaJS/custodiajs-core/types"
-	"github.com/CustodiaJS/custodiajs-core/utils"
+	"github.com/CustodiaJS/custodiajs-core/global/procslog"
+	"github.com/CustodiaJS/custodiajs-core/global/static"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
+	"github.com/CustodiaJS/custodiajs-core/global/utils"
 )
 
 // Fügt eine neue API hinzu

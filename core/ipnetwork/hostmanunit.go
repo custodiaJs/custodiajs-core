@@ -3,7 +3,7 @@ package ipnetwork
 import (
 	"net"
 
-	"github.com/CustodiaJS/custodiajs-core/types"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
 )
 
 func NewHostNetworkManagmentUnit() *HostNetworkManagmentUnit {
