@@ -13,9 +13,6 @@ import (
 
 // Wird verwendet um den Core Service Offen zu halten
 func RunCoreConsoleOrBackgroundService(coreinst *core.Core) {
-	// LOG
-	fmt.Println("Starting done...")
-
 	// Es wird eine neuer Waitgroup erzeugt,
 	// diese Waitgroup wird verwendet um zu ermitteln
 	// ob die Core Instanz ausgeführt wird

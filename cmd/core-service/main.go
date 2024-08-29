@@ -37,14 +37,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Der Host Netzwerk Controller wird erstellt
-	ipnetcon := ipnetwork.NewHostNetworkManagmentUnit()
-
 	// Die CLI Sockets werden vorbereitet
 	cliSockets, cliSocketsError := cmd.NewCLIHostSockets(false)
 	if cliSocketsError != nil {
 		panic(cliSocketsError)
 	}
+
+	// Der Host Netzwerk Controller wird erstellt
+	ipnetcon := ipnetwork.NewHostNetworkManagmentUnit()
 
 	// Der Core wird erzeugt
 	coreInstance, coreInstanceError := core.NewCore(cryptoStore, logDirectoryPath, ipnetcon)

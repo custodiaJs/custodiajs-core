@@ -39,15 +39,23 @@ type CHN_CORE_SOCKET_PATH string
 type CONTEXT_KEY string
 type HTTP_METHOD string
 
+// Gibt die QUID einer VM an
+type QVMID string
+
+// Gibt den Hash eines Scriptes an
+type VmScriptHash string
+
+// Gibt die VmProcessId an
+type VmProcessId string
+
 // RPC Transport & Call Typen
 type RpcCallTransportProtocol uint8 // RPC Transport Protokoll
 type HttpRequestContentType uint8   // HTTP Request Content Type
 
 // ID Typen
-type KernelID string                     // Gibt die ID eines Kernels an
-type KernelFingerprint string            // Gibt die Kernel VM-ID an
-type CoreVMFingerprint KernelFingerprint // Gibt die ID einer CoreVM zurück
-type RPCCallSource uint8                 // Gibt an ob es sich um eine Lokale Anfrage oder eine Remote Anfrage handelt
+type KernelID string          // Gibt die ID eines Kernels an
+type KernelFingerprint string // Gibt die Kernel VM-ID an
+type RPCCallSource uint8      // Gibt an ob es sich um eine Lokale Anfrage oder eine Remote Anfrage handelt
 
 // RPC Request Methode
 type RpcRequestMethode uint8 // Gibt an, über welche Methode der RPC Request Empfangen wurde

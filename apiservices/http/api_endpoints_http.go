@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	"github.com/CustodiaJS/custodiajs-core/context"
+	"github.com/CustodiaJS/custodiajs-core/procslog"
 	"github.com/CustodiaJS/custodiajs-core/static"
 	"github.com/CustodiaJS/custodiajs-core/static/errormsgs"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
-	"github.com/CustodiaJS/custodiajs-core/utils/procslog"
 )
 
 // Nimmt Anfragen für "/" entgegen
@@ -396,7 +396,7 @@ func (o *HttpApiService) httpRPC(w http.ResponseWriter, r *http.Request) {
 		//result.Reject()
 
 		// Log
-		procLog.Log("%s call function response sending '%s' error\n\t%s\n", vmInstance.GetVMName(), foundFunction.GetName(), frwrerr)
+		procLog.Log("%s call function response sending '%s' error\n\t%s\n", vmInstance.GetManifest().Name, foundFunction.GetName(), frwrerr)
 
 		// Der Vorgang wird geschlossen
 		return

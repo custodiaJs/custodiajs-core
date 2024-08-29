@@ -8,11 +8,12 @@ import (
 	"io"
 	"strings"
 
+	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
 	"golang.org/x/crypto/sha3"
 )
 
-func (o *VmImage) GetManifest() *Manifest {
+func (o *VmImage) GetManifest() *types.Manifest {
 	return o.manifest
 }
 
@@ -30,7 +31,7 @@ func TryToLoadVmImage(vmImageFilePath string) (*VmImage, error) {
 	defer r.Close()
 
 	// Flags zum Überprüfen der Existenz der Verzeichnisse und Dateien
-	var manifestFile *Manifest
+	var manifestFile *types.Manifest
 
 	// Speichert die MainJsFile Datei ab
 	var mainJsFile *MainJsFile
@@ -67,7 +68,7 @@ func TryToLoadVmImage(vmImageFilePath string) (*VmImage, error) {
 			}
 
 			// Der Hash wird erzeugt und in der Datei zwischengspeichert
-			manifestFile.filehash = hex.EncodeToString(hash.Sum(nil))
+			manifestFile.Filehash = hex.EncodeToString(hash.Sum(nil))
 
 			// Die Datei wird geschlossen
 			rc.Close()

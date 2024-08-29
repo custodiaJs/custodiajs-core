@@ -6,11 +6,11 @@ import (
 	"runtime"
 
 	cmd "github.com/CustodiaJS/custodiajs-core/cmd"
-	"github.com/CustodiaJS/custodiajs-core/core/vmprocessio"
 	"github.com/CustodiaJS/custodiajs-core/crypto"
 	"github.com/CustodiaJS/custodiajs-core/filesystem"
 	"github.com/CustodiaJS/custodiajs-core/vm"
 	"github.com/CustodiaJS/custodiajs-core/vmimage"
+	"github.com/CustodiaJS/custodiajs-core/vmprocess"
 )
 
 func main() {
@@ -65,7 +65,7 @@ func main() {
 	cryptoStore := crypto.NewCoreVmCryptoStore()
 
 	// Es wird versucht eine Verbindung mit dem Host Controller aufzubauen
-	coreVmProcessInstance, instanceError := vmprocessio.NewCoreVmClientProcess(false, coreServiceSocketPath, cryptoStore, vmImageInstance.GetManifest())
+	coreVmProcessInstance, instanceError := vmprocess.NewCoreVmClientProcess(false, coreServiceSocketPath, cryptoStore, vmImageInstance.GetManifest())
 	if instanceError != nil {
 		fmt.Println(instanceError)
 		os.Exit(1)

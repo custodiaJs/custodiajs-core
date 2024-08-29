@@ -58,9 +58,9 @@ func GetSocketOrPipeNameOrAddress(root bool) types.SOCKET_PATH {
 }
 
 // Wird verwendet um die HostCliServices vorzubereiten
-func NewCLIHostSockets(withRoot bool) ([]*localgrpc.HostCliService, error) {
+func NewCLIHostSockets(withRoot bool) ([]*localgrpc.HostAPIService, error) {
 	// Speichert alle Verfügabren API Instanzen ab
-	apiInstances := make([]*localgrpc.HostCliService, 0)
+	apiInstances := make([]*localgrpc.HostAPIService, 0)
 
 	// Es wird versucht die Testunit zu erzeugen
 	cliAPIInstance, cliAPIInstanceError := localgrpc.New(GetSocketOrPipeNameOrAddress(withRoot), static.NONE_ROOT_ADMIN)
@@ -224,8 +224,12 @@ func CheckFolderAndFileStructureOnHost() {
 
 	// Es wird geprüft ob das Log Direcotry vorhanden ist
 	if !filesystem.FolderExists(string(logDirectoryPath)) {
-		fmt.Printf(" -> Logging directory %s not found\n", logDirectoryPath)
-		totalFoldersNotFound = totalFoldersNotFound + 1
+		// Es wird versucht den Ordner zu erstellen
+		if err := filesystem.CreateDirectory(string(logDirectoryPath)); err != nil {
+			fmt.Printf(" -> Logging directory %s not found\n", logDirectoryPath)
+			fmt.Printf(" -> Creating error %s\n", err.Error())
+			totalFoldersNotFound = totalFoldersNotFound + 1
+		}
 	}
 
 	// Es wird geprüft ob 'totalNotFound' gleich 0 ist,

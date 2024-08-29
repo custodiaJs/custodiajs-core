@@ -5,10 +5,10 @@ import (
 	"net"
 	"net/url"
 
+	"github.com/CustodiaJS/custodiajs-core/procslog"
 	"github.com/CustodiaJS/custodiajs-core/saftychan"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils/grsbool"
-	"github.com/CustodiaJS/custodiajs-core/utils/procslog"
 )
 
 type Context struct {

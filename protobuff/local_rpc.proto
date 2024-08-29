@@ -16,26 +16,29 @@ enum ClientMethode {
   USER = 1;
 }
 
-message ProcessInfo {
-  bool run_in_container = 1;
-  uint32 user_id = 2;
-  uint32 process_id = 3;
+message VMClientRegisterRequest {
+  bytes manifest = 1;
+  bytes signature = 2;
+  string scriptHash = 3;
+  string process_id = 4;
+  string kid = 5;
 }
 
-message VMClient {
-  string manifest = 1;
+message VMClientRegisterResponse {
+  string vmid = 1;
 }
 
 message ClientWelcomeRequest {
   uint64 version = 1;
   ClientType client_type = 2;
   ClientMethode client_methode = 3;
-  optional ProcessInfo unix_proc_info = 4;
-  optional VMClient vm_client = 5;
 }
 
-message ClientWelcomeResponse {
+message ServerWelcomeResponse {
   uint64 version = 1;
+  string process_id = 2;
+  bool accepted = 3;
+  string reason = 4;
 }
 
 message VmListEntry {
@@ -98,13 +101,29 @@ message VmDetailsParms {
   }
 }
 
+message PingPong {
+
+}
+
+message ProcessControlPackage {
+  oneof req {
+    string register_process = 1;
+  }
+}
+
 service LocalhostAPIService {
   // Wird verwendet damit ein Client seine Sitzungsdaten angeben kann
-  rpc WelcomeClient(ClientWelcomeRequest) returns (ClientWelcomeResponse);
+  rpc WelcomeClient(ClientWelcomeRequest) returns (ServerWelcomeResponse);
+
+  // Wird verwendet um von einem Client aus eine neue VM zu Registrieren
+  rpc AddVMInstanceByProcess(VMClientRegisterRequest) returns (VMClientRegisterResponse);
 
   // Ruft eine Liste, aller Verfügabren VM's ab
   rpc ListVMs(google.protobuf.Empty) returns (VmListResponse);
 
   // Ruft alle Details einer VM ab
   rpc GetVMDetails(VmDetailsParms) returns (VmDetailsResponse);
+
+  // Wird verwendet um den Prozess vom Core aus zu Kontrollieren
+  rpc CoreToProcessControl (stream ProcessControlPackage) returns (stream ProcessControlPackage);
 }

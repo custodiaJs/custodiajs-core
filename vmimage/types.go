@@ -1,5 +1,7 @@
 package vmimage
 
+import "github.com/CustodiaJS/custodiajs-core/types"
+
 type VMEntryBaseData struct {
 	Type     string
 	Host     string
@@ -19,7 +21,7 @@ type MainJsFile struct {
 type VmImage struct {
 	mainFile  *MainJsFile
 	signature *ImageSignature
-	manifest  *Manifest
+	manifest  *types.Manifest
 }
 
 type ImageSignature struct {

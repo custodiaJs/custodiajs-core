@@ -4,10 +4,10 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/CustodiaJS/custodiajs-core/procslog"
 	"github.com/CustodiaJS/custodiajs-core/static"
 	"github.com/CustodiaJS/custodiajs-core/static/errormsgs"
 	"github.com/CustodiaJS/custodiajs-core/types"
-	"github.com/CustodiaJS/custodiajs-core/utils/procslog"
 )
 
 // Wird ausgeführt um eine neue HTTP Sitzung zu erstellen und zu schließen
@@ -20,7 +20,7 @@ func (o *HttpApiService) newSessionHandler(next http.Handler) http.Handler {
 		}
 
 		// Es wird eine neue Sitzum im Core erzeugt
-		coreSession, err := o.core.GetCoreSessionManagmentUnit().NewHTTPBasesSession(r)
+		coreSession, err := o.core.GetCoreSessionManagmentUnit().NewHTTPBasesSession(r, o.plog)
 		if err != nil {
 			// Es muss ein neuer Process Log erzeugt werden um den Fehler auszugeben
 			tempLogProc := procslog.NewProcLogSession()

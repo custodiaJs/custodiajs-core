@@ -16,6 +16,7 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/fatih/color v1.17.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

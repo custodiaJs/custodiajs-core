@@ -10,3 +10,6 @@ type ProcLogChildSession struct {
 	header string
 	mother *ProcLogSession
 }
+
+type gloablProcLog struct {
+}

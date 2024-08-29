@@ -14,12 +14,24 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/vmimage"
 )
 
-func (o *CoreVM) GetVMName() string {
-	return o.vmImage.GetManifest().Name
+func (o *CoreVM) GetManifest() *types.Manifest {
+	return o.vmImage.GetManifest()
 }
 
-func (o *CoreVM) GetFingerprint() types.CoreVMFingerprint {
-	return types.CoreVMFingerprint(o.Kernel.GetFingerprint())
+func (o *CoreVM) GetScriptHash() types.VmScriptHash {
+	return types.VmScriptHash(o.vmImage.GetMain().GetHash())
+}
+
+func (o *CoreVM) GetVmProcessId() types.VmProcessId {
+	return ""
+}
+
+func (o *CoreVM) GetQVMID() types.QVMID {
+	return ""
+}
+
+func (o *CoreVM) GetVMName() string {
+	return o.vmImage.GetManifest().Name
 }
 
 func (o *CoreVM) GetOwner() string {
@@ -270,6 +282,11 @@ func NewCoreVM(core types.CoreInterface, workingDir string, vmImage *vmimage.VmI
 	// Es wird versucht die VM mit dem Kernel zu verlinken
 	if err := vmKernel.LinkKernelWithCoreVM(coreObject); err != nil {
 		return nil, fmt.Errorf("newCoreVM: " + err.Error())
+	}
+
+	// Die VM wird dem Core hinzugefügt
+	if err := core.AddVMInstance(coreObject); err != nil {
+		return nil, fmt.Errorf("CoreVM->newCoreVM: " + err.Error())
 	}
 
 	// Das Objekt wird zurückgegeben

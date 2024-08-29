@@ -37,7 +37,7 @@ func (o *Kernel) ContextV8() *v8.Context {
 }
 
 func (o *Kernel) GetFingerprint() types.KernelFingerprint {
-	panic("not implementated")
+	return types.KernelFingerprint(o.vmLink.GetManifest().Filehash)
 }
 
 func (o *Kernel) GloablRegisterRead(name_id string) interface{} {
@@ -125,7 +125,7 @@ func (o *Kernel) GetCore() types.CoreInterface {
 	return o.core
 }
 
-func (o *Kernel) LinkKernelWithCoreVM(coreObj types.VmInterface) error {
+func (o *Kernel) LinkKernelWithCoreVM(vmInstance types.VmInterface) error {
 	// Der Mutex wird verwendet
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
@@ -136,7 +136,7 @@ func (o *Kernel) LinkKernelWithCoreVM(coreObj types.VmInterface) error {
 	}
 
 	// Der Kernel wird mit dem VM Verlinkt
-	o.vmLink = coreObj
+	o.vmLink = vmInstance
 
 	// Es ist kein Fehler aufgetreten
 	return nil

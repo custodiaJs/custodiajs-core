@@ -20,9 +20,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LocalhostAPIService_WelcomeClient_FullMethodName = "/localgrpcproto.LocalhostAPIService/WelcomeClient"
-	LocalhostAPIService_ListVMs_FullMethodName       = "/localgrpcproto.LocalhostAPIService/ListVMs"
-	LocalhostAPIService_GetVMDetails_FullMethodName  = "/localgrpcproto.LocalhostAPIService/GetVMDetails"
+	LocalhostAPIService_WelcomeClient_FullMethodName          = "/localgrpcproto.LocalhostAPIService/WelcomeClient"
+	LocalhostAPIService_AddVMInstanceByProcess_FullMethodName = "/localgrpcproto.LocalhostAPIService/AddVMInstanceByProcess"
+	LocalhostAPIService_ListVMs_FullMethodName                = "/localgrpcproto.LocalhostAPIService/ListVMs"
+	LocalhostAPIService_GetVMDetails_FullMethodName           = "/localgrpcproto.LocalhostAPIService/GetVMDetails"
+	LocalhostAPIService_CoreToProcessControl_FullMethodName   = "/localgrpcproto.LocalhostAPIService/CoreToProcessControl"
 )
 
 // LocalhostAPIServiceClient is the client API for LocalhostAPIService service.
@@ -30,11 +32,15 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LocalhostAPIServiceClient interface {
 	// Wird verwendet damit ein Client seine Sitzungsdaten angeben kann
-	WelcomeClient(ctx context.Context, in *ClientWelcomeRequest, opts ...grpc.CallOption) (*ClientWelcomeResponse, error)
+	WelcomeClient(ctx context.Context, in *ClientWelcomeRequest, opts ...grpc.CallOption) (*ServerWelcomeResponse, error)
+	// Wird verwendet um von einem Client aus eine neue VM zu Registrieren
+	AddVMInstanceByProcess(ctx context.Context, in *VMClientRegisterRequest, opts ...grpc.CallOption) (*VMClientRegisterResponse, error)
 	// Ruft eine Liste, aller Verfügabren VM's ab
 	ListVMs(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*VmListResponse, error)
 	// Ruft alle Details einer VM ab
 	GetVMDetails(ctx context.Context, in *VmDetailsParms, opts ...grpc.CallOption) (*VmDetailsResponse, error)
+	// Wird verwendet um den Prozess vom Core aus zu Kontrollieren
+	CoreToProcessControl(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProcessControlPackage, ProcessControlPackage], error)
 }
 
 type localhostAPIServiceClient struct {
@@ -45,10 +51,20 @@ func NewLocalhostAPIServiceClient(cc grpc.ClientConnInterface) LocalhostAPIServi
 	return &localhostAPIServiceClient{cc}
 }
 
-func (c *localhostAPIServiceClient) WelcomeClient(ctx context.Context, in *ClientWelcomeRequest, opts ...grpc.CallOption) (*ClientWelcomeResponse, error) {
+func (c *localhostAPIServiceClient) WelcomeClient(ctx context.Context, in *ClientWelcomeRequest, opts ...grpc.CallOption) (*ServerWelcomeResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ClientWelcomeResponse)
+	out := new(ServerWelcomeResponse)
 	err := c.cc.Invoke(ctx, LocalhostAPIService_WelcomeClient_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localhostAPIServiceClient) AddVMInstanceByProcess(ctx context.Context, in *VMClientRegisterRequest, opts ...grpc.CallOption) (*VMClientRegisterResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VMClientRegisterResponse)
+	err := c.cc.Invoke(ctx, LocalhostAPIService_AddVMInstanceByProcess_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -75,16 +91,33 @@ func (c *localhostAPIServiceClient) GetVMDetails(ctx context.Context, in *VmDeta
 	return out, nil
 }
 
+func (c *localhostAPIServiceClient) CoreToProcessControl(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProcessControlPackage, ProcessControlPackage], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &LocalhostAPIService_ServiceDesc.Streams[0], LocalhostAPIService_CoreToProcessControl_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ProcessControlPackage, ProcessControlPackage]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type LocalhostAPIService_CoreToProcessControlClient = grpc.BidiStreamingClient[ProcessControlPackage, ProcessControlPackage]
+
 // LocalhostAPIServiceServer is the server API for LocalhostAPIService service.
 // All implementations must embed UnimplementedLocalhostAPIServiceServer
 // for forward compatibility.
 type LocalhostAPIServiceServer interface {
 	// Wird verwendet damit ein Client seine Sitzungsdaten angeben kann
-	WelcomeClient(context.Context, *ClientWelcomeRequest) (*ClientWelcomeResponse, error)
+	WelcomeClient(context.Context, *ClientWelcomeRequest) (*ServerWelcomeResponse, error)
+	// Wird verwendet um von einem Client aus eine neue VM zu Registrieren
+	AddVMInstanceByProcess(context.Context, *VMClientRegisterRequest) (*VMClientRegisterResponse, error)
 	// Ruft eine Liste, aller Verfügabren VM's ab
 	ListVMs(context.Context, *emptypb.Empty) (*VmListResponse, error)
 	// Ruft alle Details einer VM ab
 	GetVMDetails(context.Context, *VmDetailsParms) (*VmDetailsResponse, error)
+	// Wird verwendet um den Prozess vom Core aus zu Kontrollieren
+	CoreToProcessControl(grpc.BidiStreamingServer[ProcessControlPackage, ProcessControlPackage]) error
 	mustEmbedUnimplementedLocalhostAPIServiceServer()
 }
 
@@ -95,14 +128,20 @@ type LocalhostAPIServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedLocalhostAPIServiceServer struct{}
 
-func (UnimplementedLocalhostAPIServiceServer) WelcomeClient(context.Context, *ClientWelcomeRequest) (*ClientWelcomeResponse, error) {
+func (UnimplementedLocalhostAPIServiceServer) WelcomeClient(context.Context, *ClientWelcomeRequest) (*ServerWelcomeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WelcomeClient not implemented")
+}
+func (UnimplementedLocalhostAPIServiceServer) AddVMInstanceByProcess(context.Context, *VMClientRegisterRequest) (*VMClientRegisterResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddVMInstanceByProcess not implemented")
 }
 func (UnimplementedLocalhostAPIServiceServer) ListVMs(context.Context, *emptypb.Empty) (*VmListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListVMs not implemented")
 }
 func (UnimplementedLocalhostAPIServiceServer) GetVMDetails(context.Context, *VmDetailsParms) (*VmDetailsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVMDetails not implemented")
+}
+func (UnimplementedLocalhostAPIServiceServer) CoreToProcessControl(grpc.BidiStreamingServer[ProcessControlPackage, ProcessControlPackage]) error {
+	return status.Errorf(codes.Unimplemented, "method CoreToProcessControl not implemented")
 }
 func (UnimplementedLocalhostAPIServiceServer) mustEmbedUnimplementedLocalhostAPIServiceServer() {}
 func (UnimplementedLocalhostAPIServiceServer) testEmbeddedByValue()                             {}
@@ -143,6 +182,24 @@ func _LocalhostAPIService_WelcomeClient_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LocalhostAPIService_AddVMInstanceByProcess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VMClientRegisterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalhostAPIServiceServer).AddVMInstanceByProcess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalhostAPIService_AddVMInstanceByProcess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalhostAPIServiceServer).AddVMInstanceByProcess(ctx, req.(*VMClientRegisterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _LocalhostAPIService_ListVMs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
@@ -179,6 +236,13 @@ func _LocalhostAPIService_GetVMDetails_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LocalhostAPIService_CoreToProcessControl_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(LocalhostAPIServiceServer).CoreToProcessControl(&grpc.GenericServerStream[ProcessControlPackage, ProcessControlPackage]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type LocalhostAPIService_CoreToProcessControlServer = grpc.BidiStreamingServer[ProcessControlPackage, ProcessControlPackage]
+
 // LocalhostAPIService_ServiceDesc is the grpc.ServiceDesc for LocalhostAPIService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -191,6 +255,10 @@ var LocalhostAPIService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _LocalhostAPIService_WelcomeClient_Handler,
 		},
 		{
+			MethodName: "AddVMInstanceByProcess",
+			Handler:    _LocalhostAPIService_AddVMInstanceByProcess_Handler,
+		},
+		{
 			MethodName: "ListVMs",
 			Handler:    _LocalhostAPIService_ListVMs_Handler,
 		},
@@ -199,6 +267,13 @@ var LocalhostAPIService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _LocalhostAPIService_GetVMDetails_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "CoreToProcessControl",
+			Handler:       _LocalhostAPIService_CoreToProcessControl_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "local_rpc.proto",
 }

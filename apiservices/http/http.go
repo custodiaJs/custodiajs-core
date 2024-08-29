@@ -8,6 +8,7 @@ import (
 
 	"github.com/CustodiaJS/custodiajs-core/apiservices/http/middleware"
 	"github.com/CustodiaJS/custodiajs-core/apiservices/http/middlewares"
+	"github.com/CustodiaJS/custodiajs-core/procslog"
 	"github.com/CustodiaJS/custodiajs-core/static"
 	"github.com/CustodiaJS/custodiajs-core/types"
 )
@@ -34,6 +35,7 @@ func New(localIp string, localPort uint32, localCert *tls.Certificate, middlewar
 
 	// Das httpapiObjekt wird zurückgegeben
 	webs := &HttpApiService{
+		plog:               procslog.NewProcLogForHttpAPIService(),
 		core:               nil,
 		cert:               x509Cert,
 		serverMux:          serverMux,
@@ -51,7 +53,7 @@ func New(localIp string, localPort uint32, localCert *tls.Certificate, middlewar
 	webs.serverObj.Handler = webs.newSessionHandler(globalMiddleware)
 
 	// Log
-	fmt.Printf("New http created on: %s\n", addr)
+	webs.plog.Log("Created on: %s", addr)
 
 	// Die Daten werden zurückgegeben
 	return webs, nil
@@ -115,14 +117,16 @@ func NewLocalService(family string, localport uint32, localCert *tls.Certificate
 }
 
 // Verknüft den Core mit dem API Service
-func (o *HttpApiService) SetupCore(coreObj types.CoreInterface) error {
+func (o *HttpApiService) LinkCore(coreObj types.CoreInterface) error {
 	// Es wird geprüft ob der Core festgelegt wurde
 	if o.core != nil {
-		return fmt.Errorf("SetupCore: always linked with core")
+		return fmt.Errorf("LinkCore: always linked with core")
 	}
 
 	// Das Objekt wird zwischengespeichert
 	o.core = coreObj
+
+	o.plog.Debug("Core linked")
 
 	// Der Vorgang ist ohne fehler durchgeführt wurden
 	return nil
@@ -140,9 +144,11 @@ func (o *HttpApiService) Serve(closeSignal chan struct{}) error {
 	o.serverMux.Handle("/rpc", middleware.RequestMiddleware(o.httpRPC, RpcMiddlewares, o.core))
 
 	// Der Webserver wird gestartet
+	o.plog.Debug("Serving...")
 	if err := o.serverObj.ListenAndServeTLS("", ""); err != nil {
 		return fmt.Errorf("HttpApiService->Serve: " + err.Error())
 	}
+	o.plog.Debug("Serving stoped")
 
 	// Der Vorgagn wurde ohne Fehler durchgeführt
 	return nil

@@ -32,27 +32,39 @@ type CoreInterface interface {
 	GetScriptContainerVMByID(vmid string) (VmInterface, bool, *SpecificError)
 	GetScriptContainerByVMName(string) (VmInterface, bool, *SpecificError)
 	GetCoreSessionManagmentUnit() ContextManagmentUnitInterface
+	AddVMInstance(vmInstance VmInterface) error
 }
 
 type VmInterface interface {
-	GetVMName() string
-	IsAllowedXRequested(xrd *XRequestedWithData) bool
-	GetFingerprint() CoreVMFingerprint
+	// Gibt das Manifest zurück
+	GetManifest() *Manifest
+	// Gibt den Scripthash zurück
+	GetScriptHash() VmScriptHash
+	// Gibt den Consolen Output Watcher zurück
 	GetConsoleOutputWatcher() WatcherInterface
+	// Gibt alle Geteilten RPC Funktionen zurück
 	GetAllSharedFunctions() []SharedFunctionInterface
+	// Hält die Vm am leben
 	Serve(*sync.WaitGroup) error
+	// Gibt eine Geteilte Funktion anhand ihrer Signatur zurück
 	GetSharedFunctionBySignature(RPCCallSource, *FunctionSignature) (SharedFunctionInterface, bool, *SpecificError)
+	// Gibt den Timestamp zurück der angebit wann die VM gestartet wurde
 	GetStartingTimestamp() uint64
+	// Gibt die KernelID zurück
 	GetKId() KernelID
+	// Signalisiert dass die VM beendet werden soll
 	SignalShutdown()
+	// Gibt den Aktuellen Status der VM zurück
 	GetState() VmState
-	GetOwner() string
-	GetRepoURL() string
+	// Gibt die ProzessID zurück
+	GetVmProcessId() VmProcessId
+	// Gibt die Qualified Full VM ID (QVMID) zurück
+	GetQVMID() QVMID
 }
 
 type APISocketInterface interface {
 	Serve(chan struct{}) error
-	SetupCore(CoreInterface) error
+	LinkCore(CoreInterface) error
 }
 
 type SharedFunctionInterface interface {
@@ -177,7 +189,7 @@ type CoreHttpContextInterface interface {
 }
 
 type ContextManagmentUnitInterface interface {
-	NewHTTPBasesSession(r *http.Request) (CoreHttpContextInterface, *SpecificError)
+	NewHTTPBasesSession(r *http.Request, proclogMother ProcessLogSessionInterface) (CoreHttpContextInterface, *SpecificError)
 }
 
 type CustodiaJSNetworkHypervisorInterface interface {

@@ -9,11 +9,63 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/core/ipnetwork"
 
 	"github.com/CustodiaJS/custodiajs-core/crypto"
+	"github.com/CustodiaJS/custodiajs-core/procslog"
 	"github.com/CustodiaJS/custodiajs-core/static"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
-	"github.com/CustodiaJS/custodiajs-core/utils/procslog"
 )
+
+// Fügt eine neue API hinzu
+func (o *Core) AddVMInstance(vmInstance types.VmInterface) error {
+	// Es wird geprüft das kein Nill Wert übergeben wurde
+	if vmInstance == nil {
+		return fmt.Errorf("Core->AddVMInstance: null vm instance not allowed")
+	}
+
+	// Der Mutex wird angewendet
+	o.objectMutex.Lock()
+
+	// Es wird geprüft ob bereits eiein VM Link hinzugefügtne VM mit der Selben ID vorhanden ist
+	if _, foundVM := o.vmsByID[string(vmInstance.GetQVMID())]; foundVM {
+		o.objectMutex.Unlock()
+		return fmt.Errorf("Core->AddNewVMInstance: You cannot add a VM container '%s' multiple times", vmInstance.GetQVMID())
+	}
+
+	// Der Mutex wird freigegeben
+	o.objectMutex.Unlock()
+
+	// Der Mutex wird angewendet
+	o.objectMutex.Lock()
+
+	// Das VMObjekt wird zwischengespeichert
+	o.vmsByID[string(vmInstance.GetQVMID())] = vmInstance                    // Merklehash
+	o.vmsByName[strings.ToLower(vmInstance.GetManifest().Name)] = vmInstance // VM-Name
+	o.vmKernelPtr[vmInstance.GetKId()] = vmInstance                          // Speichert die VM ab, diese wird verwendet um die VM durch den Kernel der VM auffindbar zu machen
+	o.vms = append(o.vms, vmInstance)                                        // Die VM wird abgespeichert
+
+	// Der Mutex wird freigegeben
+	o.objectMutex.Unlock()
+
+	o.coreLog.Log("New VM Instance added, name = '%s', shash = '%s'", vmInstance.GetManifest().Name, vmInstance.GetScriptHash())
+
+	/* Die VM wird mit allen Datenbankdiensten Verknüpft
+	for _, item := range vmDbEntry.GetAllDatabaseServices() {
+		// Es wird ein neuer Link für die VM erzeugt
+		link, err := o.databaseService.GetDBServiceLink(item.GetDatabaseFingerprint())
+		if err != nil {
+			return nil, fmt.Errorf("Core->AddNewVMInstance: " + err.Error())
+		}
+
+		// Der Link für den Datenbank Dienst wird abgespeichert
+		if err := vmInstance.AddDatabaseServiceLink(link); err != nil {
+			return nil, fmt.Errorf("Core->AddNewVMInstance: " + err.Error())
+		}
+	}
+	*/
+
+	// Das VM Objekt wird zwischengespeichert
+	return nil
+}
 
 // Fügt einen API Socket hinzu
 func (o *Core) AddAPISocket(apiSocket types.APISocketInterface) error {
@@ -23,7 +75,7 @@ func (o *Core) AddAPISocket(apiSocket types.APISocketInterface) error {
 	}
 
 	// Der Core wird in dem  Registriert
-	err := apiSocket.SetupCore(o)
+	err := apiSocket.LinkCore(o)
 	if err != nil {
 		return fmt.Errorf("AddAPISocket: ")
 	}
@@ -35,6 +87,7 @@ func (o *Core) AddAPISocket(apiSocket types.APISocketInterface) error {
 
 	// Der API Socket wird zwischengespeichert
 	o.apiSockets = append(o.apiSockets, apiSocket)
+	o.coreLog.Debug("New API Socket added")
 
 	// Es ist kein Fehler aufgetreten
 	return nil
@@ -111,7 +164,7 @@ func (o *Core) GetAllActiveScriptContainerIDs(processLog types.ProcessLogSession
 	// Es wird eine Liste mit allen Verfügbaren VM's erstellt
 	extr := make([]string, 0)
 	for _, item := range o.vmsByID {
-		extr = append(extr, string(item.GetFingerprint()))
+		extr = append(extr, string(item.GetQVMID()))
 	}
 
 	// DEBUG
@@ -162,14 +215,11 @@ func NewCore(localHostCryptoStore *crypto.CryptoStore, logDIRPath types.LOG_DIR,
 		//hostTlsCert:     hostTlsCert,
 		cryptoStore: localHostCryptoStore,
 		state:       static.NEW,
-		//extModules:      make(map[string]*external_modules.ExternalModule),
 		// Chans
 		holdOpenChan:     make(chan struct{}),
 		serviceSignaling: make(chan struct{}),
 		vmSyncWaitGroup:  sync.WaitGroup{},
 		apiSyncWaitGroup: sync.WaitGroup{},
-		// Datenbanken
-		//hostIdentKeyDatabase: hostIdenKeyDatabase,
 		// Mutexes
 		objectMutex: &sync.Mutex{},
 		// Log
@@ -180,6 +230,8 @@ func NewCore(localHostCryptoStore *crypto.CryptoStore, logDIRPath types.LOG_DIR,
 
 	// Der Core sowie der Context Manager werden miteinander gepaart
 	context.PairCoreToContextManager(coreObj.cpmu, coreObj)
+
+	coreObj.coreLog.Debug("Created")
 
 	// Das Objekt wird zurückgegeben
 	return coreObj, nil

@@ -1,4 +1,4 @@
-package vmimage
+package types
 
 type Manifest struct {
 	Name         string      `json:"name"`
@@ -10,7 +10,7 @@ type Manifest struct {
 	HostCAMember []CAMember  `json:"hostcamember"`
 	Databases    []Database  `json:"databases"`
 	Services     Services    `json:"services"`
-	filehash     string      `json:"-"`
+	Filehash     string      `json:"-"`
 }
 
 type Services struct {

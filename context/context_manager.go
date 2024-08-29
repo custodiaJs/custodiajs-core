@@ -4,15 +4,16 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/CustodiaJS/custodiajs-core/procslog"
 	"github.com/CustodiaJS/custodiajs-core/saftychan"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils/grsbool"
-	"github.com/CustodiaJS/custodiajs-core/utils/procslog"
 )
 
-func (o *ContextManagmentUnit) NewHTTPBasesSession(r *http.Request) (types.CoreHttpContextInterface, *types.SpecificError) {
+func (o *ContextManagmentUnit) NewHTTPBasesSession(r *http.Request, proclogMother types.ProcessLogSessionInterface) (types.CoreHttpContextInterface, *types.SpecificError) {
 	// Die Basis Variabeln werden erzeugt
-	proc, isConnected, saftyResponseChan := procslog.NewProcLogSessionWithHeader("HttpContext"), grsbool.NewGrsbool(true), saftychan.NewFunctionCallReturnChan()
+	proc := procslog.NewChainMergedProcLog(proclogMother, procslog.NewProcLogSessionWithHeader("HttpContext"))
+	isConnected, saftyResponseChan := grsbool.NewGrsbool(true), saftychan.NewFunctionCallReturnChan()
 
 	// Die RemoteIP wird eingelesen
 	remoteIp := net.ParseIP(r.RemoteAddr)

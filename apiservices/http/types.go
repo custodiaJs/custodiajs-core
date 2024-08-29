@@ -6,11 +6,13 @@ import (
 	"net/http"
 
 	"github.com/CustodiaJS/custodiajs-core/apiservices/http/middleware"
+	"github.com/CustodiaJS/custodiajs-core/procslog"
 	"github.com/CustodiaJS/custodiajs-core/types"
 )
 
 type HttpApiService struct {
 	middlewareHandlers []middleware.MiddlewareFunction
+	plog               *procslog.ProcLogSession
 	core               types.CoreInterface
 	cert               *x509.Certificate
 	localAddress       *LocalAddress
