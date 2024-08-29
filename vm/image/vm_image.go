@@ -1,4 +1,4 @@
-package vmimage
+package image
 
 import (
 	"archive/zip"

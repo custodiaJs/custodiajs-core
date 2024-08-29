@@ -125,7 +125,7 @@ func (o *Kernel) GetCore() types.CoreInterface {
 	return o.core
 }
 
-func (o *Kernel) LinkKernelWithCoreVM(vmInstance types.VmInterface) error {
+func (o *Kernel) LinkKernelWithVmInstance(vmInstance types.VmInterface) error {
 	// Der Mutex wird verwendet
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
@@ -142,7 +142,7 @@ func (o *Kernel) LinkKernelWithCoreVM(vmInstance types.VmInterface) error {
 	return nil
 }
 
-func (o *Kernel) AsCoreVM() types.VmInterface {
+func (o *Kernel) AsVmInstance() types.VmInterface {
 	return o.vmLink
 }
 

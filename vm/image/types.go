@@ -1,4 +1,4 @@
-package vmimage
+package image
 
 import "github.com/CustodiaJS/custodiajs-core/types"
 

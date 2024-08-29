@@ -30,7 +30,7 @@ type RPCModule int
 // Versucht eine Lokale RPC Funktion abzurufen
 func __determineRPCFunction(kernel types.KernelInterface, funcsig *types.FunctionSignature) (types.SharedFunctionInterface, bool, error) {
 	// Sollte keine VM ID / VM Name angegeben sein, oder die ID bzw der Name stimmen mit der Aktuellen VM überein, wird die Funktion in der Aktuellen VM gesucht
-	if (funcsig.VMID == "" && funcsig.VMName == "") || funcsig.VMID == string(kernel.GetFingerprint()) || funcsig.VMName == kernel.AsCoreVM().GetManifest().Name {
+	if (funcsig.VMID == "" && funcsig.VMName == "") || funcsig.VMID == string(kernel.GetFingerprint()) || funcsig.VMName == kernel.AsVmInstance().GetManifest().Name {
 		// Es wird versucht die Lokale Kernel Tabelle abzurufen
 		table, isok := kernel.GloablRegisterRead("rpc").(map[string]types.SharedFunctionInterface)
 		if !isok {
@@ -53,9 +53,9 @@ func __determineRPCFunction(kernel types.KernelInterface, funcsig *types.Functio
 	var terr error
 	switch {
 	case funcsig.VMName == "" && funcsig.VMID != "":
-		vmiface, vmFound, terr = kernel.GetCore().GetScriptContainerVMByID(string(funcsig.VMID))
+		vmiface, vmFound, terr = kernel.GetCore().GetScriptContainerVMByID(string(funcsig.VMID), nil)
 	case funcsig.VMName != "" && funcsig.VMID == "":
-		vmiface, _, terr = kernel.GetCore().GetScriptContainerByVMName(funcsig.VMName)
+		vmiface, _, terr = kernel.GetCore().GetScriptContainerByVMName(funcsig.VMName, nil)
 	default:
 		terr = fmt.Errorf("crazy internal error")
 	}

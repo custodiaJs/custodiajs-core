@@ -59,7 +59,7 @@ func main() {
 
 	// Die API Socket Instanzen werden dem Core hinzugefügt
 	for _, coreApiInstance := range cliSockets {
-		if err := coreInstance.AddAPISocket(coreApiInstance); err != nil {
+		if err := coreInstance.AddAPISocket(coreApiInstance, nil); err != nil {
 			panic(err)
 		}
 	}

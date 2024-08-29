@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/CustodiaJS/custodiajs-core/context"
+	"github.com/CustodiaJS/custodiajs-core/apiservices/http/context"
 	"github.com/CustodiaJS/custodiajs-core/static"
 	"github.com/CustodiaJS/custodiajs-core/static/errormsgs"
 	"github.com/CustodiaJS/custodiajs-core/types"
@@ -69,7 +69,7 @@ func ValidateRPCRequest(core types.CoreInterface, w http.ResponseWriter, r *http
 	functionSignature := coreSession.GetSearchedFunctionSignature()
 
 	// Es wird versucht die VM zu finden
-	vmInstance, foundVM, vmSearchError := core.GetScriptContainerVMByID(functionSignature.VMID)
+	vmInstance, foundVM, vmSearchError := core.GetScriptContainerVMByID(functionSignature.VMID, nil)
 	if vmSearchError != nil {
 		return vmSearchError.AddCallerFunctionToHistory("ValidateRPCRequest")
 	}

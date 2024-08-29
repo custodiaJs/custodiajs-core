@@ -3,7 +3,7 @@ package core
 import (
 	"sync"
 
-	"github.com/CustodiaJS/custodiajs-core/context"
+	"github.com/CustodiaJS/custodiajs-core/apiservices/http/context"
 	"github.com/CustodiaJS/custodiajs-core/core/ipnetwork"
 	"github.com/CustodiaJS/custodiajs-core/crypto"
 	"github.com/CustodiaJS/custodiajs-core/types"

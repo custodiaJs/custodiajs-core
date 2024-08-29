@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/CustodiaJS/custodiajs-core/context"
+	"github.com/CustodiaJS/custodiajs-core/apiservices/http/context"
 	"github.com/CustodiaJS/custodiajs-core/static"
 	"github.com/CustodiaJS/custodiajs-core/static/errormsgs"
 	"github.com/CustodiaJS/custodiajs-core/types"

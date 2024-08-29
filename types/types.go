@@ -165,13 +165,13 @@ type HostKeyCert struct {
 	Alias     string
 }
 
-type CoreVMProcessParameters struct {
+type VmInstanceProcessParameters struct {
 	VMImageFilePath   string
 	VMWorkingDir      string
 	HostKeyCerts      []HostKeyCert
 	DisableCoreCrypto bool
 }
 
-type CoreVmInstanceConfig struct {
-	VmProcessParameters *CoreVMProcessParameters
+type VmInstanceInstanceConfig struct {
+	VmProcessParameters *VmInstanceProcessParameters
 }

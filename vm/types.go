@@ -3,18 +3,18 @@ package vm
 import (
 	"sync"
 
-	"github.com/CustodiaJS/custodiajs-core/kernel"
 	"github.com/CustodiaJS/custodiajs-core/types"
-	"github.com/CustodiaJS/custodiajs-core/vmimage"
+	"github.com/CustodiaJS/custodiajs-core/vm/image"
+	"github.com/CustodiaJS/custodiajs-core/vm/kernel"
 )
 
-type CoreVM struct {
+type VmInstance struct {
 	*kernel.Kernel
 	core          types.CoreInterface
 	scriptLoaded  bool
 	startTimeUnix uint64
 	objectMutex   *sync.Mutex
 	vmState       types.VmState
-	vmImage       *vmimage.VmImage
+	vmImage       *image.VmImage
 	_signal_CLOSE bool
 }

@@ -14,13 +14,14 @@ api/vm/client/*.js
 # Ignore TypeScript build output directory
 dist/
 build/
-vmprocess/grpc_streams.go
-vmprocess/types.go
-vmprocess/vmprocess.go
+#vmprocess/grpc_streams.go
+#vmprocess/types.go
+#vmprocess/vmprocess.go
 .gitignore
-apiservices/localgrpc/api_context.go
-apiservices/localgrpc/grpc_functions.go
-apiservices/localgrpc/grpc_streams.go
-apiservices/localgrpc/vm_process.go
-apiservices/localgrpc/types.go
-protobuff/local_rpc.proto
+#apiservices/localgrpc/api_context.go
+#apiservices/localgrpc/grpc_functions.go
+#apiservices/localgrpc/grpc_streams.go
+#apiservices/localgrpc/vm_process.go
+#apiservices/localgrpc/types.go
+#protobuff/local_rpc.proto
+log.console.txt

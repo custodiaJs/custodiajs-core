@@ -1,15 +1,10 @@
 package procslog
 
 type ProcLogSession struct {
+	mergedContainer  bool
+	merged           []*ProcLogSession
 	id               string
 	header           string
 	sessionColorFunc func(a ...interface{}) string
-}
-
-type ProcLogChildSession struct {
-	header string
-	mother *ProcLogSession
-}
-
-type gloablProcLog struct {
+	printFunction    func(text string)
 }

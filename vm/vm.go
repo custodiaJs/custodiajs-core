@@ -6,43 +6,43 @@ import (
 	"time"
 
 	"github.com/CustodiaJS/custodiajs-core/core/consolecache"
-	"github.com/CustodiaJS/custodiajs-core/kernel"
 	"github.com/CustodiaJS/custodiajs-core/static"
 	"github.com/CustodiaJS/custodiajs-core/static/errormsgs"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
-	"github.com/CustodiaJS/custodiajs-core/vmimage"
+	"github.com/CustodiaJS/custodiajs-core/vm/image"
+	"github.com/CustodiaJS/custodiajs-core/vm/kernel"
 )
 
-func (o *CoreVM) GetManifest() *types.Manifest {
+func (o *VmInstance) GetManifest() *types.Manifest {
 	return o.vmImage.GetManifest()
 }
 
-func (o *CoreVM) GetScriptHash() types.VmScriptHash {
+func (o *VmInstance) GetScriptHash() types.VmScriptHash {
 	return types.VmScriptHash(o.vmImage.GetMain().GetHash())
 }
 
-func (o *CoreVM) GetVmProcessId() types.VmProcessId {
+func (o *VmInstance) GetVmProcessId() types.VmProcessId {
 	return ""
 }
 
-func (o *CoreVM) GetQVMID() types.QVMID {
+func (o *VmInstance) GetQVMID() types.QVMID {
 	return ""
 }
 
-func (o *CoreVM) GetVMName() string {
+func (o *VmInstance) GetVMName() string {
 	return o.vmImage.GetManifest().Name
 }
 
-func (o *CoreVM) GetOwner() string {
+func (o *VmInstance) GetOwner() string {
 	return o.vmImage.GetManifest().Owner
 }
 
-func (o *CoreVM) GetRepoURL() string {
+func (o *VmInstance) GetRepoURL() string {
 	return o.vmImage.GetManifest().RepoURL
 }
 
-func (o *CoreVM) _routine(scriptContent []byte) {
+func (o *VmInstance) _routine(scriptContent []byte) {
 	// Log
 	o.Kernel.LogPrint("", "VM is running")
 
@@ -105,7 +105,7 @@ func (o *CoreVM) _routine(scriptContent []byte) {
 	o.LogPrint("", "Eventloop stoped")
 }
 
-func (o *CoreVM) Serve(syncWaitGroup *sync.WaitGroup) error {
+func (o *VmInstance) Serve(syncWaitGroup *sync.WaitGroup) error {
 	// Es wird geprüft ob der Server bereits gestartet wurde
 	if o.GetState() != static.StillWait && o.GetState() != static.Closed {
 		return fmt.Errorf("serveGorutine: vm always running")
@@ -135,19 +135,19 @@ func (o *CoreVM) Serve(syncWaitGroup *sync.WaitGroup) error {
 	return nil
 }
 
-func (o *CoreVM) GetState() types.VmState {
+func (o *VmInstance) GetState() types.VmState {
 	return o.vmState
 }
 
-func (o *CoreVM) GetConsoleOutputWatcher() types.WatcherInterface {
+func (o *VmInstance) GetConsoleOutputWatcher() types.WatcherInterface {
 	return o.Kernel.Console().GetOutputStream()
 }
 
-func (o *CoreVM) GetStartingTimestamp() uint64 {
+func (o *VmInstance) GetStartingTimestamp() uint64 {
 	return o.startTimeUnix
 }
 
-func (o *CoreVM) runScript(script string) error {
+func (o *VmInstance) runScript(script string) error {
 	// Es wird geprüft ob das Script beretis geladen wurden
 	if o.scriptLoaded {
 		return fmt.Errorf("LoadScript: always script loaded")
@@ -166,7 +166,7 @@ func (o *CoreVM) runScript(script string) error {
 	return nil
 }
 
-func (o *CoreVM) GetAllSharedFunctions() []types.SharedFunctionInterface {
+func (o *VmInstance) GetAllSharedFunctions() []types.SharedFunctionInterface {
 	extracted := make([]types.SharedFunctionInterface, 0)
 	table := o.GloablRegisterRead("rpc")
 	if table == nil {
@@ -185,7 +185,7 @@ func (o *CoreVM) GetAllSharedFunctions() []types.SharedFunctionInterface {
 	return extracted
 }
 
-func (o *CoreVM) GetSharedFunctionBySignature(sourceType types.RPCCallSource, funcSignature *types.FunctionSignature) (types.SharedFunctionInterface, bool, *types.SpecificError) {
+func (o *VmInstance) GetSharedFunctionBySignature(sourceType types.RPCCallSource, funcSignature *types.FunctionSignature) (types.SharedFunctionInterface, bool, *types.SpecificError) {
 	// Es wird versucht die RPC Tabelle zu lesen
 	var table interface{}
 	if sourceType == static.LOCAL {
@@ -215,14 +215,14 @@ func (o *CoreVM) GetSharedFunctionBySignature(sourceType types.RPCCallSource, fu
 	return result, true, nil
 }
 
-func (o *CoreVM) hasCloseSignal() bool {
+func (o *VmInstance) hasCloseSignal() bool {
 	o.objectMutex.Lock()
 	v := bool(o._signal_CLOSE)
 	o.objectMutex.Unlock()
 	return v
 }
 
-func (o *CoreVM) SignalShutdown() {
+func (o *VmInstance) SignalShutdown() {
 	// Der Mutex wird angewendet
 	o.objectMutex.Lock()
 
@@ -245,19 +245,19 @@ func (o *CoreVM) SignalShutdown() {
 	o.Kernel.Close()
 }
 
-func (o *CoreVM) eventloopForRunner() bool {
+func (o *VmInstance) eventloopForRunner() bool {
 	return !o.hasCloseSignal() && !o.Kernel.IsClosed()
 }
 
-func (o *CoreVM) IsAllowedXRequested(xrd *types.XRequestedWithData) bool {
+func (o *VmInstance) IsAllowedXRequested(xrd *types.XRequestedWithData) bool {
 	return false
 }
 
-func NewCoreVM(core types.CoreInterface, workingDir string, vmImage *vmimage.VmImage, loggingPath types.LOG_DIR) (*CoreVM, error) {
+func NewVmInstance(core types.CoreInterface, workingDir string, vmImage *image.VmImage, loggingPath types.LOG_DIR) (*VmInstance, error) {
 	// Es wird ein neuer Konsolen Stream erzeugt
 	consoleStream, err := consolecache.NewConsoleOutputCache(string(loggingPath))
 	if err != nil {
-		return nil, fmt.Errorf("CoreVM->newCoreVM: " + err.Error())
+		return nil, fmt.Errorf("VmInstance->newVmInstance: " + err.Error())
 	}
 
 	// Die Kernel Configurationen werden bereigestellt
@@ -266,11 +266,11 @@ func NewCoreVM(core types.CoreInterface, workingDir string, vmImage *vmimage.VmI
 	// Es wird ein neuer Kernel erzeugt
 	vmKernel, err := kernel.NewKernel(consoleStream, kernelConfig, core)
 	if err != nil {
-		return nil, fmt.Errorf("newCoreVM: " + err.Error())
+		return nil, fmt.Errorf("newVmInstance: " + err.Error())
 	}
 
 	// Das Core Objekt wird erstellt
-	coreObject := &CoreVM{
+	coreObject := &VmInstance{
 		Kernel:        vmKernel,
 		core:          core,
 		vmImage:       vmImage,
@@ -280,13 +280,13 @@ func NewCoreVM(core types.CoreInterface, workingDir string, vmImage *vmimage.VmI
 	}
 
 	// Es wird versucht die VM mit dem Kernel zu verlinken
-	if err := vmKernel.LinkKernelWithCoreVM(coreObject); err != nil {
-		return nil, fmt.Errorf("newCoreVM: " + err.Error())
+	if err := vmKernel.LinkKernelWithVmInstance(coreObject); err != nil {
+		return nil, fmt.Errorf("newVmInstance: " + err.Error())
 	}
 
 	// Die VM wird dem Core hinzugefügt
-	if err := core.AddVMInstance(coreObject); err != nil {
-		return nil, fmt.Errorf("CoreVM->newCoreVM: " + err.Error())
+	if err := core.AddVMInstance(coreObject, nil); err != nil {
+		return nil, fmt.Errorf("VmInstance->newVmInstance: " + err.Error())
 	}
 
 	// Das Objekt wird zurückgegeben

@@ -66,7 +66,7 @@ func TryToLoad(hostCryptoStoreDirPath types.HOST_CRYPTOSTORE_WATCH_DIR_PATH) (*C
 	return &CryptoStore{localhostIdentPairs: hostCertsAndPrivKeys, localhostTLSCert: localhostTLSCert}, nil
 }
 
-func NewCoreVmCryptoStore() *VmCryptoStore {
+func NewVmInstanceCryptoStore() *VmCryptoStore {
 	return &VmCryptoStore{CryptoStore: &CryptoStore{localhostIdentPairs: make([]*HostCertAndOrPrivateKey, 0), localhostTLSCert: nil}}
 }
 

@@ -25,8 +25,33 @@ func (o *ProcLogSession) LogPrint(header, format string, value ...interface{}) {
 		foldedHeader = color.New(color.Bold).SprintFunc()(o.header)
 	}
 
+	// Es wird geprüft ob Merged Procs vorhanden sind
+	var finalValue string
+	if len(o.merged) > 0 {
+		// Speichert die Extrahierten Elemente ab
+		elements := []string{}
+
+		// Die Einzelnen Merged Elememente werden extrahiert
+		for _, item := range o.merged {
+			elements = append(elements, fmt.Sprintf("[%s] %s", item.sessionColorFunc(strings.ToUpper(item.id)), item.header))
+		}
+
+		// Der Neu Formatierte Text wird erstellt
+		newFormated := strings.Join(elements, " > ")
+
+		// Der Neue Finale Wert wird erzeugt
+		finalValue = fmt.Sprintf("%s%s%s %s", newFormated, foldedHeader, foldEnd, userinput)
+	} else {
+		// Der Neue Finale Wert wird erzeugt
+		finalValue = fmt.Sprintf("[%s] %s%s %s", o.sessionColorFunc(strings.ToUpper(o.id)), foldedHeader, foldEnd, userinput)
+	}
+
 	// Der Text wird angezeigt
-	logPrint(fmt.Sprintf("[%s] %s%s %s", o.sessionColorFunc(strings.ToUpper(o.id)), foldedHeader, foldEnd, userinput))
+	if o.printFunction != nil {
+		o.printFunction(finalValue)
+	} else {
+		logPrint(finalValue)
+	}
 }
 
 func (o *ProcLogSession) Log(format string, value ...interface{}) {
@@ -46,7 +71,9 @@ func (o *ProcLogSession) LogPrintError(format string, value ...interface{}) {
 }
 
 func (o *ProcLogSession) GetChildLog(header string) types.ProcessLogSessionInterface {
-	return &ProcLogChildSession{mother: o, header: header}
+	newProcLog := NewProcLogSessionWithHeader(header)
+	merged := NewChainMergedProcLog(o, newProcLog)
+	return merged
 }
 
 func (o *ProcLogSession) GetID() string {

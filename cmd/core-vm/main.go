@@ -9,8 +9,8 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/crypto"
 	"github.com/CustodiaJS/custodiajs-core/filesystem"
 	"github.com/CustodiaJS/custodiajs-core/vm"
-	"github.com/CustodiaJS/custodiajs-core/vmimage"
-	"github.com/CustodiaJS/custodiajs-core/vmprocess"
+	"github.com/CustodiaJS/custodiajs-core/vm/image"
+	"github.com/CustodiaJS/custodiajs-core/vm/process"
 )
 
 func main() {
@@ -55,24 +55,24 @@ func main() {
 	}
 
 	// Es wird versucht das Image zu laden
-	vmImageInstance, vmImageLoadingErr := vmimage.TryToLoadVmImage(config.VmProcessParameters.VMImageFilePath)
+	vmImageInstance, vmImageLoadingErr := image.TryToLoadVmImage(config.VmProcessParameters.VMImageFilePath)
 	if vmImageLoadingErr != nil {
 		fmt.Println(vmImageLoadingErr)
 		os.Exit(1)
 	}
 
 	// Es wird ein neuer Crypto Store erzeugt
-	cryptoStore := crypto.NewCoreVmCryptoStore()
+	cryptoStore := crypto.NewVmInstanceCryptoStore()
 
 	// Es wird versucht eine Verbindung mit dem Host Controller aufzubauen
-	coreVmProcessInstance, instanceError := vmprocess.NewCoreVmClientProcess(false, coreServiceSocketPath, cryptoStore, vmImageInstance.GetManifest())
+	VmInstanceProcessInstance, instanceError := process.NewVmInstanceClientProcess(false, coreServiceSocketPath, cryptoStore, vmImageInstance.GetManifest())
 	if instanceError != nil {
 		fmt.Println(instanceError)
 		os.Exit(1)
 	}
 
 	// Es wird eine neue VM erstellt
-	vmInstance, vmErr := vm.NewCoreVM(coreVmProcessInstance, config.VmProcessParameters.VMWorkingDir, vmImageInstance, "")
+	vmInstance, vmErr := vm.NewVmInstance(VmInstanceProcessInstance, config.VmProcessParameters.VMWorkingDir, vmImageInstance, "")
 	if vmErr != nil {
 		fmt.Println(vmErr)
 		os.Exit(1)

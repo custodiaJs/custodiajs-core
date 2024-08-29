@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/CustodiaJS/custodiajs-core/context"
+	"github.com/CustodiaJS/custodiajs-core/apiservices/http/context"
 	"github.com/CustodiaJS/custodiajs-core/procslog"
 	"github.com/CustodiaJS/custodiajs-core/static"
 	"github.com/CustodiaJS/custodiajs-core/static/errormsgs"
@@ -22,7 +22,7 @@ func (o *HttpApiService) httpIndex(w http.ResponseWriter, r *http.Request) {
 	coreSession, ok := r.Context().Value(static.CORE_SESSION_CONTEXT_KEY).(*context.HttpContext)
 	if !ok {
 		// Es muss ein neuer Process Log erzeugt werden um den Fehler auszugeben
-		tempLogProc := procslog.NewProcLogSession()
+		tempLogProc := procslog.NewProcLog()
 
 		// Der Fehler wird zurückgegeben
 		BuildErrorHttpRequestResponseAndWrite("", errormsgs.HTTP_API_CORE_CONTEXT_EXTRACTION_ERROR("httpIndex"), nil, tempLogProc, w)
@@ -32,7 +32,8 @@ func (o *HttpApiService) httpIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Es wird ein neuer ProcLog erzeugt
-	procLog := coreSession.GetChildProcessLog("ServerOverview")
+	coreSession.GetProcessLog().Debug("TEST GUER")
+	procLog := procslog.NewChainMergedProcLog(procslog.NewProcLogSessionWithHeader("Page[OVERVIEW]"), coreSession.GetProcessLog())
 	procLog.Log("New server overview request [%s]", "")
 
 	// Die Sitzung wird geschlossen
@@ -113,7 +114,7 @@ func (o *HttpApiService) httpVmInfo(w http.ResponseWriter, r *http.Request) {
 	coreSession, ok := r.Context().Value(static.CORE_SESSION_CONTEXT_KEY).(*context.HttpContext)
 	if !ok {
 		// Es muss ein neuer Process Log erzeugt werden um den Fehler auszugeben
-		tempLogProc := procslog.NewProcLogSession()
+		tempLogProc := procslog.NewProcLog()
 
 		// Der Fehler wird zurückgegeben
 		BuildErrorHttpRequestResponseAndWrite("", errormsgs.HTTP_API_CORE_CONTEXT_EXTRACTION_ERROR("httpIndex"), nil, tempLogProc, w)
@@ -150,7 +151,7 @@ func (o *HttpApiService) httpRPC(w http.ResponseWriter, r *http.Request) {
 	coreWebSession, ok := r.Context().Value(static.CORE_SESSION_CONTEXT_KEY).(*context.HttpContext)
 	if !ok {
 		// Es muss ein neuer Process Log erzeugt werden um den Fehler auszugeben
-		tempLogProc := procslog.NewProcLogSession()
+		tempLogProc := procslog.NewProcLog()
 
 		// Der Fehler wird zurückgegeben
 		BuildErrorRpcHttpRequestResponseAndWrite("", errormsgs.HTTP_API_CORE_CONTEXT_EXTRACTION_ERROR("httpRPC"), nil, static.HTTP_CONTENT_JSON, tempLogProc, w)
@@ -169,7 +170,7 @@ func (o *HttpApiService) httpRPC(w http.ResponseWriter, r *http.Request) {
 	functionSignature := coreWebSession.GetSearchedFunctionSignature()
 
 	// Es wird versucht die VM abzurufen
-	vmInstance, foundVM, vmSearchError := o.core.GetScriptContainerVMByID(functionSignature.VMID)
+	vmInstance, foundVM, vmSearchError := o.core.GetScriptContainerVMByID(functionSignature.VMID, nil)
 	if vmSearchError != nil {
 		// Der Fehler wird zurückgegeben
 		BuildErrorRpcHttpRequestResponseAndWrite("httpRPC", vmSearchError, coreWebSession, coreWebSession.GetContentType(), procLog, w)

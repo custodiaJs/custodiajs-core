@@ -16,9 +16,9 @@
 package kmodulerpc
 
 import (
-	"github.com/CustodiaJS/custodiajs-core/kernel/eventloop"
 	"github.com/CustodiaJS/custodiajs-core/types"
 	"github.com/CustodiaJS/custodiajs-core/utils"
+	"github.com/CustodiaJS/custodiajs-core/vm/kernel/eventloop"
 
 	v8 "rogchap.com/v8go"
 )
@@ -149,5 +149,5 @@ func (o *SharedFunction) EnterFunctionCall(req *types.RpcRequest) *types.Specifi
 }
 
 func (o *SharedFunction) GetScriptVM() types.VmInterface {
-	return o.kernel.AsCoreVM()
+	return o.kernel.AsVmInstance()
 }

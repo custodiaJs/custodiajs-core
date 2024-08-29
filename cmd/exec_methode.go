@@ -94,7 +94,7 @@ func NewCLIHostSockets(withRoot bool) ([]*localgrpc.HostAPIService, error) {
 // Wird verwendet um die Host API Services bereizustellen
 func SetupHostAPIServices(coreinst *core.Core) error {
 	// Der Lokale Crypto Store wird abgerufen
-	localhostAPICert := coreinst.GetLocalhostCryptoStore()
+	localhostAPICert := coreinst.GetLocalhostCryptoStore(nil)
 
 	// Der Localhost http wird erzeugt
 	localhostWebserviceV6, err := http.NewLocalService("ipv6", 8080, localhostAPICert.GetLocalhostAPICertificate())
@@ -107,10 +107,10 @@ func SetupHostAPIServices(coreinst *core.Core) error {
 	}
 
 	// Der Localhost http wird hinzugefügt
-	if err := coreinst.AddAPISocket(localhostWebserviceV6); err != nil {
+	if err := coreinst.AddAPISocket(localhostWebserviceV6, nil); err != nil {
 		panic(err)
 	}
-	if err := coreinst.AddAPISocket(localhostWebserviceV4); err != nil {
+	if err := coreinst.AddAPISocket(localhostWebserviceV4, nil); err != nil {
 		panic(err)
 	}
 
@@ -263,7 +263,7 @@ func PrintHostInformations() {
 }
 
 // Wird verwendet um die Parameter auszlesen (Core-VM)
-func ReadParametersCoreVM() (*types.CoreVMProcessParameters, error) {
+func ReadParametersVmInstance() (*types.VmInstanceProcessParameters, error) {
 	// Nutzungshinweis
 	usage := `Usage of ./build/core-vm:
 	--image string
@@ -336,8 +336,8 @@ func ReadParametersCoreVM() (*types.CoreVMProcessParameters, error) {
 		return nil, fmt.Errorf("required parameters are missing: Please make sure that --image and --workdir are set")
 	}
 
-	// Rückgabe der eingelesenen Parameter als CoreVMProcessParameters (angenommen, dass dieser Typ existiert)
-	params := &types.CoreVMProcessParameters{
+	// Rückgabe der eingelesenen Parameter als VmInstanceProcessParameters (angenommen, dass dieser Typ existiert)
+	params := &types.VmInstanceProcessParameters{
 		VMImageFilePath:   vmImageFilePath,
 		VMWorkingDir:      vmWorkingDir,
 		HostKeyCerts:      hostKeyCerts,
@@ -359,9 +359,9 @@ func IsRunningAsRoot() bool {
 }
 
 // Wird verwender um die Instanzeinstellungen abzurufen
-func LoadInstanceConfig() (*types.CoreVmInstanceConfig, types.SOCKET_PATH, error) {
+func LoadInstanceConfig() (*types.VmInstanceInstanceConfig, types.SOCKET_PATH, error) {
 	// Die Programmparameter werden ausgelesen
-	parms, err := ReadParametersCoreVM()
+	parms, err := ReadParametersVmInstance()
 	if err != nil {
 		return nil, "", fmt.Errorf("LoadInstanceConfig: " + err.Error())
 	}
@@ -370,5 +370,5 @@ func LoadInstanceConfig() (*types.CoreVmInstanceConfig, types.SOCKET_PATH, error
 	socketPath := GetSocketOrPipeNameOrAddress(IsRunningAsRoot())
 
 	// Das Objket wird zurückgegeben
-	return &types.CoreVmInstanceConfig{VmProcessParameters: parms}, socketPath, nil
+	return &types.VmInstanceInstanceConfig{VmProcessParameters: parms}, socketPath, nil
 }

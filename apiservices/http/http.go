@@ -35,7 +35,7 @@ func New(localIp string, localPort uint32, localCert *tls.Certificate, middlewar
 
 	// Das httpapiObjekt wird zurückgegeben
 	webs := &HttpApiService{
-		plog:               procslog.NewProcLogForHttpAPIService(),
+		plog:               procslog.NewProcLogForHttpAPISocket(),
 		core:               nil,
 		cert:               x509Cert,
 		serverMux:          serverMux,

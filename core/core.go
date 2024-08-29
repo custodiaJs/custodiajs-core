@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/CustodiaJS/custodiajs-core/context"
+	"github.com/CustodiaJS/custodiajs-core/apiservices/http/context"
 	"github.com/CustodiaJS/custodiajs-core/core/ipnetwork"
 
 	"github.com/CustodiaJS/custodiajs-core/crypto"
@@ -16,7 +16,7 @@ import (
 )
 
 // Fügt eine neue API hinzu
-func (o *Core) AddVMInstance(vmInstance types.VmInterface) error {
+func (o *Core) AddVMInstance(vmInstance types.VmInterface, plog_a types.ProcessLogSessionInterface) error {
 	// Es wird geprüft das kein Nill Wert übergeben wurde
 	if vmInstance == nil {
 		return fmt.Errorf("Core->AddVMInstance: null vm instance not allowed")
@@ -68,7 +68,7 @@ func (o *Core) AddVMInstance(vmInstance types.VmInterface) error {
 }
 
 // Fügt einen API Socket hinzu
-func (o *Core) AddAPISocket(apiSocket types.APISocketInterface) error {
+func (o *Core) AddAPISocket(apiSocket types.APISocketInterface, plog_a types.ProcessLogSessionInterface) error {
 	// Es wird geprüft das kein Null Wert übergeben wurde
 	if apiSocket == nil {
 		return fmt.Errorf("Core->AddAPISocket: null api socket not allowed")
@@ -94,7 +94,7 @@ func (o *Core) AddAPISocket(apiSocket types.APISocketInterface) error {
 }
 
 // Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
-func (o *Core) GetScriptContainerVMByID(vmid string) (types.VmInterface, bool, *types.SpecificError) {
+func (o *Core) GetScriptContainerVMByID(vmid string, plog_a types.ProcessLogSessionInterface) (types.VmInterface, bool, *types.SpecificError) {
 	// Es wird geprüft ob es sich um einen zulässigen vm Namen handelt
 	if !utils.ValidateVMIdString(vmid) {
 		return nil, false, nil //fmt.Errorf("Core->GetScriptContainerVMByID: invalid vm container id")
@@ -119,7 +119,7 @@ func (o *Core) GetScriptContainerVMByID(vmid string) (types.VmInterface, bool, *
 }
 
 // Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
-func (o *Core) GetScriptContainerByVMName(vmName string) (types.VmInterface, bool, *types.SpecificError) {
+func (o *Core) GetScriptContainerByVMName(vmName string, plog_a types.ProcessLogSessionInterface) (types.VmInterface, bool, *types.SpecificError) {
 	// Es wird geprüft ob es sich um einen zulässigen Namen handelt
 	if !utils.ValidateVMName(vmName) {
 		return nil, false, nil //fmt.Errorf("Core->GetScriptContainerByVMName: invalid vm container name")
@@ -144,11 +144,11 @@ func (o *Core) GetScriptContainerByVMName(vmName string) (types.VmInterface, boo
 }
 
 // Gibt die ID's der Aktiven VM-Container zurück
-func (o *Core) GetAllActiveScriptContainerIDs(processLog types.ProcessLogSessionInterface) []string {
+func (o *Core) GetAllActiveScriptContainerIDs(plog_a types.ProcessLogSessionInterface) []string {
 	// Es wird eine neue Debug einheit erzeugt
 	var plog types.ProcessLogSessionInterface
-	if processLog != nil {
-		plog = processLog.GetChildLog("Core")
+	if plog_a != nil {
+		plog = procslog.NewChainMergedProcLog(plog_a, o.coreLog)
 	} else {
 		plog = o.coreLog
 	}
@@ -175,7 +175,7 @@ func (o *Core) GetAllActiveScriptContainerIDs(processLog types.ProcessLogSession
 }
 
 // Gibt alle VM-Container zurück
-func (o *Core) GetAllVMs() []types.VmInterface {
+func (o *Core) GetAllVMs(plog_a types.ProcessLogSessionInterface) []types.VmInterface {
 	// Der Mutex wird angewendet
 	// und nach beenden der Funktion freigegeben
 	o.objectMutex.Lock()
@@ -192,12 +192,12 @@ func (o *Core) GetAllVMs() []types.VmInterface {
 }
 
 // Gibt die Prozess Managment Unit zurück
-func (o *Core) GetCoreSessionManagmentUnit() types.ContextManagmentUnitInterface {
+func (o *Core) GetCoreSessionManagmentUnit(plog_a types.ProcessLogSessionInterface) types.ContextManagmentUnitInterface {
 	return o.cpmu
 }
 
 // Gibt das Aktuelle Primäre Host Cert für API Verbindungen zurück
-func (o *Core) GetLocalhostCryptoStore() *crypto.CryptoStore {
+func (o *Core) GetLocalhostCryptoStore(plog_a types.ProcessLogSessionInterface) *crypto.CryptoStore {
 	return o.cryptoStore
 }
 

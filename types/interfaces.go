@@ -27,12 +27,12 @@ import (
 )
 
 type CoreInterface interface {
-	GetAllVMs() []VmInterface
-	GetAllActiveScriptContainerIDs(processLog ProcessLogSessionInterface) []string
-	GetScriptContainerVMByID(vmid string) (VmInterface, bool, *SpecificError)
-	GetScriptContainerByVMName(string) (VmInterface, bool, *SpecificError)
-	GetCoreSessionManagmentUnit() ContextManagmentUnitInterface
-	AddVMInstance(vmInstance VmInterface) error
+	GetAllVMs(plog_a ProcessLogSessionInterface) []VmInterface
+	GetAllActiveScriptContainerIDs(plog_a ProcessLogSessionInterface) []string
+	GetScriptContainerVMByID(vmid string, plog_a ProcessLogSessionInterface) (VmInterface, bool, *SpecificError)
+	GetScriptContainerByVMName(vmname string, plog_a ProcessLogSessionInterface) (VmInterface, bool, *SpecificError)
+	GetCoreSessionManagmentUnit(plog_a ProcessLogSessionInterface) ContextManagmentUnitInterface
+	AddVMInstance(vmInstance VmInterface, plog_a ProcessLogSessionInterface) error
 }
 
 type VmInterface interface {
@@ -99,7 +99,7 @@ type KernelInterface interface {
 	AddToEventLoop(KernelEventLoopOperationInterface) *SpecificError
 	GetFingerprint() KernelFingerprint
 	Signal(id string, value interface{})
-	AsCoreVM() VmInterface
+	AsVmInstance() VmInterface
 	GetCAMembershipIDs() []string
 	GetCore() CoreInterface
 	GetKId() KernelID

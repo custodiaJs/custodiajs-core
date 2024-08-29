@@ -1,4 +1,4 @@
-package vmimage
+package image
 
 func (o *MainJsFile) Content() string {
 	return o.content

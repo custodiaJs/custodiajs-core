@@ -5,7 +5,66 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/utils"
 )
 
-func NewProcLogSession() *ProcLogSession {
+func extractMergedSessions(p *ProcLogSession) []*ProcLogSession {
+	var allMergedSessions []*ProcLogSession
+
+	var extract func(sessions []*ProcLogSession)
+	extract = func(sessions []*ProcLogSession) {
+		for _, session := range sessions {
+			allMergedSessions = append(allMergedSessions, session)
+			if len(session.merged) > 0 {
+				extract(session.merged)
+			}
+		}
+	}
+
+	extract(p.merged)
+
+	return allMergedSessions
+}
+
+func NewChainMergedProcLog(vat ...types.ProcessLogSessionInterface) *ProcLogSession {
+	newProcLog := NewProcLog()
+	newProcLog.mergedContainer = true
+	newProcLog.merged = []*ProcLogSession{}
+	for _, item := range vat {
+		x := item.(*ProcLogSession)
+		if len(x.merged) != 0 {
+			newProcLog.merged = extractMergedSessions(x)
+		}
+		if !x.mergedContainer {
+			newProcLog.merged = append(newProcLog.merged, x)
+		}
+	}
+
+	return newProcLog
+}
+
+func NewProcLogForCore() *ProcLogSession {
+	newProcLog := NewProcLog()
+	newProcLog.header = "Core"
+	return newProcLog
+}
+
+func NewProcLogForHostAPISocket() *ProcLogSession {
+	newProcLog := NewProcLog()
+	newProcLog.header = "Host-API-Socket"
+	return newProcLog
+}
+
+func NewProcLogForHttpAPISocket() *ProcLogSession {
+	newProcLog := NewProcLog()
+	newProcLog.header = "Http-API-Socket"
+	return newProcLog
+}
+
+func NewProcLogForVmProcess() *ProcLogSession {
+	newProcLog := NewProcLog()
+	newProcLog.header = "VM-Process"
+	return newProcLog
+}
+
+func NewProcLog() *ProcLogSession {
 	randHex, _ := utils.RandomHex(4)
 	sessioncollorFormater := utils.DetermineColorFromHex(randHex)
 	val := &ProcLogSession{id: randHex, sessionColorFunc: sessioncollorFormater}
@@ -13,24 +72,7 @@ func NewProcLogSession() *ProcLogSession {
 }
 
 func NewProcLogSessionWithHeader(header string) *ProcLogSession {
-	randHex, _ := utils.RandomHex(4)
-	sessioncollorFormater := utils.DetermineColorFromHex(randHex)
-	val := &ProcLogSession{id: randHex, header: header, sessionColorFunc: sessioncollorFormater}
-	return val
-}
-
-func NewProcLogForCore() *ProcLogSession {
-	return glogger.NewProcLogForCore()
-}
-
-func NewProcLogForHostAPIService() *ProcLogSession {
-	return glogger.NewProcLogForHostAPISocket()
-}
-
-func NewProcLogForHttpAPIService() *ProcLogSession {
-	return glogger.NewProcLogForHttpAPISocket()
-}
-
-func NewChainMergedProcLog(vat ...types.ProcessLogSessionInterface) *ProcLogSession {
-	return nil
+	newProcLog := NewProcLog()
+	newProcLog.header = header
+	return newProcLog
 }

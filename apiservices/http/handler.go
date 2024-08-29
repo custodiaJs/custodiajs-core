@@ -20,10 +20,10 @@ func (o *HttpApiService) newSessionHandler(next http.Handler) http.Handler {
 		}
 
 		// Es wird eine neue Sitzum im Core erzeugt
-		coreSession, err := o.core.GetCoreSessionManagmentUnit().NewHTTPBasesSession(r, o.plog)
+		coreSession, err := o.core.GetCoreSessionManagmentUnit(nil).NewHTTPBasesSession(r, o.plog)
 		if err != nil {
 			// Es muss ein neuer Process Log erzeugt werden um den Fehler auszugeben
-			tempLogProc := procslog.NewProcLogSession()
+			tempLogProc := procslog.NewProcLog()
 
 			// Der Fehler wird zurückgegeben
 			BuildErrorRpcHttpRequestResponseAndWrite("newSessionHandler", err, nil, static.HTTP_CONTENT_JSON, tempLogProc, w)

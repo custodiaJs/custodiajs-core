@@ -49,13 +49,17 @@ func (o *HostAPIService) NewAPIContext() *APIContext {
 	// Es wird eine neue UUID erzeugt
 	prod_uuid := uuid.New().String()
 
+	// Es wird eine neue Child Session erstellt
+	child_session := o.procLog.GetChildLog("ProcessInstance")
+
 	// Es wird ein neuer Context erzeugt
-	new_context := &APIContext{procUUID: types.VmProcessId(prod_uuid)}
+	new_context := &APIContext{procUUID: types.VmProcessId(prod_uuid), Log: child_session}
 
 	// Der Context wird zwischengespeichert
 	o.processes[prod_uuid] = new_context
 
-	o.procLog.Debug("New Process '%s' started", prod_uuid)
+	// DEBUG
+	child_session.Debug("Process '%s' initiated", prod_uuid)
 
 	// Die UID wird zurückgegeben
 	return new_context
@@ -64,6 +68,7 @@ func (o *HostAPIService) NewAPIContext() *APIContext {
 // Wird verwendet um einen API Context abzurufen
 func (o *HostAPIService) GetContextByProcessId(procId types.VmProcessId) *APIContext {
 	f := o.processes[string(procId)]
+	f.Log.Debug("Passed from memory")
 	return f
 }
 
@@ -87,7 +92,7 @@ func New(unixOrWinNamedPipeAddr types.SOCKET_PATH, userRightState types.IPCRight
 	}
 
 	// Das HostCLI Objekt wird erstellt
-	hcs := &HostAPIService{netListner: cliSocket, processes: make(map[string]*APIContext), procLog: procslog.NewProcLogForHostAPIService()}
+	hcs := &HostAPIService{netListner: cliSocket, processes: make(map[string]*APIContext), procLog: procslog.NewProcLogForHostAPISocket()}
 
 	hcs.procLog.Log("Created on '%s'", unixOrWinNamedPipeAddr)
 
