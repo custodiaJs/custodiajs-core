@@ -1,27 +1,22 @@
-CutodiaJS-Core Open Source License (Version 1.0)
+CutodiaJS-Core License
 
-1. Preamble
-This license allows users to freely use, copy, modify, and distribute the "CutodiaJS-Core" software, under certain conditions, to acknowledge the original authors and prohibit commercial use.
+Copyright (c) 2024 [Your Name or Organization]
 
-2. Attribution and Branding
-   1. Attribution: The name "CutodiaJS" must be retained in all versions of the "CutodiaJS-Core" source code. If the source code is modified, the name "CutodiaJS" must remain visible in the source code.
-   2. Visibility: It must be clearly evident that the program is based on "CutodiaJS-Core". This can be achieved through a clear mention in the user interface, at program startup, in the "About" information, in the documentation, or at a similar, easily visible location. A mere reference in the source code is not sufficient; end users of the program must know that "CutodiaJS-Core" is the foundation of the program.
-   3. Reference in Modifications: Any modification of the source code must include a reference to the original "CutodiaJS-Core" project, similar to how Android projects maintain a reference to the original Android platform.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, and distribute copies of the Software, 
+subject to the following conditions:
 
-3. Commercial Use
-   1. Restriction: This software may not be sold, either as a standalone product or as part of another product. Any commercial use is prohibited.
-   2. Exception: The use of the software in a non-commercial context is permitted, including use in open-source projects, educational projects, and personal projects.
+1. The name "CutodiaJS" must be retained in all versions of the "CutodiaJS-Core" source code. If the source code is modified, the name "CutodiaJS" must remain visible in the source code.
+2. It must be clearly evident that the program is based on "CutodiaJS-Core". This can be achieved through a clear mention in the user interface, at program startup, in the "About" information, in the documentation, or at a similar, easily visible location. A mere reference in the source code is not sufficient; end users of the program must know that "CutodiaJS-Core" is the foundation of the program.
+3. Any modification of the source code must include a reference to the original "CutodiaJS-Core" project, similar to how Android projects maintain a reference to the original Android platform.
+4. This software may not be sold, either as a standalone product or as part of another product. Any commercial use is prohibited.
 
-4. Distribution and Modification
-   1. Distribution: Copying, distributing, and modifying the "CutodiaJS-Core" software is permitted as long as the terms of this license are followed.
-   2. Modifications: All modified versions must be distributed under the same conditions as the original version. Any alteration of this license is not permitted.
-
-5. License Modification
-   1. Author's Rights: The license of this software may only be changed by the original author(s). Any other alteration of the license is invalid and void.
-
-6. Disclaimer of Liability
-   1. No Warranty: This software is provided without any warranty. The authors are not liable for any damages resulting from the use of the software.
-
-7. Final Provisions
-   1. Scope: This license applies exclusively to the "CutodiaJS-Core" program, regardless of how and where the code is distributed.
-   2. Applicable Law: The law of the country in which the original author(s) reside applies.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
