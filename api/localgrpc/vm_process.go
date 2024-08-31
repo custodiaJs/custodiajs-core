@@ -14,7 +14,7 @@ func (o *APIProcessVm) GetManifest() *types.Manifest {
 	return o.manifest
 }
 
-func (o *APIProcessVm) GetVmProcessId() types.VmProcessId {
+func (o *APIProcessVm) GetProcessId() types.ProcessId {
 	return o.context.procUUID
 }
 
@@ -47,7 +47,6 @@ func (o *APIProcessVm) GetKId() types.KernelID {
 }
 
 func (o *APIProcessVm) SignalShutdown() {
-
 }
 
 func (o *APIProcessVm) GetState() types.VmState {

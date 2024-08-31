@@ -28,9 +28,9 @@ import (
 
 type CoreInterface interface {
 	GetAllVMs(plog_a ProcessLogSessionInterface) []VmInterface
-	GetAllActiveScriptContainerIDs(plog_a ProcessLogSessionInterface) []string
-	GetScriptContainerVMByID(vmid string, plog_a ProcessLogSessionInterface) (VmInterface, bool, *SpecificError)
-	GetScriptContainerByVMName(vmname string, plog_a ProcessLogSessionInterface) (VmInterface, bool, *SpecificError)
+	GetAllActiveVmIDs(plog_a ProcessLogSessionInterface) []string
+	GetVmByID(vmid string, plog_a ProcessLogSessionInterface) (VmInterface, bool, *SpecificError)
+	GetVmByName(vmname string, plog_a ProcessLogSessionInterface) (VmInterface, bool, *SpecificError)
 	GetCoreSessionManagmentUnit(plog_a ProcessLogSessionInterface) ContextManagmentUnitInterface
 	AddVMInstance(vmInstance VmInterface, plog_a ProcessLogSessionInterface) error
 }
@@ -57,7 +57,7 @@ type VmInterface interface {
 	// Gibt den Aktuellen Status der VM zurück
 	GetState() VmState
 	// Gibt die ProzessID zurück
-	GetVmProcessId() VmProcessId
+	GetProcessId() ProcessId
 	// Gibt die Qualified Full VM ID (QVMID) zurück
 	GetQVMID() QVMID
 }

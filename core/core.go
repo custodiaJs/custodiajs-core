@@ -94,10 +94,10 @@ func (o *Core) AddAPISocket(apiSocket types.APISocketInterface, plog_a types.Pro
 }
 
 // Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
-func (o *Core) GetScriptContainerVMByID(vmid string, plog_a types.ProcessLogSessionInterface) (types.VmInterface, bool, *types.SpecificError) {
+func (o *Core) GetVmByID(vmid string, plog_a types.ProcessLogSessionInterface) (types.VmInterface, bool, *types.SpecificError) {
 	// Es wird geprüft ob es sich um einen zulässigen vm Namen handelt
 	if !utils.ValidateVMIdString(vmid) {
-		return nil, false, nil //fmt.Errorf("Core->GetScriptContainerVMByID: invalid vm container id")
+		return nil, false, nil //fmt.Errorf("Core->GetVmByID: invalid vm container id")
 	}
 
 	// Die ID wird lowercast
@@ -119,10 +119,10 @@ func (o *Core) GetScriptContainerVMByID(vmid string, plog_a types.ProcessLogSess
 }
 
 // Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
-func (o *Core) GetScriptContainerByVMName(vmName string, plog_a types.ProcessLogSessionInterface) (types.VmInterface, bool, *types.SpecificError) {
+func (o *Core) GetVmByName(vmName string, plog_a types.ProcessLogSessionInterface) (types.VmInterface, bool, *types.SpecificError) {
 	// Es wird geprüft ob es sich um einen zulässigen Namen handelt
 	if !utils.ValidateVMName(vmName) {
-		return nil, false, nil //fmt.Errorf("Core->GetScriptContainerByVMName: invalid vm container name")
+		return nil, false, nil //fmt.Errorf("Core->GetVmByName: invalid vm container name")
 	}
 
 	// Der Name wird lowercast
@@ -136,7 +136,7 @@ func (o *Core) GetScriptContainerByVMName(vmName string, plog_a types.ProcessLog
 	// Es wird geprüft ob die VM exestiert
 	vmObj, found := o.vmsByName[lowerCaseVmName]
 	if !found {
-		return nil, false, nil // fmt.Errorf("Core->GetScriptContainerByVMName: unkown vm '%s'", lowerCaseVmName)
+		return nil, false, nil // fmt.Errorf("Core->GetVmByName: unkown vm '%s'", lowerCaseVmName)
 	}
 
 	// Das Objekt wird zurückgegeben
@@ -144,7 +144,7 @@ func (o *Core) GetScriptContainerByVMName(vmName string, plog_a types.ProcessLog
 }
 
 // Gibt die ID's der Aktiven VM-Container zurück
-func (o *Core) GetAllActiveScriptContainerIDs(plog_a types.ProcessLogSessionInterface) []string {
+func (o *Core) GetAllActiveVmIDs(plog_a types.ProcessLogSessionInterface) []string {
 	// Es wird eine neue Debug einheit erzeugt
 	var plog types.ProcessLogSessionInterface
 	if plog_a != nil {

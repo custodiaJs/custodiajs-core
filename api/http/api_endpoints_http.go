@@ -41,7 +41,7 @@ func (o *HttpApiService) httpIndex(w http.ResponseWriter, r *http.Request) {
 
 	// Es werden alle Script Container extrahiert
 	procLog.Debug("Try to call all available VMs...")
-	scriptContainers := o.core.GetAllActiveScriptContainerIDs(procLog)
+	scriptContainers := o.core.GetAllActiveVmIDs(procLog)
 	ucscontainers := []string{}
 	for _, item := range scriptContainers {
 		ucscontainers = append(ucscontainers, strings.ToUpper(item))
@@ -170,7 +170,7 @@ func (o *HttpApiService) httpRPC(w http.ResponseWriter, r *http.Request) {
 	functionSignature := coreWebSession.GetSearchedFunctionSignature()
 
 	// Es wird versucht die VM abzurufen
-	vmInstance, foundVM, vmSearchError := o.core.GetScriptContainerVMByID(functionSignature.VMID, nil)
+	vmInstance, foundVM, vmSearchError := o.core.GetVmByID(functionSignature.VMID, nil)
 	if vmSearchError != nil {
 		// Der Fehler wird zurückgegeben
 		BuildErrorRpcHttpRequestResponseAndWrite("httpRPC", vmSearchError, coreWebSession, coreWebSession.GetContentType(), procLog, w)

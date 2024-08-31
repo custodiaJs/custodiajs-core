@@ -69,7 +69,7 @@ func ValidateRPCRequest(core types.CoreInterface, w http.ResponseWriter, r *http
 	functionSignature := coreSession.GetSearchedFunctionSignature()
 
 	// Es wird versucht die VM zu finden
-	vmInstance, foundVM, vmSearchError := core.GetScriptContainerVMByID(functionSignature.VMID, nil)
+	vmInstance, foundVM, vmSearchError := core.GetVmByID(functionSignature.VMID, nil)
 	if vmSearchError != nil {
 		return vmSearchError.AddCallerFunctionToHistory("ValidateRPCRequest")
 	}

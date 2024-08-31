@@ -53,9 +53,9 @@ func __determineRPCFunction(kernel types.KernelInterface, funcsig *types.Functio
 	var terr error
 	switch {
 	case funcsig.VMName == "" && funcsig.VMID != "":
-		vmiface, vmFound, terr = kernel.GetCore().GetScriptContainerVMByID(string(funcsig.VMID), nil)
+		vmiface, vmFound, terr = kernel.GetCore().GetVmByID(string(funcsig.VMID), nil)
 	case funcsig.VMName != "" && funcsig.VMID == "":
-		vmiface, _, terr = kernel.GetCore().GetScriptContainerByVMName(funcsig.VMName, nil)
+		vmiface, _, terr = kernel.GetCore().GetVmByName(funcsig.VMName, nil)
 	default:
 		terr = fmt.Errorf("crazy internal error")
 	}

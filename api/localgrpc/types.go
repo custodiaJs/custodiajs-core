@@ -9,7 +9,7 @@ import (
 )
 
 type APIContext struct {
-	procUUID types.VmProcessId
+	procUUID types.ProcessId
 	tpe      localgrpcproto.ClientType
 	openvm   *APIProcessVm
 	Log      types.ProcessLogSessionInterface
@@ -24,7 +24,7 @@ type APIProcessVm struct {
 }
 
 type HostAPIService struct {
-	localgrpcproto.UnimplementedLocalhostapierver
+	localgrpcproto.UnimplementedLocalhostAPIServiceServer
 	procLog    types.ProcessLogSessionInterface
 	grpcServer *grpc.Server
 	processes  map[string]*APIContext

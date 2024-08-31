@@ -22,7 +22,7 @@ func (o *VmInstance) GetScriptHash() types.VmScriptHash {
 	return types.VmScriptHash(o.vmImage.GetMain().GetHash())
 }
 
-func (o *VmInstance) GetVmProcessId() types.VmProcessId {
+func (o *VmInstance) GetProcessId() types.ProcessId {
 	return ""
 }
 

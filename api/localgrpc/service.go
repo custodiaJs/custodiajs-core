@@ -18,8 +18,9 @@ import (
 // Hält den Server am leben
 func (o *HostAPIService) Serve(closeSignal chan struct{}) error {
 	// Das CLI gRPC Serverobjekt wird erstellt
-	localgrpcproto.RegisterLocalhostapierver(o.grpcServer, o)
+	localgrpcproto.RegisterLocalhostAPIServiceServer(o.grpcServer, o)
 
+	// DEBUG
 	o.procLog.Debug("Serving...")
 
 	// Der grpc Server wird gestartet
@@ -27,6 +28,7 @@ func (o *HostAPIService) Serve(closeSignal chan struct{}) error {
 		log.Fatalf("Fehler beim Starten des gRPC-Servers: %v", err)
 	}
 
+	// DEBUG
 	o.procLog.Debug("Serving stoped")
 
 	// Der Vorgagn wurde ohne Fehler durchgeführt
@@ -53,20 +55,17 @@ func (o *HostAPIService) NewAPIContext() *APIContext {
 	child_session := o.procLog.GetChildLog("ProcessInstance")
 
 	// Es wird ein neuer Context erzeugt
-	new_context := &APIContext{procUUID: types.VmProcessId(prod_uuid), Log: child_session}
+	new_context := &APIContext{procUUID: types.ProcessId(prod_uuid), Log: child_session}
 
 	// Der Context wird zwischengespeichert
 	o.processes[prod_uuid] = new_context
-
-	// DEBUG
-	child_session.Debug("Process '%s' initiated", prod_uuid)
 
 	// Die UID wird zurückgegeben
 	return new_context
 }
 
 // Wird verwendet um einen API Context abzurufen
-func (o *HostAPIService) GetContextByProcessId(procId types.VmProcessId) *APIContext {
+func (o *HostAPIService) GetContextByProcessId(procId types.ProcessId) *APIContext {
 	f := o.processes[string(procId)]
 	f.Log.Debug("Passed from memory")
 	return f

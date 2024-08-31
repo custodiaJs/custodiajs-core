@@ -3,8 +3,6 @@ syntax = "proto3";
 package localgrpcproto;
 option go_package = "/localgrpcproto;localgrpcproto";
 
-import "google/protobuf/empty.proto";
-
 enum ClientType {
   CLI = 0;
   VM = 1;
@@ -41,89 +39,28 @@ message ServerWelcomeResponse {
   string reason = 4;
 }
 
-message VmListEntry {
-  string name = 1;
-  string id = 2;
-  uint32 state = 3;
-  uint64 startTime = 4;
-}
-
-message VmListResponse {
-  repeated VmListEntry vms = 1;
-}
-
-message VmDetailWhitelistEntry {
-  repeated string WildCardDomains = 1;
-	repeated string ExactDomains = 2;
-	repeated string Methods = 3;
-	repeated string IPv4List = 4;
-	repeated string Ipv6List = 5;
-}
-
-message VmDetailHostCAMemberEntry {
-  uint32 type = 1;
-  string fingerprint = 2;
-}
-
-message VmDetailDatabaseEntry {
-  string type = 1;
-  string host = 2;
-  uint32 port = 3;
-  string username = 4;
-  string database = 6;
-  string alias = 7;
-}
-
-message VmDetailSharedFunctionEntry {
-  string name = 1;
-  repeated uint32 parmTypes = 2;
-  string mode = 3;
-}
-
-message VmDetailsResponse {
-  string name = 1;
-  uint64 version = 2;
-  string owner = 3;
-  string repourl = 4;
-  string mode = 5;
-  string state = 6;
-  uint64 startTimestamp = 7;
-  repeated VmDetailWhitelistEntry whitelist = 8;
-  repeated VmDetailHostCAMemberEntry hostcamember = 9;
-  repeated VmDetailDatabaseEntry databases = 10;
-  repeated VmDetailSharedFunctionEntry sharedFunctions = 11;
-}
-
-message VmDetailsParms {
-  oneof value {
-    string name = 1;
-    string id = 2;
+message ProcessTransport {
+  oneof Request {
+    ClientWelcomeRequest welcomeRequest = 1;
+  }
+  oneof Respone {
+    ServerWelcomeResponse welcomeResponse = 2;
   }
 }
 
-message PingPong {
-
-}
-
-message ProcessControlPackage {
-  oneof req {
-    string register_process = 1;
+message VmInstanceTransport {
+  oneof Request {
+    VMClientRegisterRequest register_vm_request = 1;
+  }
+  oneof Response {
+    VMClientRegisterResponse register_vm_response = 2;
   }
 }
 
 service LocalhostAPIService {
-  // Wird verwendet damit ein Client seine Sitzungsdaten angeben kann
-  rpc WelcomeClient(ClientWelcomeRequest) returns (ServerWelcomeResponse);
+  // Wird verwendet um einen Prozess zu Registrieren und offen zu halten
+  rpc SpawnProcess (stream ProcessTransport) returns (stream ProcessTransport);
 
-  // Wird verwendet um von einem Client aus eine neue VM zu Registrieren
-  rpc AddVMInstanceByProcess(VMClientRegisterRequest) returns (VMClientRegisterResponse);
-
-  // Ruft eine Liste, aller Verfügabren VM's ab
-  rpc ListVMs(google.protobuf.Empty) returns (VmListResponse);
-
-  // Ruft alle Details einer VM ab
-  rpc GetVMDetails(VmDetailsParms) returns (VmDetailsResponse);
-
-  // Wird verwendet um den Prozess vom Core aus zu Kontrollieren
-  rpc CoreToProcessControl (stream ProcessControlPackage) returns (stream ProcessControlPackage);
+  // Wird verwendet um eine VM Instantz zu registrieren
+  rpc RegisterAndLinkVmInstanceStream (stream VmInstanceTransport) returns (stream VmInstanceTransport);
 }

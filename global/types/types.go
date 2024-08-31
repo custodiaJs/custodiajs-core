@@ -45,8 +45,11 @@ type QVMID string
 // Gibt den Hash eines Scriptes an
 type VmScriptHash string
 
-// Gibt die VmProcessId an
-type VmProcessId string
+// Gibt die ProcessId an
+type ProcessId string
+
+// Gibt die VmID an
+type VmId string
 
 // RPC Transport & Call Typen
 type RpcCallTransportProtocol uint8 // RPC Transport Protokoll
