@@ -66,6 +66,10 @@ func alive_process(_ processStream, _ *VmProcess) error {
 func init_vm_instance_stream(ctx context.Context, vmProcess *VmProcess, stream vmInstanceStream, manifest *types.Manifest) (types.VmId, error) {
 	// Das VmProcess Register Package wird gebaut
 
+	// Das Paket wird an den Core übermittelt
+
+	// Es wird auf das Response Paket des Server gewartet
+
 	// Das Manifest wird in JSON umgewandelt
 	_, err := json.Marshal(manifest)
 	if err != nil {
