@@ -1,4 +1,4 @@
-CutodiaJS-Core License
+CustodiaJs-Core License
 
 Copyright (c) 2024 [Your Name or Organization]
 
@@ -8,9 +8,9 @@ in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, and distribute copies of the Software, 
 subject to the following conditions:
 
-1. The name "CutodiaJS" must be retained in all versions of the "CutodiaJS-Core" source code. If the source code is modified, the name "CutodiaJS" must remain visible in the source code.
-2. It must be clearly evident that the program is based on "CutodiaJS-Core". This can be achieved through a clear mention in the user interface, at program startup, in the "About" information, in the documentation, or at a similar, easily visible location. A mere reference in the source code is not sufficient; end users of the program must know that "CutodiaJS-Core" is the foundation of the program.
-3. Any modification of the source code must include a reference to the original "CutodiaJS-Core" project, similar to how Android projects maintain a reference to the original Android platform.
+1. The name "CustodiaJs" must be retained in all versions of the "CustodiaJs-Core" source code. If the source code is modified, the name "CustodiaJs" must remain visible in the source code.
+2. It must be clearly evident that the program is based on "CustodiaJs-Core". This can be achieved through a clear mention in the user interface, at program startup, in the "About" information, in the documentation, or at a similar, easily visible location. A mere reference in the source code is not sufficient; end users of the program must know that "CustodiaJs-Core" is the foundation of the program.
+3. Any modification of the source code must include a reference to the original "CustodiaJs-Core" project, similar to how Android projects maintain a reference to the original Android platform.
 4. This software may not be sold, either as a standalone product or as part of another product. Any commercial use is prohibited.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR

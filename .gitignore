@@ -25,3 +25,6 @@ build/
 #apiservices/localgrpc/types.go
 #protobuff/local_rpc.proto
 log.console.txt
+ipc/socket/ipc_socket_wrapper.go
+ipc/socket/types.go
+ipc/socket/channel.go
