@@ -2,34 +2,17 @@ package localgrpc
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"runtime"
 
 	"github.com/CustodiaJS/custodiajs-core/global/procslog"
 	"github.com/CustodiaJS/custodiajs-core/global/types"
 	"github.com/CustodiaJS/custodiajs-core/ipc"
-	"github.com/CustodiaJS/custodiajs-core/localgrpcproto"
 	"github.com/google/uuid"
-
-	"google.golang.org/grpc"
 )
 
 // Hält den Server am leben
 func (o *HostAPIService) Serve(closeSignal chan struct{}) error {
-	// Das CLI gRPC Serverobjekt wird erstellt
-	localgrpcproto.RegisterLocalhostAPIServiceServer(o.grpcServer, o)
-
-	// DEBUG
-	o.procLog.Debug("Serving...")
-
-	// Der grpc Server wird gestartet
-	if err := o.grpcServer.Serve(o.netListner); err != nil {
-		log.Fatalf("Fehler beim Starten des gRPC-Servers: %v", err)
-	}
-
-	// DEBUG
-	o.procLog.Debug("Serving stoped")
 
 	// Der Vorgagn wurde ohne Fehler durchgeführt
 	return nil
@@ -91,15 +74,14 @@ func New(unixOrWinNamedPipeAddr types.SOCKET_PATH, userRightState types.IPCRight
 	}
 
 	// Das HostCLI Objekt wird erstellt
-	hcs := &HostAPIService{netListner: cliSocket, processes: make(map[string]*APIContext), procLog: procslog.NewProcLogForHostAPISocket()}
+	hcs := &HostAPIService{
+		netListner: cliSocket,
+		processes:  make(map[string]*APIContext),
+		procLog:    procslog.NewProcLogForHostAPISocket(),
+	}
 
+	// LOG
 	hcs.procLog.Log("Created on '%s'", unixOrWinNamedPipeAddr)
-
-	// Es wird ein neuer gRPC Server erstellt
-	grpcServer := grpc.NewServer()
-
-	// Der gRPC Server wird zwischengspeichert
-	hcs.grpcServer = grpcServer
 
 	// Das Objekt wird zurückgegeben
 	return hcs, nil

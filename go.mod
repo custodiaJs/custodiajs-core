@@ -1,6 +1,6 @@
 module github.com/CustodiaJS/custodiajs-core
 
-go 1.21.3
+go 1.22.5
 
 require (
 	github.com/go-sql-driver/mysql v1.8.1
@@ -13,7 +13,9 @@ require (
 )
 
 require (
+	capnproto.org/go/capnp/v3 v3.0.1-alpha.2 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
+	github.com/colega/zeropool v0.0.0-20230505084239-6fb4a4f75381 // indirect
 	github.com/fatih/color v1.17.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -24,6 +26,8 @@ require (
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/tdewolff/parse v2.3.4+incompatible // indirect
 	github.com/tdewolff/parse/v2 v2.7.14 // indirect
+	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
+	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
@@ -36,9 +40,11 @@ require (
 )
 
 require (
+	github.com/CustodiaJS/bngsocket v0.0.0-20240923050945-0d7f75a1cc7c
 	github.com/btcsuite/btcutil v1.0.2
-	github.com/fxamacker/cbor/v2 v2.6.0
+	github.com/fxamacker/cbor/v2 v2.7.0
 	github.com/gofrs/flock v0.8.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tdewolff/minify v2.3.6+incompatible
 	golang.org/x/sys v0.20.0 // indirect
