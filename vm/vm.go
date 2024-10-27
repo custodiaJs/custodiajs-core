@@ -10,8 +10,8 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/global/static/errormsgs"
 	"github.com/CustodiaJS/custodiajs-core/global/types"
 	"github.com/CustodiaJS/custodiajs-core/global/utils"
+	VmContext "github.com/CustodiaJS/custodiajs-core/vm/context"
 	"github.com/CustodiaJS/custodiajs-core/vm/image"
-	"github.com/CustodiaJS/custodiajs-core/vm/kernel"
 )
 
 func (o *VmInstance) GetManifest() *types.Manifest {
@@ -44,7 +44,7 @@ func (o *VmInstance) GetRepoURL() string {
 
 func (o *VmInstance) _routine(scriptContent []byte) {
 	// Log
-	o.Kernel.LogPrint("", "VM is running")
+	o.VmContext.LogPrint("", "VM is running")
 
 	// Der Mutex wird verwendet
 	o.objectMutex.Lock()
@@ -91,7 +91,7 @@ func (o *VmInstance) _routine(scriptContent []byte) {
 	// Die Schleife wird solange ausgeführt, solange der Status, running ist.
 	// Die Schleife für den Eventloop des Kernels auf
 	for o.eventloopForRunner() {
-		if err := o.Kernel.ServeEventLoop(); err != nil {
+		if err := o.VmContext.ServeEventLoop(); err != nil {
 			panic(err)
 		}
 	}
@@ -120,12 +120,12 @@ func (o *VmInstance) Serve(syncWaitGroup *sync.WaitGroup) error {
 		o._routine([]byte(o.vmImage.GetMain().Content()))
 
 		// Sollte der Kernel nicht geschlossen sein, wird er beendet
-		if !o.Kernel.IsClosed() {
-			o.Kernel.Close()
+		if !o.VmContext.IsClosed() {
+			o.VmContext.Close()
 		}
 
 		// Log
-		o.Kernel.LogPrint("", "VM is closed")
+		o.VmContext.LogPrint("", "VM is closed")
 
 		// Es wird signalisiert das die VM nicht mehr ausgeführt wird
 		syncWaitGroup.Done()
@@ -140,7 +140,7 @@ func (o *VmInstance) GetState() types.VmState {
 }
 
 func (o *VmInstance) GetConsoleOutputWatcher() types.WatcherInterface {
-	return o.Kernel.Console().GetOutputStream()
+	return o.VmContext.Console().GetOutputStream()
 }
 
 func (o *VmInstance) GetStartingTimestamp() uint64 {
@@ -157,7 +157,7 @@ func (o *VmInstance) runScript(script string) error {
 	o.scriptLoaded = true
 
 	// Das Script wird ausgeführt
-	_, err := o.Kernel.RunScript(script, "main.js")
+	_, err := o.VmContext.RunScript(script, "main.js")
 	if err != nil {
 		panic(err)
 	}
@@ -233,7 +233,7 @@ func (o *VmInstance) SignalShutdown() {
 	}
 
 	// Log
-	o.Kernel.LogPrint("", "Signal shutdown")
+	o.VmContext.LogPrint("", "Signal shutdown")
 
 	// Es wird Signalisiert das ein Close Signal vorhanden ist
 	o._signal_CLOSE = true
@@ -242,11 +242,11 @@ func (o *VmInstance) SignalShutdown() {
 	o.objectMutex.Unlock()
 
 	// Der Kernel wird beendet
-	o.Kernel.Close()
+	o.VmContext.Close()
 }
 
 func (o *VmInstance) eventloopForRunner() bool {
-	return !o.hasCloseSignal() && !o.Kernel.IsClosed()
+	return !o.hasCloseSignal() && !o.VmContext.IsClosed()
 }
 
 func (o *VmInstance) IsAllowedXRequested(xrd *types.XRequestedWithData) bool {
@@ -260,18 +260,15 @@ func NewVmInstance(core types.CoreInterface, workingDir string, vmImage *image.V
 		return nil, fmt.Errorf("VmInstance->newVmInstance: " + err.Error())
 	}
 
-	// Die Kernel Configurationen werden bereigestellt
-	kernelConfig := &kernel.DEFAULT_CONFIG
-
 	// Es wird ein neuer Kernel erzeugt
-	vmKernel, err := kernel.NewKernel(consoleStream, kernelConfig, core)
+	vmKernel, err := VmContext.NewKernel(consoleStream, core, map[string]bool{"rpc": true})
 	if err != nil {
 		return nil, fmt.Errorf("newVmInstance: " + err.Error())
 	}
 
 	// Das Core Objekt wird erstellt
 	coreObject := &VmInstance{
-		Kernel:        vmKernel,
+		VmContext:     vmKernel,
 		core:          core,
 		vmImage:       vmImage,
 		objectMutex:   &sync.Mutex{},

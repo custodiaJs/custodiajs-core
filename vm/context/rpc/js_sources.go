@@ -1,4 +1,4 @@
-package kmodulerpc
+package rpcjsprocessor
 
 const testJsProxySource = `(funct, proxyobject, ...parms) => {
 	// Consolen Objekt

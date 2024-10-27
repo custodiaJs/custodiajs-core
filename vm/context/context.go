@@ -1,4 +1,4 @@
-package kernel
+package vmcontext
 
 import (
 	"fmt"
@@ -9,38 +9,40 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/global/static"
 	"github.com/CustodiaJS/custodiajs-core/global/types"
 	"github.com/CustodiaJS/custodiajs-core/global/utils"
+	contextconsole "github.com/CustodiaJS/custodiajs-core/vm/context/console"
+	rpcjsprocessor "github.com/CustodiaJS/custodiajs-core/vm/context/rpc"
 
 	v8 "rogchap.com/v8go"
 )
 
-func (o *Kernel) Console() *consolecache.ConsoleOutputCache {
+func (o *VmContext) Console() *consolecache.ConsoleOutputCache {
 	return o.console
 }
 
-func (o *Kernel) GetCAMembershipCerts() []types.VmCaMembershipCertInterface {
+func (o *VmContext) GetCAMembershipCerts() []types.VmCaMembershipCertInterface {
 	return nil
 }
 
-func (o *Kernel) GetNewIsolateContext() (*v8.Isolate, *v8.Context, error) {
+func (o *VmContext) GetNewIsolateContext() (*v8.Isolate, *v8.Context, error) {
 	// Es wird versucht eine neue ISO und einen neuen Context mit VM Zugehörigkeit zu erzeugen
-	iso, context, err := makeIsolationAndContext(o, false)
+	iso, context, err := makeIsolationAndContext(o, map[string]bool{})
 	if err != nil {
-		return nil, nil, fmt.Errorf("Kernel->GetNewIsolateContext: " + err.Error())
+		return nil, nil, fmt.Errorf("VmContext->GetNewIsolateContext: " + err.Error())
 	}
 
 	// Die Objekte werden zurückgegeben
 	return iso, context, nil
 }
 
-func (o *Kernel) ContextV8() *v8.Context {
+func (o *VmContext) ContextV8() *v8.Context {
 	return o.Context
 }
 
-func (o *Kernel) GetFingerprint() types.KernelFingerprint {
+func (o *VmContext) GetFingerprint() types.KernelFingerprint {
 	return types.KernelFingerprint(o.vmLink.GetManifest().Filehash)
 }
 
-func (o *Kernel) GloablRegisterRead(name_id string) interface{} {
+func (o *VmContext) GloablRegisterRead(name_id string) interface{} {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 
@@ -53,7 +55,7 @@ func (o *Kernel) GloablRegisterRead(name_id string) interface{} {
 	return value
 }
 
-func (o *Kernel) GloablRegisterWrite(name_id string, value interface{}) error {
+func (o *VmContext) GloablRegisterWrite(name_id string, value interface{}) error {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 
@@ -63,7 +65,7 @@ func (o *Kernel) GloablRegisterWrite(name_id string, value interface{}) error {
 	return nil
 }
 
-func (o *Kernel) HostRegisterRead(name_id string) interface{} {
+func (o *VmContext) HostRegisterRead(name_id string) interface{} {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 
@@ -76,7 +78,7 @@ func (o *Kernel) HostRegisterRead(name_id string) interface{} {
 	return value
 }
 
-func (o *Kernel) HostRegisterWrite(name_id string, value interface{}) error {
+func (o *VmContext) HostRegisterWrite(name_id string, value interface{}) error {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 
@@ -86,7 +88,7 @@ func (o *Kernel) HostRegisterWrite(name_id string, value interface{}) error {
 	return nil
 }
 
-func (o *Kernel) AddImportModule(name string, v8Value *v8.Value) error {
+func (o *VmContext) AddImportModule(name string, v8Value *v8.Value) error {
 	// Der Mutex wird verwendet
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
@@ -98,7 +100,7 @@ func (o *Kernel) AddImportModule(name string, v8Value *v8.Value) error {
 	return nil
 }
 
-func (o *Kernel) LogPrint(header string, format string, v ...any) {
+func (o *VmContext) LogPrint(header string, format string, v ...any) {
 	if header != "" {
 		log.Printf("VM(%s): %s:-$ %s", o.id, header, fmt.Sprintf(format, v...))
 	} else {
@@ -106,11 +108,11 @@ func (o *Kernel) LogPrint(header string, format string, v ...any) {
 	}
 }
 
-func (o *Kernel) GetKId() types.KernelID {
+func (o *VmContext) GetKId() types.KernelID {
 	return o.id
 }
 
-func (o *Kernel) GetCAMembershipIDs() []string {
+func (o *VmContext) GetCAMembershipIDs() []string {
 	/*
 		membIds := make([]string, 0)
 		for _, item := range o.dbEntry.GetRootMemberIDS() {
@@ -121,39 +123,39 @@ func (o *Kernel) GetCAMembershipIDs() []string {
 	panic("not implemented")
 }
 
-func (o *Kernel) GetCore() types.CoreInterface {
+func (o *VmContext) GetCore() types.CoreInterface {
 	return o.core
 }
 
-func (o *Kernel) LinkKernelWithVmInstance(vmInstance types.VmInterface) error {
+func (o *VmContext) LinkKernelWithVmInstance(vmInstance types.VmInterface) error {
 	// Der Mutex wird verwendet
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 
-	// Es wird geprüft ob bereits eine VM mit dem Kernel verlinkt wurde
+	// Es wird geprüft ob bereits eine VM mit dem VmContext verlinkt wurde
 	if o.vmLink != nil {
-		return fmt.Errorf("vm always linked with kernel")
+		return fmt.Errorf("vm always linked with VmContext")
 	}
 
-	// Der Kernel wird mit dem VM Verlinkt
+	// Der VmContext wird mit dem VM Verlinkt
 	o.vmLink = vmInstance
 
 	// Es ist kein Fehler aufgetreten
 	return nil
 }
 
-func (o *Kernel) AsVmInstance() types.VmInterface {
+func (o *VmContext) AsVmInstance() types.VmInterface {
 	return o.vmLink
 }
 
-func (o *Kernel) IsClosed() bool {
+func (o *VmContext) IsClosed() bool {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 	cstate := bool(o.hasCloseSignal)
 	return cstate
 }
 
-func (o *Kernel) ServeEventLoop() error {
+func (o *VmContext) ServeEventLoop() error {
 	// Der Mutex wird verwendet
 	o.eventLoopLockCond.L.Lock()
 
@@ -162,7 +164,7 @@ func (o *Kernel) ServeEventLoop() error {
 		o.eventLoopLockCond.Wait()
 	}
 
-	// Es wird ermittelt ob der Kernel beendet werden soll
+	// Es wird ermittelt ob der VmContext beendet werden soll
 	if o.hasCloseSignal {
 		o.eventLoopLockCond.L.Unlock()
 		return nil
@@ -194,7 +196,7 @@ func (o *Kernel) ServeEventLoop() error {
 			eventLoopOperation.SetError(err)
 
 			// Der Fehler wird zurückgegeben
-			return fmt.Errorf("Kernel->call_eventloop_function: " + err.Error())
+			return fmt.Errorf("VmContext->call_eventloop_function: " + err.Error())
 		}
 
 		// Die Rückgabe wird zurückgegeben
@@ -203,11 +205,11 @@ func (o *Kernel) ServeEventLoop() error {
 		// Es ist kein Fehler aufgetreten
 		return nil
 	default:
-		return fmt.Errorf("Kernel->ServeEventLoop: unkown operation methode")
+		return fmt.Errorf("VmContext->ServeEventLoop: unkown operation methode")
 	}
 }
 
-func (o *Kernel) AddToEventLoop(operation types.KernelEventLoopOperationInterface) *types.SpecificError {
+func (o *VmContext) AddToEventLoop(operation types.KernelEventLoopOperationInterface) *types.SpecificError {
 	// Mittels Goroutine wird ein neues Event hinzugefügt
 	go func() {
 		// Der Mutex wird verwendet
@@ -227,7 +229,7 @@ func (o *Kernel) AddToEventLoop(operation types.KernelEventLoopOperationInterfac
 	return nil
 }
 
-func (o *Kernel) Close() {
+func (o *VmContext) Close() {
 	// Der Mutex wird angewendet
 	o.eventLoopLockCond.L.Lock()
 
@@ -250,28 +252,25 @@ func (o *Kernel) Close() {
 	o.ContextV8().Close()
 }
 
-func (o *Kernel) Signal(id string, value interface{}) {
+func (o *VmContext) Signal(id string, value interface{}) {
 
 }
 
-func makeIsolationAndContext(kernel *Kernel, isMain bool) (*v8.Isolate, *v8.Context, error) {
+func makeIsolationAndContext(VmContext *VmContext, enabeldFunctions map[string]bool) (*v8.Isolate, *v8.Context, error) {
 	// Die Isolation wird erezrugt
 	iso := v8.NewIsolate()
 
 	// Der Context wird erzeugt
 	context := v8.NewContext(iso)
 
-	// Es werden alle Standard Module geladen
-	for _, item := range kernel.config.Modules {
-		// Es wird geprüft ob es sich um den Main Context handelt
-		if item.OnlyForMain() {
-			if !isMain {
-				continue
-			}
-		}
+	// Die Consolen Funktionen werden bereitgestellt
+	if err := contextconsole.NewConsoleModule().Init(VmContext, iso, context); err != nil {
+		return nil, nil, fmt.Errorf("makeIsolationAndContext: " + err.Error())
+	}
 
-		// Das Modul wird geladen
-		if err := item.Init(kernel, iso, context); err != nil {
+	// Es wird geprüft ob die RPC Funktionen verfügbar sind
+	if value, exists := enabeldFunctions["rpc"]; exists && value {
+		if err := rpcjsprocessor.NewRPCModule().Init(VmContext, iso, context); err != nil {
 			return nil, nil, fmt.Errorf("makeIsolationAndContext: " + err.Error())
 		}
 	}
@@ -280,46 +279,44 @@ func makeIsolationAndContext(kernel *Kernel, isMain bool) (*v8.Isolate, *v8.Cont
 	return iso, context, nil
 }
 
-func NewKernel(consoleCache *consolecache.ConsoleOutputCache, kernelConfig *KernelConfig, coreIface types.CoreInterface) (*Kernel, error) {
+func NewKernel(consoleCache *consolecache.ConsoleOutputCache, coreIface types.CoreInterface, enabeldFunctions map[string]bool) (*VmContext, error) {
 	// Die KernelID wird erzeugt
 	kid, err := utils.RandomHex(6)
 	if err != nil {
-		return nil, fmt.Errorf("Kernel->NewKernel:" + err.Error())
+		return nil, fmt.Errorf("VmContext->NewKernel:" + err.Error())
 	}
 
 	// Der Mutex wird erzeugt
 	mutex := &sync.Mutex{}
 
 	// Das Kernelobjekt wird erzeugt
-	kernelObj := &Kernel{
-		Context:   nil,
-		id:        types.KernelID(kid),
-		register:  make(map[string]interface{}),
-		mutex:     mutex,
-		console:   consoleCache,
-		config:    kernelConfig,
-		core:      coreIface,
-		vmImports: make(map[string]*v8.Value),
-		//dbEntry:           dbEntry,
+	jsprocessorObj := &VmContext{
+		Context:           nil,
+		id:                types.KernelID(kid),
+		register:          make(map[string]interface{}),
+		mutex:             mutex,
+		console:           consoleCache,
+		core:              coreIface,
+		vmImports:         make(map[string]*v8.Value),
 		eventLoopStack:    make([]types.KernelEventLoopOperationInterface, 0),
 		eventLoopLockCond: sync.NewCond(mutex),
 		hasCloseSignal:    false,
 	}
 
-	// Der Context wird im Kernel Objekt gespeichert
-	_, context, err := makeIsolationAndContext(kernelObj, true)
+	// Der Context wird im VmContext Objekt gespeichert
+	_, context, err := makeIsolationAndContext(jsprocessorObj, enabeldFunctions)
 	if err != nil {
-		return nil, fmt.Errorf("Kernel->NewKernel:" + err.Error())
+		return nil, fmt.Errorf("VmContext->NewKernel:" + err.Error())
 	}
 
-	// Der Context wird im Kernel abgespeichert
-	kernelObj.Context = context
+	// Der Context wird im VmContext abgespeichert
+	jsprocessorObj.Context = context
 
 	// Die Require Funktionen werden Registriert
-	if err := kernelObj._setup_require(); err != nil {
-		return nil, fmt.Errorf("Kernel->NewKernel: " + err.Error())
+	if err := jsprocessorObj._setup_require(); err != nil {
+		return nil, fmt.Errorf("VmContext->NewKernel: " + err.Error())
 	}
 
 	// Das Kernelobejkt wird zurückgegeben
-	return kernelObj, nil
+	return jsprocessorObj, nil
 }

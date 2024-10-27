@@ -8,7 +8,6 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/crypto"
 	"github.com/CustodiaJS/custodiajs-core/global/procslog"
 	"github.com/CustodiaJS/custodiajs-core/global/types"
-	"github.com/CustodiaJS/custodiajs-core/ipc"
 	"github.com/CustodiaJS/custodiajs-core/localgrpcproto"
 )
 

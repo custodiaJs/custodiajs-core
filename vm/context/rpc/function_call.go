@@ -1,4 +1,4 @@
-package kmodulerpc
+package rpcjsprocessor
 
 import (
 	"time"
@@ -6,7 +6,7 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/global/static/errormsgs"
 	"github.com/CustodiaJS/custodiajs-core/global/types"
 	"github.com/CustodiaJS/custodiajs-core/global/utils"
-	"github.com/CustodiaJS/custodiajs-core/vm/kernel/eventloop"
+	"github.com/CustodiaJS/custodiajs-core/vm/context/eventloop"
 
 	v8 "rogchap.com/v8go"
 )

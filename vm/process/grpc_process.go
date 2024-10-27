@@ -7,7 +7,6 @@ import (
 
 	"github.com/CustodiaJS/custodiajs-core/global/static"
 	"github.com/CustodiaJS/custodiajs-core/global/types"
-	"github.com/CustodiaJS/custodiajs-core/localgrpcproto"
 )
 
 // Wird verwendet um den neuen Prozess zu Initalisieren

@@ -1,4 +1,4 @@
-package kmoduleconsole
+package contextconsole
 
 import (
 	"encoding/json"

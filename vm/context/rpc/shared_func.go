@@ -13,12 +13,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package kmodulerpc
+package rpcjsprocessor
 
 import (
 	"github.com/CustodiaJS/custodiajs-core/global/types"
 	"github.com/CustodiaJS/custodiajs-core/global/utils"
-	"github.com/CustodiaJS/custodiajs-core/vm/kernel/eventloop"
+	"github.com/CustodiaJS/custodiajs-core/vm/context/eventloop"
 
 	v8 "rogchap.com/v8go"
 )

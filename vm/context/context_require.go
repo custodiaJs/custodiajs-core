@@ -1,4 +1,4 @@
-package kernel
+package vmcontext
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	v8 "rogchap.com/v8go"
 )
 
-func (o *Kernel) _require(value string) (*v8.Value, error) {
+func (o *VmContext) _require(value string) (*v8.Value, error) {
 	// Der Mutex wird verwendet
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
@@ -25,7 +25,7 @@ func (o *Kernel) _require(value string) (*v8.Value, error) {
 	// Die Exports Funktionen werden bereitsgestellt
 	_, err := ctx.RunScript("const exports = {};", "require.js")
 	if err != nil {
-		return nil, fmt.Errorf("Kernel->_require: " + err.Error())
+		return nil, fmt.Errorf("VmContext->_require: " + err.Error())
 	}
 
 	test := `
@@ -37,7 +37,7 @@ func (o *Kernel) _require(value string) (*v8.Value, error) {
 	`
 	_, err = ctx.RunScript(test, "require.js")
 	if err != nil {
-		return nil, fmt.Errorf("Kernel->_require: " + err.Error())
+		return nil, fmt.Errorf("VmContext->_require: " + err.Error())
 	}
 
 	// Die Schlüssel werden ausgelesen
@@ -51,7 +51,7 @@ func (o *Kernel) _require(value string) (*v8.Value, error) {
 	return importModule, nil
 }
 
-func (o *Kernel) _setup_require() error {
+func (o *VmContext) _setup_require() error {
 	// Bereitstellen der 'require' Funktion im globalen Kontext
 	requireFunc := v8.NewFunctionTemplate(o.Isolate(), func(info *v8.FunctionCallbackInfo) *v8.Value {
 		// Der Import wird abgerufen
@@ -73,7 +73,7 @@ func (o *Kernel) _setup_require() error {
 
 	// Die Require Funktion wird registriert
 	if err := o.Global().Set("require", reqFunc); err != nil {
-		return fmt.Errorf("Kernel->_setup_require: " + err.Error())
+		return fmt.Errorf("VmContext->_setup_require: " + err.Error())
 	}
 
 	// Es ist kein Fehler aufgetreten

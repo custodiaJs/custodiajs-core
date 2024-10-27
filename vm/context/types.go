@@ -1,4 +1,4 @@
-package kernel
+package vmcontext
 
 import (
 	"sync"
@@ -9,14 +9,9 @@ import (
 	v8 "rogchap.com/v8go"
 )
 
-type KernelConfig struct {
-	Modules []types.KernelModuleInterface
-}
-
-type Kernel struct {
+type VmContext struct {
 	*v8.Context
 	id        types.KernelID
-	config    *KernelConfig
 	mutex     *sync.Mutex
 	core      types.CoreInterface
 	console   *consolecache.ConsoleOutputCache

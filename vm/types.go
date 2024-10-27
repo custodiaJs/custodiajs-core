@@ -4,12 +4,12 @@ import (
 	"sync"
 
 	"github.com/CustodiaJS/custodiajs-core/global/types"
+	kernel "github.com/CustodiaJS/custodiajs-core/vm/context"
 	"github.com/CustodiaJS/custodiajs-core/vm/image"
-	"github.com/CustodiaJS/custodiajs-core/vm/kernel"
 )
 
 type VmInstance struct {
-	*kernel.Kernel
+	*kernel.VmContext
 	core          types.CoreInterface
 	scriptLoaded  bool
 	startTimeUnix uint64
