@@ -227,9 +227,6 @@ func Init(localHostCryptoStore *crypto.CryptoStore, logDIRPath types.LOG_DIR, ip
 	coreLog.Debug("Created")
 
 	// Der VMIPC-Service wird gestartet
-	if err := initVmIpcServer(); err != nil {
-		return err
-	}
 
 	// Das Objekt wird zurückgegeben
 	return nil
