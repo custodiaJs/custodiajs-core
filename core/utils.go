@@ -10,8 +10,8 @@ import (
 func setState(tstate types.CoreState, useMutex bool) {
 	// Es wird geprüft ob Mutex verwendet werden sollen
 	if useMutex {
-		objectMutex.Lock()
-		defer objectMutex.Unlock()
+		coremutex.Lock()
+		defer coremutex.Unlock()
 	}
 
 	// Der Neue Status wird gesetzt

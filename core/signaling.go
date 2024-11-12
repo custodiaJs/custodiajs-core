@@ -8,8 +8,8 @@ func SignalShutdown() {
 	fmt.Println("Closing CustodiaJS...")
 
 	// Der Mutex wird angewendet
-	objectMutex.Lock()
-	defer objectMutex.Unlock()
+	coremutex.Lock()
+	defer coremutex.Unlock()
 
 	// Die Chan wird geschlossen
 	close(holdOpenChan)

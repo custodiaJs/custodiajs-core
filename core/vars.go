@@ -4,11 +4,25 @@ import (
 	"net"
 	"sync"
 
+	"github.com/CustodiaJS/bngsocket"
 	"github.com/CustodiaJS/custodiajs-core/core/ipnetwork"
 	"github.com/CustodiaJS/custodiajs-core/crypto"
 	"github.com/CustodiaJS/custodiajs-core/global/types"
 )
 
+// Core Mutex
+var coremutex *sync.Mutex = new(sync.Mutex)
+
+// VM-IPC Sockets
+var (
+	vmipcRootListener      net.Listener
+	vmipcAllUsersListener  net.Listener
+	vmipcSpecificListeners map[string]net.Listener
+	vmipcOpenConnections   []*bngsocket.BngSocket
+	vmipcInited            bool
+)
+
+// Core Variablen
 var (
 	coreLog          types.ProcessLogSessionInterface
 	apiSockets       []types.APISocketInterface
@@ -22,10 +36,6 @@ var (
 	serviceSignaling chan struct{}
 	holdOpenChan     chan struct{}
 	logDIR           types.LOG_DIR
-	objectMutex      *sync.Mutex
 	vms              []types.VmInterface
 	hostnetmanager   *ipnetwork.HostNetworkManagmentUnit
-	rootListener     net.Listener
-	coreUserListener net.Listener
-	allUsersListener net.Listener
 )

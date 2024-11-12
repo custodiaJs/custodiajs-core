@@ -11,7 +11,7 @@ import (
 // Wird verwendet um den Core geöffnet zu halten
 func Serve() {
 	// Der Mutex wird angewendet
-	objectMutex.Lock()
+	coremutex.Lock()
 
 	// Der Status wird auf Serving gesetzt
 	setState(static.SERVING, false)
@@ -42,7 +42,7 @@ func Serve() {
 	}
 
 	// Der Mutex wird freigegeben
-	objectMutex.Unlock()
+	coremutex.Unlock()
 
 	// Es wird ein neuer Waiter erzeugt
 	waiter := &sync.WaitGroup{}
@@ -51,7 +51,7 @@ func Serve() {
 	<-holdOpenChan
 
 	// Der Objekt Mutex wird angewendet
-	objectMutex.Lock()
+	coremutex.Lock()
 
 	// Der Status wird auf Shutdown gesetzt
 	setState(static.SHUTDOWN, false)
@@ -60,7 +60,7 @@ func Serve() {
 	closeAllVirtualMachines(waiter)
 
 	// Der Objekt Mutex wird freigegeben
-	objectMutex.Unlock()
+	coremutex.Unlock()
 
 	// Es wird gewartet bis alle VM's geschlossen wurden
 	waiter.Wait()

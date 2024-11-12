@@ -13,6 +13,46 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/global/utils"
 )
 
+// Erstellt einen neuen CustodiaJS Core
+func Init(localHostCryptoStore *crypto.CryptoStore, logDIRPath types.LOG_DIR, ipnet *ipnetwork.HostNetworkManagmentUnit) error {
+	coremutex.Lock()
+
+	coreLog = procslog.NewProcLogForCore()
+	vmKernelPtr = make(map[types.KernelID]types.VmInterface)
+	apiSockets = make([]types.APISocketInterface, 0)
+	vmsByName = make(map[string]types.VmInterface)
+	vmsByID = make(map[string]types.VmInterface)
+	cryptoStore = localHostCryptoStore
+	vms = make([]types.VmInterface, 0)
+	cstate = static.NEW
+
+	// Chans
+	holdOpenChan = make(chan struct{})
+	serviceSignaling = make(chan struct{})
+	vmSyncWaitGroup = sync.WaitGroup{}
+	apiSyncWaitGroup = sync.WaitGroup{}
+
+	// Log
+	logDIR = logDIRPath
+
+	// IP-Info Einheit
+	hostnetmanager = ipnet
+
+	// Log
+	coreLog.Debug("Created")
+
+	// Der VMIPC-Service wird gestartet
+	if err := InitVmIpcServer("/tmp", nil, nil); err != nil {
+		coremutex.Unlock()
+		return err
+	}
+
+	coremutex.Unlock()
+
+	// Das Objekt wird zurückgegeben
+	return nil
+}
+
 // Gibt das Aktuelle Primäre Host Cert für API Verbindungen zurück
 func GetLocalhostCryptoStore(plog_a types.ProcessLogSessionInterface) *crypto.CryptoStore {
 	return cryptoStore
@@ -22,8 +62,8 @@ func GetLocalhostCryptoStore(plog_a types.ProcessLogSessionInterface) *crypto.Cr
 func GetAllVMs(plog_a types.ProcessLogSessionInterface) []types.VmInterface {
 	// Der Mutex wird angewendet
 	// und nach beenden der Funktion freigegeben
-	objectMutex.Lock()
-	defer objectMutex.Unlock()
+	coremutex.Lock()
+	defer coremutex.Unlock()
 
 	// Es wird eine Liste mit allen Verfügbaren VM-Containern erstellt
 	extr := make([]types.VmInterface, 0)
@@ -50,8 +90,8 @@ func GetAllActiveVmIDs(plog_a types.ProcessLogSessionInterface) []string {
 
 	// Der Mutex wird angewendet
 	// und nach beenden der Funktion freigegeben
-	objectMutex.Lock()
-	defer objectMutex.Unlock()
+	coremutex.Lock()
+	defer coremutex.Unlock()
 
 	// Es wird eine Liste mit allen Verfügbaren VM's erstellt
 	extr := make([]string, 0)
@@ -78,8 +118,8 @@ func GetVmByName(vmName string, plog_a types.ProcessLogSessionInterface) (types.
 
 	// Der Mutex wird angewendet
 	// und nach beenden der Funktion freigegeben
-	objectMutex.Lock()
-	defer objectMutex.Unlock()
+	coremutex.Lock()
+	defer coremutex.Unlock()
 
 	// Es wird geprüft ob die VM exestiert
 	vmObj, found := vmsByName[lowerCaseVmName]
@@ -103,8 +143,8 @@ func GetVmByID(vmid string, plog_a types.ProcessLogSessionInterface) (types.VmIn
 
 	// Der Mutex wird angewendet
 	// und nach beenden der Funktion freigegeben
-	objectMutex.Lock()
-	defer objectMutex.Unlock()
+	coremutex.Lock()
+	defer coremutex.Unlock()
 
 	// Es wird geprüft ob die VM exestiert
 	vmObj, found := vmsByID[lowerCaseId]
@@ -132,8 +172,8 @@ func AddAPISocket(apiSocket types.APISocketInterface, plog_a types.ProcessLogSes
 
 	// Der Mutex wird angewendet
 	// und nach beenden der Funktion freigegeben
-	objectMutex.Lock()
-	defer objectMutex.Unlock()
+	coremutex.Lock()
+	defer coremutex.Unlock()
 
 	// Der API Socket wird zwischengespeichert
 	apiSockets = append(apiSockets, apiSocket)
@@ -151,19 +191,19 @@ func AddVMInstance(vmInstance types.VmInterface, plog_a types.ProcessLogSessionI
 	}
 
 	// Der Mutex wird angewendet
-	objectMutex.Lock()
+	coremutex.Lock()
 
 	// Es wird geprüft ob bereits eiein VM Link hinzugefügtne VM mit der Selben ID vorhanden ist
 	if _, foundVM := vmsByID[string(vmInstance.GetQVMID())]; foundVM {
-		objectMutex.Unlock()
+		coremutex.Unlock()
 		return fmt.Errorf("Core->AddNewVMInstance: You cannot add a VM container '%s' multiple times", vmInstance.GetQVMID())
 	}
 
 	// Der Mutex wird freigegeben
-	objectMutex.Unlock()
+	coremutex.Unlock()
 
 	// Der Mutex wird angewendet
-	objectMutex.Lock()
+	coremutex.Lock()
 
 	// Das VMObjekt wird zwischengespeichert
 	vmsByID[string(vmInstance.GetQVMID())] = vmInstance                    // Merklehash
@@ -172,7 +212,7 @@ func AddVMInstance(vmInstance types.VmInterface, plog_a types.ProcessLogSessionI
 	vms = append(vms, vmInstance)                                          // Die VM wird abgespeichert
 
 	// Der Mutex wird freigegeben
-	objectMutex.Unlock()
+	coremutex.Unlock()
 
 	coreLog.Log("New VM Instance added, name = '%s', shash = '%s'", vmInstance.GetManifest().Name, vmInstance.GetScriptHash())
 
@@ -195,39 +235,7 @@ func AddVMInstance(vmInstance types.VmInterface, plog_a types.ProcessLogSessionI
 	return nil
 }
 
-// Erstellt einen neuen CustodiaJS Core
-func Init(localHostCryptoStore *crypto.CryptoStore, logDIRPath types.LOG_DIR, ipnet *ipnetwork.HostNetworkManagmentUnit) error {
-	coreLog = procslog.NewProcLogForCore()
-	vmsByID = make(map[string]types.VmInterface)
-	vmsByName = make(map[string]types.VmInterface)
-	vmKernelPtr = make(map[types.KernelID]types.VmInterface)
-	vms = make([]types.VmInterface, 0)
-	apiSockets = make([]types.APISocketInterface, 0)
-	cryptoStore = localHostCryptoStore
-	cstate = static.NEW
-
-	// Chans
-	holdOpenChan = make(chan struct{})
-	serviceSignaling = make(chan struct{})
-	vmSyncWaitGroup = sync.WaitGroup{}
-	apiSyncWaitGroup = sync.WaitGroup{}
-
-	// Mutexes
-	objectMutex = &sync.Mutex{}
-	objectMutex.Lock()
-	defer objectMutex.Unlock()
-
-	// Log
-	logDIR = logDIRPath
-
-	// IP-Info Einheit
-	hostnetmanager = ipnet
-
-	// Log
-	coreLog.Debug("Created")
-
-	// Der VMIPC-Service wird gestartet
-
-	// Das Objekt wird zurückgegeben
-	return nil
+// Gibt an ob der Core Initialisiert wurde
+func CoreIsInited() bool {
+	return false
 }
