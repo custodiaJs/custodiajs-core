@@ -3,14 +3,14 @@ package core
 import "fmt"
 
 // Signalisiert dem Core, dass er beendet werden soll
-func (o *Core) SignalShutdown() {
+func SignalShutdown() {
 	// Log
 	fmt.Println("Closing CustodiaJS...")
 
 	// Der Mutex wird angewendet
-	o.objectMutex.Lock()
-	defer o.objectMutex.Unlock()
+	objectMutex.Lock()
+	defer objectMutex.Unlock()
 
 	// Die Chan wird geschlossen
-	close(o.holdOpenChan)
+	close(holdOpenChan)
 }

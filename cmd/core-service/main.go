@@ -26,7 +26,7 @@ func main() {
 	cmd.CheckFolderAndFileStructureOnHost()
 
 	// Die Default Pfade werden ermittelt
-	hostCryptoStoreDirPath, _, logDirectoryPath, _, _ := cmd.GetPathsAndDirs()
+	hostCryptoStoreDirPath, logDirectoryPath, _, _ := cmd.GetPathsAndDirs()
 
 	// Es wird versucht den CryptoStore zu laden,
 	// sollte kein Crypto Store vorhanden sein,
@@ -37,33 +37,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Die CLI Sockets werden vorbereitet
-	cliSockets, cliSocketsError := cmd.NewCLIHostSockets(false)
-	if cliSocketsError != nil {
-		panic(cliSocketsError)
-	}
-
 	// Der Host Netzwerk Controller wird erstellt
 	ipnetcon := ipnetwork.NewHostNetworkManagmentUnit()
 
 	// Der Core wird erzeugt
-	coreInstance, coreInstanceError := core.NewCore(cryptoStore, logDirectoryPath, ipnetcon)
+	coreInstanceError := core.Init(cryptoStore, logDirectoryPath, ipnetcon)
 	if coreInstanceError != nil {
 		panic(coreInstanceError)
 	}
 
-	// Die API's werden vorbereitet
-	if apiSocketsError := cmd.SetupHostapi(coreInstance); apiSocketsError != nil {
-		panic(apiSocketsError)
-	}
-
-	// Die API Socket Instanzen werden dem Core hinzugefügt
-	for _, coreApiInstance := range cliSockets {
-		if err := coreInstance.AddAPISocket(coreApiInstance, nil); err != nil {
-			panic(err)
-		}
-	}
-
 	// Das Hauptprogramm wird offen gehalten
-	cmd.RunCoreConsoleOrBackgroundService(coreInstance)
+	cmd.RunCoreConsoleOrBackgroundService()
 }

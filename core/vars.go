@@ -1,17 +1,16 @@
 package core
 
 import (
+	"net"
 	"sync"
 
-	"github.com/CustodiaJS/custodiajs-core/api/http/context"
 	"github.com/CustodiaJS/custodiajs-core/core/ipnetwork"
 	"github.com/CustodiaJS/custodiajs-core/crypto"
 	"github.com/CustodiaJS/custodiajs-core/global/types"
 )
 
-type Core struct {
+var (
 	coreLog          types.ProcessLogSessionInterface
-	cpmu             *context.ContextManagmentUnit
 	apiSockets       []types.APISocketInterface
 	cryptoStore      *crypto.CryptoStore
 	vmsByID          map[string]types.VmInterface
@@ -19,14 +18,14 @@ type Core struct {
 	vmKernelPtr      map[types.KernelID]types.VmInterface
 	vmSyncWaitGroup  sync.WaitGroup
 	apiSyncWaitGroup sync.WaitGroup
-	state            types.CoreState
+	cstate           types.CoreState
 	serviceSignaling chan struct{}
 	holdOpenChan     chan struct{}
 	logDIR           types.LOG_DIR
 	objectMutex      *sync.Mutex
 	vms              []types.VmInterface
 	hostnetmanager   *ipnetwork.HostNetworkManagmentUnit
-}
-
-type CoreFirewall struct {
-}
+	rootListener     net.Listener
+	coreUserListener net.Listener
+	allUsersListener net.Listener
+)

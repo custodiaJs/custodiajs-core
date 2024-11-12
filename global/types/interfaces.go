@@ -17,7 +17,6 @@ package types
 
 import (
 	"crypto/x509"
-	"net/http"
 	"net/url"
 	"sync"
 
@@ -25,15 +24,6 @@ import (
 
 	v8 "rogchap.com/v8go"
 )
-
-type CoreInterface interface {
-	GetAllVMs(plog_a ProcessLogSessionInterface) []VmInterface
-	GetAllActiveVmIDs(plog_a ProcessLogSessionInterface) []string
-	GetVmByID(vmid string, plog_a ProcessLogSessionInterface) (VmInterface, bool, *SpecificError)
-	GetVmByName(vmname string, plog_a ProcessLogSessionInterface) (VmInterface, bool, *SpecificError)
-	GetCoreSessionManagmentUnit(plog_a ProcessLogSessionInterface) ContextManagmentUnitInterface
-	AddVMInstance(vmInstance VmInterface, plog_a ProcessLogSessionInterface) error
-}
 
 type VmInterface interface {
 	// Gibt das Manifest zurück
@@ -64,7 +54,6 @@ type VmInterface interface {
 
 type APISocketInterface interface {
 	Serve(chan struct{}) error
-	LinkCore(CoreInterface) error
 }
 
 type SharedFunctionInterface interface {
@@ -101,7 +90,6 @@ type KernelInterface interface {
 	Signal(id string, value interface{})
 	AsVmInstance() VmInterface
 	GetCAMembershipIDs() []string
-	GetCore() CoreInterface
 	GetKId() KernelID
 }
 
@@ -186,10 +174,6 @@ type CoreHttpContextInterface interface {
 	SignalThatTheErrorWasSuccessfullyTransmitted(size int)
 	GetReturnChan() FunctionCallReturnChanInterface
 	CloseBecauseFunctionReturned()
-}
-
-type ContextManagmentUnitInterface interface {
-	NewHTTPBasesSession(r *http.Request, proclogMother ProcessLogSessionInterface) (CoreHttpContextInterface, *SpecificError)
 }
 
 type CustodiaJSNetworkHypervisorInterface interface {

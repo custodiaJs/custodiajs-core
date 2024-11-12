@@ -9,18 +9,14 @@ import (
 	"runtime"
 	"strings"
 
-	http "github.com/CustodiaJS/custodiajs-core/api/http"
-	"github.com/CustodiaJS/custodiajs-core/api/localgrpc"
-	"github.com/CustodiaJS/custodiajs-core/core"
 	"github.com/CustodiaJS/custodiajs-core/filesystem"
 	"github.com/CustodiaJS/custodiajs-core/global/paths"
-	"github.com/CustodiaJS/custodiajs-core/global/static"
 	"github.com/CustodiaJS/custodiajs-core/global/types"
 	"github.com/CustodiaJS/custodiajs-core/global/utils"
 )
 
 // Wird verwendet alle Verzeichnisse zu ermitteln
-func GetPathsAndDirs() (types.HOST_CRYPTOSTORE_WATCH_DIR_PATH, types.VM_DB_DIR_PATH, types.LOG_DIR, types.HOST_CONFIG_FILE_PATH, types.HOST_CONFIG_PATH) {
+func GetPathsAndDirs() (types.HOST_CRYPTOSTORE_WATCH_DIR_PATH, types.LOG_DIR, types.HOST_CONFIG_FILE_PATH, types.HOST_CONFIG_PATH) {
 	// Erzeugt den Cryptostore Path
 	cryptoStorePath := types.HOST_CRYPTOSTORE_WATCH_DIR_PATH(path.Join(string(paths.HOST_CONFIG_DIR_PATH), "crypstore"))
 
@@ -28,7 +24,7 @@ func GetPathsAndDirs() (types.HOST_CRYPTOSTORE_WATCH_DIR_PATH, types.VM_DB_DIR_P
 	hostConfigFilePath := types.HOST_CONFIG_FILE_PATH(path.Join(string(paths.HOST_CONFIG_DIR_PATH), "config.json"))
 
 	// Gibt die Pfade zurück
-	return cryptoStorePath, paths.DEFAULT_HOST_VM_DB_DIR_PATH, paths.DEFAULT_LOGGING_DIR_PATH, hostConfigFilePath, paths.HOST_CONFIG_DIR_PATH
+	return cryptoStorePath, paths.DEFAULT_LOGGING_DIR_PATH, hostConfigFilePath, paths.HOST_CONFIG_DIR_PATH
 }
 
 // Gibt den Pfad für die UnixSockets bzw Named Pipes zurück
@@ -42,67 +38,6 @@ func GetSocketOrPipeNameOrAddress(root bool) types.SOCKET_PATH {
 	} else {
 		return ""
 	}
-}
-
-// Wird verwendet um die HostCliServices vorzubereiten
-func NewCLIHostSockets(withRoot bool) ([]*localgrpc.HostAPIService, error) {
-	// Speichert alle Verfügabren API Instanzen ab
-	apiInstances := make([]*localgrpc.HostAPIService, 0)
-
-	// Es wird versucht die Testunit zu erzeugen
-	cliAPIInstance, cliAPIInstanceError := localgrpc.New(GetSocketOrPipeNameOrAddress(withRoot), static.NONE_ROOT_ADMIN)
-
-	// Es wird geprüft ob ein Fehler aufgetretn ist
-	if cliAPIInstanceError != nil {
-		return nil, fmt.Errorf("NewCLIHostSockets: " + cliAPIInstanceError.Error())
-	}
-
-	// Die CLI Instanz wird zwischengsepeichert
-	apiInstances = append(apiInstances, cliAPIInstance)
-
-	// Es wird geprüft ob Root gewünscht wird
-	if withRoot {
-		// Sollte Root gewünscht sein, wird Zusätzlich der Root CLI Socket hinzugefügt
-		cliRootAPIInstance, cliRootAPIInstanceError := localgrpc.New(GetSocketOrPipeNameOrAddress(false), static.NONE_ROOT_ADMIN)
-
-		// Es wird geprüft ob ein Fehler aufgetretn ist
-		if cliRootAPIInstanceError != nil {
-			return nil, fmt.Errorf("NewCLIHostSockets: " + cliRootAPIInstanceError.Error())
-		}
-
-		// Die CLI API Instanz wird zwischengspeichert
-		apiInstances = append(apiInstances, cliRootAPIInstance)
-	}
-
-	// Gibt die API Sockets zurück
-	return apiInstances, nil
-}
-
-// Wird verwendet um die Host API Services bereizustellen
-func SetupHostapi(coreinst *core.Core) error {
-	// Der Lokale Crypto Store wird abgerufen
-	localhostAPICert := coreinst.GetLocalhostCryptoStore(nil)
-
-	// Der Localhost http wird erzeugt
-	localhostWebserviceV6, err := http.NewLocalService("ipv6", 8080, localhostAPICert.GetLocalhostAPICertificate())
-	if err != nil {
-		panic(err)
-	}
-	localhostWebserviceV4, err := http.NewLocalService("ipv4", 8080, localhostAPICert.GetLocalhostAPICertificate())
-	if err != nil {
-		panic(err)
-	}
-
-	// Der Localhost http wird hinzugefügt
-	if err := coreinst.AddAPISocket(localhostWebserviceV6, nil); err != nil {
-		panic(err)
-	}
-	if err := coreinst.AddAPISocket(localhostWebserviceV4, nil); err != nil {
-		panic(err)
-	}
-
-	// Es ist kein Fehler aufgetreten
-	return nil
 }
 
 // Wird verwendet um zu ermitteln ob es sich um ein unterstützes OS handelt
@@ -141,7 +76,7 @@ func CheckFolderAndFileStructureOnHost() {
 	fmt.Println("Folder and file structure checking...")
 
 	// Es werden alle Pfade abgerufen welche notwendig sind
-	hostCryptoStoreDirPath, vmDatabaseDirectoryPath, logDirectoryPath, hostConfigFile, hostConfigBaseDirectoryPath := GetPathsAndDirs()
+	hostCryptoStoreDirPath, logDirectoryPath, hostConfigFile, hostConfigBaseDirectoryPath := GetPathsAndDirs()
 
 	// Gibt an wieviele Dateien / Ordner nicht gefunden wurden, muss bei 0 stehen
 	totalFoldersNotFound := uint(0)
@@ -201,12 +136,6 @@ func CheckFolderAndFileStructureOnHost() {
 				totalFoldersNotFound = totalFoldersNotFound + 1
 			}
 		}
-	}
-
-	// Es wird geprüft ob die VM-DB vorhanden ist
-	if !filesystem.FolderExists(string(vmDatabaseDirectoryPath)) {
-		fmt.Printf(" -> VM-Database directory %s not found\n", vmDatabaseDirectoryPath)
-		totalFoldersNotFound = totalFoldersNotFound + 1
 	}
 
 	// Es wird geprüft ob das Log Direcotry vorhanden ist

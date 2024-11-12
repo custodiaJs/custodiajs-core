@@ -12,7 +12,7 @@ import (
 )
 
 // Wird verwendet um den Core Service Offen zu halten
-func RunCoreConsoleOrBackgroundService(coreinst *core.Core) {
+func RunCoreConsoleOrBackgroundService() {
 	// Es wird eine neuer Waitgroup erzeugt,
 	// diese Waitgroup wird verwendet um zu ermitteln
 	// ob die Core Instanz ausgeführt wird
@@ -22,7 +22,7 @@ func RunCoreConsoleOrBackgroundService(coreinst *core.Core) {
 	// Der Core wird in einer eigenen Gouroutine ausgeführt
 	go func() {
 		// Der Core wird gestartet
-		coreinst.Serve()
+		core.Serve()
 
 		// Es wird Signalisiert dass der Core beendet wurde
 		waitGroupForServing.Done()
@@ -51,7 +51,7 @@ func RunCoreConsoleOrBackgroundService(coreinst *core.Core) {
 			// Es wird versucht das Signal zu ermitteln
 			if sig == syscall.SIGINT || sig == syscall.SIGTERM || sig == syscall.SIGHUP || sig == syscall.SIGQUIT {
 				// Bei Beenden-Signalen Core ordnungsgemäß herunterfahren
-				coreinst.SignalShutdown()
+				core.SignalShutdown()
 
 				// Es wird auf die Wait Group gewartet
 				waitGroupForServing.Wait()
@@ -66,7 +66,7 @@ func RunCoreConsoleOrBackgroundService(coreinst *core.Core) {
 			// Es wird versucht das Signal zu ermitteln
 			if sig == os.Interrupt {
 				// Bei Beenden-Signalen Core ordnungsgemäß herunterfahren
-				coreinst.SignalShutdown()
+				core.SignalShutdown()
 
 				// Es wird auf die Wait Group gewartet
 				waitGroupForServing.Wait()

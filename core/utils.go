@@ -7,26 +7,21 @@ import (
 )
 
 // Legt den Core Status fest
-func setState(core *Core, state types.CoreState, useMutex bool) {
+func setState(tstate types.CoreState, useMutex bool) {
 	// Es wird geprüft ob Mutex verwendet werden sollen
 	if useMutex {
-		core.objectMutex.Lock()
-		defer core.objectMutex.Unlock()
-	}
-
-	// Es wird geprüft ob der neue Status, der Aktuelle ist
-	if core.state == state {
-		return
+		objectMutex.Lock()
+		defer objectMutex.Unlock()
 	}
 
 	// Der Neue Status wird gesetzt
-	core.state = state
+	cstate = tstate
 }
 
 // Signalisiert allen VM's dass sie beendet werden
-func closeAllVirtualMachines(o *Core, wg *sync.WaitGroup) {
+func closeAllVirtualMachines(wg *sync.WaitGroup) {
 	// Es werden alle VM's abgearbeitet und geschlossen
-	for _, item := range o.vms {
+	for _, item := range vms {
 		wg.Add(1)
 		go func(cvm types.VmInterface) {
 			cvm.SignalShutdown()

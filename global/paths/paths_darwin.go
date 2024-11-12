@@ -14,10 +14,6 @@ var (
 	//LINUX_HOST_CONFIG_DIR_PATH  types.HOST_CONFIG_PATH = types.HOST_CONFIG_PATH(filepath.Join("/", "etc", "CustodiaJS"))
 	HOST_CONFIG_DIR_PATH types.HOST_CONFIG_PATH = types.HOST_CONFIG_PATH(filepath.Join("/", "Library", "Application Support", "CustodiaJS"))
 
-	// Die VM Datenbanken
-	//LINUX_DEFAULT_HOST_VM_DB_DIR_PATH  types.VM_DB_DIR_PATH = types.VM_DB_DIR_PATH(filepath.Join("var", "lib", "CustodiaJS", "vms"))
-	DEFAULT_HOST_VM_DB_DIR_PATH types.VM_DB_DIR_PATH = types.VM_DB_DIR_PATH(filepath.Join("/", "Library", "Application Support", "CustodiaJS", "vms"))
-
 	// Log Pfade
 	//LINUX_DEFAULT_LOGGING_DIR_PATH  types.LOG_DIR = types.LOG_DIR(filepath.Join("var", "log", "CustodiaJS"))
 	DEFAULT_LOGGING_DIR_PATH types.LOG_DIR = types.LOG_DIR(filepath.Join("/", "Library", "Logs", "CustodiaJS"))

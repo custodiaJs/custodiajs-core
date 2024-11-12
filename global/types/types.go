@@ -30,7 +30,6 @@ type VERSION uint32                         // Version des Hauptpgrogrammes
 type REPO string                            // URL der Sourccode Qeulle
 type SOCKET_PATH string                     // Gibt einen Socket Path an
 type LOG_DIR string                         // Gibt den Path des Log Dir's unter
-type VM_DB_DIR_PATH string                  // Gibt den Path des VM-Datenbank Verzeichniss an
 type HOST_CRYPTOSTORE_WATCH_DIR_PATH string // Gibt den Ordner an, in dem sich alle Zertifikate und Schlüssel des Hosts befinden
 type HOST_CONFIG_FILE_PATH string           // Gibt den Pfad der Config Datei an
 type HOST_CONFIG_PATH string
