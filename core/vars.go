@@ -18,7 +18,7 @@ var (
 	vmipcRootListener      net.Listener
 	vmipcAllUsersListener  net.Listener
 	vmipcSpecificListeners map[string]net.Listener
-	vmipcOpenConnections   []*bngsocket.BngSocket
+	vmipcOpenConnections   []*bngsocket.BngConn
 	vmipcInited            bool
 )
 

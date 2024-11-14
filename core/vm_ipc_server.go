@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/user"
@@ -9,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/CustodiaJS/bngsocket"
+	"github.com/CustodiaJS/custodiajs-core/log"
 )
 
 // initVmIpcServer erstellt Sockets für Root, spezifische Gruppen, alle Benutzer und spezifische Benutzer, wenn der Prozess als Root ausgeführt wird.
@@ -28,7 +30,7 @@ func InitVmIpcServer(basePath string, groupNames, userNames []string) error {
 	}
 
 	// Das Open Connections Array wird erzeugt
-	vmipcOpenConnections = make([]*bngsocket.BngSocket, 0)
+	vmipcOpenConnections = make([]*bngsocket.BngConn, 0)
 
 	// Der Aktuelle Benutzer wird ermittelt
 	currentUser, err := user.Current()
@@ -94,18 +96,57 @@ func processListenerGoroutine(nlist net.Listener) {
 		if err != nil {
 		}
 
-		upgraddedConn, err := bngsocket.UpgradeSocketToBngSocket(conn)
-		if err != nil {
-		}
-
-		if addVmIpcConnection(upgraddedConn); err != nil {
-		}
+		go processConnectionGoroutine(conn)
 	}
 }
 
+// Wird verwendet um zu ermitteln ob die Verbindung geschlossen wurde
+func processConnectionGoroutine(conn net.Conn) {
+	// Die Verbindung wird geupgradet
+	upgraddedConn, err := bngsocket.UpgradeSocketToBngConn(conn)
+	if err != nil {
+	}
+
+	// Die Verbindung wird zwischengespeichert
+	addVmIpcConnection(upgraddedConn)
+
+	// Es wird eine Go Routine gestartet, welche das Monitoring der Verbindung übernimmt
+	go func() {
+		// Die Verbindung wird nach abschluss der Funktion entfernt
+		defer removeVmIpcConnection(upgraddedConn)
+
+		// Es wird darauf gewartet dass die Verbindung geschlossen wird
+		mresult := bngsocket.MonitorConnection(upgraddedConn)
+		if mresult != nil {
+			// Es wird geprüft ob die Verbindung Regulär getrennt wurde,
+			// sollte die Verbindung nicht Regulär getrennt wurden sein,
+			// so wird der Vorgang in den Error Log geschrieben
+			if mresult != io.EOF && mresult != bngsocket.ErrConnectionClosedEOF {
+				// Der Fehler wird in den Log geschrieben
+				log.LogError("VM-IPC# Monitoring error: %s", mresult.Error())
+				return
+			}
+		}
+	}()
+
+	// Die Kernfunktion wird Registriert, über diese Funktion Registriert sich ein Client
+	upgraddedConn.RegisterFunction("init", func(req *bngsocket.BngRequest) error {
+		return nil
+	})
+}
+
 // Speichert eintreffende Verbindungen von VM Prozessen ab
-func addVmIpcConnection(conn *bngsocket.BngSocket) error {
-	return nil
+func addVmIpcConnection(conn *bngsocket.BngConn) {
+	coremutex.Lock()
+	vmipcOpenConnections = append(vmipcOpenConnections, conn)
+	coremutex.Unlock()
+}
+
+// Entfernt VM Prozesse
+func removeVmIpcConnection(conn *bngsocket.BngConn) {
+	coremutex.Lock()
+	vmipcOpenConnections = append(vmipcOpenConnections, conn)
+	coremutex.Unlock()
 }
 
 // createSocketForUser erstellt einen UNIX-Socket mit Berechtigungen für einen bestimmten Benutzer oder eine Gruppe

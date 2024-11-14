@@ -12,11 +12,11 @@ import (
 var (
 	// Gibt das Standard Config Verzeichniss an
 	//LINUX_HOST_CONFIG_DIR_PATH  types.HOST_CONFIG_PATH = types.HOST_CONFIG_PATH(filepath.Join("/", "etc", "CustodiaJS"))
-	HOST_CONFIG_DIR_PATH types.HOST_CONFIG_PATH = types.HOST_CONFIG_PATH(filepath.Join("/", "Library", "Application Support", "CustodiaJS"))
+	HOST_CONFIG_DIR_PATH types.HOST_CONFIG_PATH = types.HOST_CONFIG_PATH(filepath.Join("/", "etc", "custodiajs"))
 
 	// Log Pfade
 	//LINUX_DEFAULT_LOGGING_DIR_PATH  types.LOG_DIR = types.LOG_DIR(filepath.Join("var", "log", "CustodiaJS"))
-	DEFAULT_LOGGING_DIR_PATH types.LOG_DIR = types.LOG_DIR(filepath.Join("/", "Library", "Logs", "CustodiaJS"))
+	DEFAULT_LOGGING_DIR_PATH types.LOG_DIR = types.LOG_DIR(filepath.Join("/", "var", "log", "custodiajs"))
 
 	// Gibt die Sockets für den Hypervisor an, wird verwendet damit der Hypervisor mit dem Host Kommunizieren kann
 	//LINUX_CNH_SOCKET_PATH  types.CHN_CORE_SOCKET_PATH = types.CHN_CORE_SOCKET_PATH("")
