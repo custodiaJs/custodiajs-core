@@ -25,3 +25,4 @@ build/
 #apiservices/localgrpc/types.go
 #protobuff/local_rpc.proto
 log.console.txt
+.DS_STORE

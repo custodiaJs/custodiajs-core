@@ -8,29 +8,27 @@ import (
 	"os/user"
 	"path/filepath"
 	"strconv"
+	"sync"
 
 	"github.com/CustodiaJS/bngsocket"
+	"github.com/CustodiaJS/custodiajs-core/global/types"
 	"github.com/CustodiaJS/custodiajs-core/log"
 )
 
 // initVmIpcServer erstellt Sockets für Root, spezifische Gruppen, alle Benutzer und spezifische Benutzer, wenn der Prozess als Root ausgeführt wird.
 // Ist der Prozess nicht Root, wird nur ein Socket für den aktuellen Benutzer erstellt.
-func InitVmIpcServer(basePath string, groupNames, userNames []string) error {
-	// Es wird geprüft ob der Core Initalisiert wurde
-	if !CoreIsInited() {
-		return fmt.Errorf("core ist not initalized")
-	}
-
-	coremutex.Lock()
-	defer coremutex.Unlock()
-
+func coreInitVmIpcServer(basePath string, groupNames, userNames []string) error {
 	// Es wird geprüft ob der VM-IPC Server initalisiert wurde
-	if vmipcInited {
+	if vmipcState != NEW {
 		return fmt.Errorf("vm ipc always initalized")
 	}
 
+	// Log
+	log.DebugLogPrint("The VM-IPC interface is prepared")
+
 	// Das Open Connections Array wird erzeugt
 	vmipcOpenConnections = make([]*bngsocket.BngConn, 0)
+	vmipcSpecificListeners = make(map[string]net.Listener)
 
 	// Der Aktuelle Benutzer wird ermittelt
 	currentUser, err := user.Current()
@@ -41,61 +39,78 @@ func InitVmIpcServer(basePath string, groupNames, userNames []string) error {
 	// Ermitteln, ob der Prozess als Root ausgeführt wird
 	isRoot := currentUser.Uid == "0"
 
-	// Socket für den aktuellen Benutzer, falls nicht Root
-	if !isRoot {
+	// Die VM-IPC wird als Initalisiert Makiert
+	vmipcState = INITED
+
+	// Sollte es sich um den Root Benutzer handeln, so werden 3 Sockets erzeugt,
+	// ansonsten wird nur ein Socket für den Aktuellen Benutezr erzeugt
+	totalIfaces := 0
+	if isRoot {
+		// Sockets für Root und allgemeine Benutzer erstellen
+		vmipcRootListener, err = createSocketWithHelper(basePath, "root_socket.sock", 0, 0, 0600)
+		if err != nil {
+			return fmt.Errorf("fehler beim erstellen des root-sockets: %w", err)
+		}
+
+		vmipcSpecificListeners, err = createGroupAndUserSockets(basePath, groupNames, userNames)
+		if err != nil {
+			return err
+		}
+
+		// Die Einzelnen Listener werden in einer Acceptor Goroutine verwendet
+		go processListenerGoroutine(vmipcRootListener)
+		for _, item := range vmipcSpecificListeners {
+			go processListenerGoroutine(item)
+		}
+
+		// Die VM-IPC wird als Serving Makiert
+		vmipcState = SERVING
+	} else {
 		// Der Listener für den Aktuellen Benutzer wird erstellt
 		userListener, err := createSocketWithHelper(basePath, fmt.Sprintf("user_%s_socket.sock", currentUser.Username), atoi(currentUser.Uid), -1, 0600)
 		if err != nil {
 			return err
 		}
 
+		// LOG
+		log.DebugLogPrint("VM-IPC created for the current user %s", currentUser.Username)
+
 		// Der Listener wird als Spefic Listener zwischnegespeichert
-		vmipcSpecificListeners := map[string]net.Listener{}
-		vmipcSpecificListeners[fmt.Sprintf("user:%s", currentUser)] = userListener
+		vmipcSpecificListeners[fmt.Sprintf("user:%s", currentUser.Username)] = userListener
 
 		// Der Einzelnen Listener wird in einer Acceptor Goroutine verwendet
 		go processListenerGoroutine(userListener)
 
-		// Es ist kein Fehler vorhanden
-		return nil
+		// Die VM-IPC wird als Serving Makiert
+		vmipcState = SERVING
 	}
 
-	// Sockets für Root und allgemeine Benutzer erstellen
-	vmipcRootListener, err = createSocketWithHelper(basePath, "root_socket.sock", 0, 0, 0600)
-	if err != nil {
-		return fmt.Errorf("fehler beim erstellen des root-sockets: %w", err)
+	// LOG
+	if totalIfaces == 1 {
+		log.DebugLogPrint("The VM-IPC interface have been successfully prepared")
+	} else {
+		log.DebugLogPrint("The VM-IPC interfaces have been successfully prepared")
 	}
 
-	vmipcSpecificListeners, err = createGroupAndUserSockets(basePath, groupNames, userNames)
-	if err != nil {
-		return err
-	}
-
-	vmipcAllUsersListener, err = createSocketWithHelper(basePath, "public_socket.sock", 0, 0, 0666)
-	if err != nil {
-		return fmt.Errorf("fehler beim erstellen des allgemeinen sockets: %w", err)
-	}
-
-	// Die Einzelnen Listener werden in einer Acceptor Goroutine verwendet
-	go processListenerGoroutine(vmipcAllUsersListener)
-	go processListenerGoroutine(vmipcRootListener)
-	for _, item := range vmipcSpecificListeners {
-		go processListenerGoroutine(item)
-	}
-
-	// Die VM-IPC wird als Initalisiert Makiert
-	vmipcInited = true
-
+	// Es ist kein Fehler aufgetreten
 	return nil
 }
 
 // Wird als Goroutine ausgeführt um eintreffende Socketanfragen zu verarbeiten
 func processListenerGoroutine(nlist net.Listener) {
+	log.DebugLogPrint("VM-IPC listener started")
 	for {
 		conn, err := nlist.Accept()
 		if err != nil {
+			cstate := getVmIpcServerState()
+			if cstate != CLOSING && cstate != CLOSED {
+				corePanic(err)
+				return
+			}
 		}
 
+		// LOG
+		log.DebugLogPrint("New VM-IPC connection accepted")
 		go processConnectionGoroutine(conn)
 	}
 }
@@ -117,6 +132,7 @@ func processConnectionGoroutine(conn net.Conn) {
 
 		// Es wird darauf gewartet dass die Verbindung geschlossen wird
 		mresult := bngsocket.MonitorConnection(upgraddedConn)
+		log.DebugLogPrint("VM-IPC connection closed")
 		if mresult != nil {
 			// Es wird geprüft ob die Verbindung Regulär getrennt wurde,
 			// sollte die Verbindung nicht Regulär getrennt wurden sein,
@@ -140,6 +156,7 @@ func addVmIpcConnection(conn *bngsocket.BngConn) {
 	coremutex.Lock()
 	vmipcOpenConnections = append(vmipcOpenConnections, conn)
 	coremutex.Unlock()
+	log.DebugLogPrint("New VM-IPC connection cached")
 }
 
 // Entfernt VM Prozesse
@@ -147,6 +164,7 @@ func removeVmIpcConnection(conn *bngsocket.BngConn) {
 	coremutex.Lock()
 	vmipcOpenConnections = append(vmipcOpenConnections, conn)
 	coremutex.Unlock()
+	log.DebugLogPrint("VM-IPC connection removed from cache")
 }
 
 // createSocketForUser erstellt einen UNIX-Socket mit Berechtigungen für einen bestimmten Benutzer oder eine Gruppe
@@ -201,6 +219,7 @@ func createGroupAndUserSockets(basePath string, groupNames, userNames []string) 
 			return nil, fmt.Errorf("fehler beim erstellen des sockets für gruppe %s: %w", groupName, err)
 		}
 		specificListeners[fmt.Sprintf("group:%s", groupName)] = listener
+		log.DebugLogPrint("Created VM-IPC listener for user group: %s", groupName)
 	}
 
 	for _, userName := range userNames {
@@ -220,9 +239,63 @@ func createGroupAndUserSockets(basePath string, groupNames, userNames []string) 
 			return nil, fmt.Errorf("fehler beim erstellen des sockets für benutzer %s: %w", userName, err)
 		}
 		specificListeners[fmt.Sprintf("user:%s", userName)] = listener
+		log.DebugLogPrint("Created VM-IPC listener for user: %s", userName)
 	}
 
 	return specificListeners, nil
+}
+
+// Wird verwendet um allen Clients zu Signalisieren das der Core beendet wird und trennt die Verbindung zu allen Vorhandenen IPC-VMS
+// Signalisiert allen VM's dass sie beendet werden
+func signalCoreIsClosingAndCloseAllIpcConnections(wg *sync.WaitGroup) {
+	// Es werden alle VM's abgearbeitet und geschlossen
+	for _, item := range vms {
+		wg.Add(1)
+		go func(cvm types.VmInterface) {
+			cvm.SignalShutdown()
+			wg.Done()
+		}(item)
+	}
+}
+
+// Gibt den Status des Aktuellen VM-IPC Servers zurück
+func getVmIpcServerState() _VmIpcServerState {
+	coremutex.Lock()
+	t := vmipcState
+	coremutex.Unlock()
+	return t
+}
+
+// Schließt alle Verfügabren VM-IPC Listener
+func closeVMIpcServer() {
+	// Es wird geprüft ob der VmIPC Server geschlossen wurde
+	if vmipcState != SERVING {
+		return
+	}
+
+	// Der Status wird auf Closing gesetzt
+	vmipcState = CLOSING
+
+	if vmipcRootListener != nil {
+		vmipcRootListener.Close()
+	}
+
+	// Die Spiziellen Werden aufgelistet
+	extracted := []string{}
+	for t, item := range vmipcSpecificListeners {
+		item.Close()
+		extracted = append(extracted, t)
+		log.DebugLogPrint("VM-IPC listener '%s' are closed", t)
+	}
+	for _, item := range extracted {
+		delete(vmipcSpecificListeners, item)
+	}
+
+	// Der Status wird auf Closed gesetzt
+	vmipcState = CLOSED
+
+	// LOG
+	log.DebugLogPrint("All VM-IPC listeners are closed")
 }
 
 // Hilfsfunktion zur Umwandlung von UID-Strings in int, um Fehlerbehandlung zu verkürzen

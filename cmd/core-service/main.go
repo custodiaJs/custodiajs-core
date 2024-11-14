@@ -7,7 +7,6 @@ import (
 
 	cmd "github.com/CustodiaJS/custodiajs-core/cmd"
 	"github.com/CustodiaJS/custodiajs-core/core"
-	"github.com/CustodiaJS/custodiajs-core/core/ipnetwork"
 	"github.com/CustodiaJS/custodiajs-core/crypto"
 )
 
@@ -26,7 +25,7 @@ func main() {
 	cmd.CheckFolderAndFileStructureOnHost()
 
 	// Die Default Pfade werden ermittelt
-	hostCryptoStoreDirPath, logDirectoryPath, _, _ := cmd.GetPathsAndDirs()
+	hostCryptoStoreDirPath, _, _, _ := cmd.GetPathsAndDirs()
 
 	// Es wird versucht den CryptoStore zu laden,
 	// sollte kein Crypto Store vorhanden sein,
@@ -38,10 +37,10 @@ func main() {
 	}
 
 	// Der Host Netzwerk Controller wird erstellt
-	ipnetcon := ipnetwork.NewHostNetworkManagmentUnit()
+	//ipnetcon := ipnetwork.NewHostNetworkManagmentUnit()
 
 	// Der Core wird erzeugt
-	coreInstanceError := core.Init(cryptoStore, logDirectoryPath, ipnetcon)
+	coreInstanceError := core.Init(cryptoStore)
 	if coreInstanceError != nil {
 		panic(coreInstanceError)
 	}

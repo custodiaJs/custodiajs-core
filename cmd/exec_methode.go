@@ -13,6 +13,7 @@ import (
 	"github.com/CustodiaJS/custodiajs-core/global/paths"
 	"github.com/CustodiaJS/custodiajs-core/global/types"
 	"github.com/CustodiaJS/custodiajs-core/global/utils"
+	"github.com/CustodiaJS/custodiajs-core/log"
 )
 
 // Wird verwendet alle Verzeichnisse zu ermitteln
@@ -46,26 +47,26 @@ func OSSupportCheck() {
 	switch runtime.GOOS {
 	case "linux":
 		if err := utils.VerifyLinuxSystem(); err != nil {
-			fmt.Println(err.Error())
+			log.InfoLogPrint(err.Error())
 			os.Exit(1)
 		}
 	case "windows":
 		if err := utils.VerifyWindowsSystem(); err != nil {
-			fmt.Println(err.Error())
+			log.InfoLogPrint(err.Error())
 			os.Exit(1)
 		}
 	case "darwin":
 		if err := utils.VerifyAppleMacOSSystem(); err != nil {
-			fmt.Println(err.Error())
+			log.InfoLogPrint(err.Error())
 			os.Exit(1)
 		}
 	case "freebsd", "openbsd", "netbsd":
 		if err := utils.VerifyBSDSystem(); err != nil {
-			fmt.Println(err.Error())
+			log.InfoLogPrint(err.Error())
 			os.Exit(1)
 		}
 	default:
-		fmt.Println("It is an unsupported operating system.")
+		log.InfoLogPrint("It is an unsupported operating system.")
 		os.Exit(1)
 	}
 }
@@ -73,7 +74,7 @@ func OSSupportCheck() {
 // Diese Funktion überprüft ob alle benötigten Ordner vorhanden sind
 func CheckFolderAndFileStructureOnHost() {
 	// Log
-	fmt.Println("Folder and file structure checking...")
+	log.InfoLogPrint("Folder and file structure checking...")
 
 	// Es werden alle Pfade abgerufen welche notwendig sind
 	hostCryptoStoreDirPath, logDirectoryPath, hostConfigFile, hostConfigBaseDirectoryPath := GetPathsAndDirs()
@@ -151,7 +152,7 @@ func CheckFolderAndFileStructureOnHost() {
 	// Es wird geprüft ob 'totalNotFound' gleich 0 ist,
 	// wenn nicht wird der Vorgang abgebrochen
 	if totalFoldersNotFound != 0 {
-		fmt.Println("The folder structure is not complete or it is confirmed, the startup process was aborted")
+		log.InfoLogPrint("The folder structure is not complete or it is confirmed, the startup process was aborted")
 		os.Exit(1)
 	}
 }
@@ -165,16 +166,16 @@ func PrintHostInformations() {
 	}
 
 	// Die Host Informationen werden angezigt
-	fmt.Println("Host OS:", hostInfo)
+	log.InfoLogPrint("Host OS:", hostInfo)
 
 	// Es wird ermittelt ob das Programm in einem Container ausgeführt wird
 	isRunningInLinuxContainer := utils.IsRunningInContainer()
 
 	// Die Info wird angezeigt
 	if isRunningInLinuxContainer {
-		fmt.Println("Running in container: yes")
+		log.InfoLogPrint("Running in container: yes")
 	} else {
-		fmt.Println("Running in container: no")
+		log.InfoLogPrint("Running in container: no")
 	}
 }
 

@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/CustodiaJS/bngsocket"
-	"github.com/CustodiaJS/custodiajs-core/core/ipnetwork"
 	"github.com/CustodiaJS/custodiajs-core/crypto"
+	"github.com/CustodiaJS/custodiajs-core/global/static"
 	"github.com/CustodiaJS/custodiajs-core/global/types"
 )
 
@@ -15,27 +15,24 @@ var coremutex *sync.Mutex = new(sync.Mutex)
 
 // VM-IPC Sockets
 var (
+	vmipcState             _VmIpcServerState = NEW
 	vmipcRootListener      net.Listener
-	vmipcAllUsersListener  net.Listener
 	vmipcSpecificListeners map[string]net.Listener
 	vmipcOpenConnections   []*bngsocket.BngConn
-	vmipcInited            bool
+)
+
+// Speichert alle VM's ab, welche dem Core bekannt sind
+var (
+	vmsByID         map[string]types.VmInterface
+	vmsByName       map[string]types.VmInterface
+	vmSyncWaitGroup sync.WaitGroup
+	vms             []types.VmInterface
 )
 
 // Core Variablen
 var (
-	coreLog          types.ProcessLogSessionInterface
-	apiSockets       []types.APISocketInterface
-	cryptoStore      *crypto.CryptoStore
-	vmsByID          map[string]types.VmInterface
-	vmsByName        map[string]types.VmInterface
-	vmKernelPtr      map[types.KernelID]types.VmInterface
-	vmSyncWaitGroup  sync.WaitGroup
-	apiSyncWaitGroup sync.WaitGroup
-	cstate           types.CoreState
-	serviceSignaling chan struct{}
-	holdOpenChan     chan struct{}
-	logDIR           types.LOG_DIR
-	vms              []types.VmInterface
-	hostnetmanager   *ipnetwork.HostNetworkManagmentUnit
+	coreLog      types.ProcessLogSessionInterface
+	coreState    types.CoreState = static.NEW
+	cryptoStore  *crypto.CryptoStore
+	holdOpenChan chan struct{}
 )

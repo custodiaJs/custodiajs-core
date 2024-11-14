@@ -5,49 +5,52 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/CustodiaJS/custodiajs-core/core/ipnetwork"
 	"github.com/CustodiaJS/custodiajs-core/crypto"
 	"github.com/CustodiaJS/custodiajs-core/global/procslog"
 	"github.com/CustodiaJS/custodiajs-core/global/static"
 	"github.com/CustodiaJS/custodiajs-core/global/types"
 	"github.com/CustodiaJS/custodiajs-core/global/utils"
+	"github.com/CustodiaJS/custodiajs-core/log"
 )
 
 // Erstellt einen neuen CustodiaJS Core
-func Init(localHostCryptoStore *crypto.CryptoStore, logDIRPath types.LOG_DIR, ipnet *ipnetwork.HostNetworkManagmentUnit) error {
+func Init(localHostCryptoStore *crypto.CryptoStore) error {
+	// Der Mutex wird verwendet
 	coremutex.Lock()
 
+	// Log
+	log.InfoLogPrint("Core initializing...")
+
+	// Es wird geprüft ob der Core bereits Initalisiert wurde
+	if coreState > 1 && coreState < 3 {
+		return fmt.Errorf("core is always inited")
+	}
+
+	// Die Laufzeitvariabeln werden festgelegt
 	coreLog = procslog.NewProcLogForCore()
-	vmKernelPtr = make(map[types.KernelID]types.VmInterface)
-	apiSockets = make([]types.APISocketInterface, 0)
 	vmsByName = make(map[string]types.VmInterface)
 	vmsByID = make(map[string]types.VmInterface)
 	cryptoStore = localHostCryptoStore
 	vms = make([]types.VmInterface, 0)
-	cstate = static.NEW
 
-	// Chans
+	// Chans und Waitgroups
 	holdOpenChan = make(chan struct{})
-	serviceSignaling = make(chan struct{})
 	vmSyncWaitGroup = sync.WaitGroup{}
-	apiSyncWaitGroup = sync.WaitGroup{}
-
-	// Log
-	logDIR = logDIRPath
-
-	// IP-Info Einheit
-	hostnetmanager = ipnet
-
-	// Log
-	coreLog.Debug("Created")
 
 	// Der VMIPC-Service wird gestartet
-	if err := InitVmIpcServer("/tmp", nil, nil); err != nil {
+	if err := coreInitVmIpcServer("/tmp", nil, nil); err != nil {
 		coremutex.Unlock()
 		return err
 	}
 
+	// Der Core Status wird auf Inited geändert
+	coreSetState(static.INITED, false)
+
+	// Der Core Mutex wird freigegeben
 	coremutex.Unlock()
+
+	// Log
+	log.InfoLogPrint("Core Initialized")
 
 	// Das Objekt wird zurückgegeben
 	return nil
@@ -156,33 +159,6 @@ func GetVmByID(vmid string, plog_a types.ProcessLogSessionInterface) (types.VmIn
 	return vmObj, true, nil
 }
 
-// Fügt einen API Socket hinzu
-func AddAPISocket(apiSocket types.APISocketInterface, plog_a types.ProcessLogSessionInterface) error {
-	// Es wird geprüft das kein Null Wert übergeben wurde
-	if apiSocket == nil {
-		return fmt.Errorf("Core->AddAPISocket: null api socket not allowed")
-	}
-
-	/* Der Core wird in dem  Registriert
-	err := apiSocket.LinkCore(o)
-	if err != nil {
-		return fmt.Errorf("AddAPISocket: ")
-	}
-	*/
-
-	// Der Mutex wird angewendet
-	// und nach beenden der Funktion freigegeben
-	coremutex.Lock()
-	defer coremutex.Unlock()
-
-	// Der API Socket wird zwischengespeichert
-	apiSockets = append(apiSockets, apiSocket)
-	coreLog.Debug("New API Socket added")
-
-	// Es ist kein Fehler aufgetreten
-	return nil
-}
-
 // Fügt eine neue API hinzu
 func AddVMInstance(vmInstance types.VmInterface, plog_a types.ProcessLogSessionInterface) error {
 	// Es wird geprüft das kein Nill Wert übergeben wurde
@@ -208,7 +184,6 @@ func AddVMInstance(vmInstance types.VmInterface, plog_a types.ProcessLogSessionI
 	// Das VMObjekt wird zwischengespeichert
 	vmsByID[string(vmInstance.GetQVMID())] = vmInstance                    // Merklehash
 	vmsByName[strings.ToLower(vmInstance.GetManifest().Name)] = vmInstance // VM-Name
-	vmKernelPtr[vmInstance.GetKId()] = vmInstance                          // Speichert die VM ab, diese wird verwendet um die VM durch den Kernel der VM auffindbar zu machen
 	vms = append(vms, vmInstance)                                          // Die VM wird abgespeichert
 
 	// Der Mutex wird freigegeben
@@ -235,7 +210,75 @@ func AddVMInstance(vmInstance types.VmInterface, plog_a types.ProcessLogSessionI
 	return nil
 }
 
+// Signalisiert dem Core, dass er beendet werden soll
+func SignalShutdown() {
+	// Log
+	fmt.Println("Closing CustodiaJS...")
+
+	// Der Mutex wird angewendet
+	coremutex.Lock()
+	defer coremutex.Unlock()
+
+	// Die Chan wird geschlossen
+	close(holdOpenChan)
+}
+
 // Gibt an ob der Core Initialisiert wurde
 func CoreIsInited() bool {
-	return false
+	coremutex.Lock()
+	defer coremutex.Unlock()
+	return coreState > 1 && coreState < 3
+}
+
+// Wird verwendet um den Core geöffnet zu halten
+func Serve() {
+	// Der Status wird auf Serving gesetzt
+	coreSetState(static.SERVING, true)
+	defer coreSetState(static.SHUTDOWN, true)
+
+	// Es wird ein neuer Waiter erzeugt
+	waiter := &sync.WaitGroup{}
+
+	// Es wird gewartet bis das Hold open geschlossen wird
+	<-holdOpenChan
+
+	// Der Objekt Mutex wird angewendet
+	coremutex.Lock()
+
+	// Der Status wird auf Shutdown gesetzt
+	coreSetState(static.SHUTDOWN, false)
+
+	// Es wird allen Virtuellen CJS Vm's mitgeteilt dass der Core beendet wird,
+	// die Funktion trennt nach dem Übermitteln des Signales alle IPC Verbindungen zu den VM's.
+	signalCoreIsClosingAndCloseAllIpcConnections(waiter)
+
+	// Es werden alle VM-IPC Server geschlossen
+	closeVMIpcServer()
+
+	// Der Status wird auf geschlossen gesetzt
+	coreSetState(static.CLOSED, false)
+
+	// Der Objekt Mutex wird freigegeben
+	coremutex.Unlock()
+
+	// Es wird gewartet bis alle VM's geschlossen wurden
+	waiter.Wait()
+
+	// Es wird gewartet dass alle VM's geschlossen wurden
+	vmSyncWaitGroup.Wait()
+
+	// Log
+	fmt.Println("Core closed, by.")
+}
+
+// Legt den Core Status fest
+func coreSetState(tstate types.CoreState, useMutex bool) {
+	// Es wird geprüft ob Mutex verwendet werden sollen
+	if useMutex {
+		coremutex.Lock()
+		defer coremutex.Unlock()
+	}
+
+	// Der Neue Status wird gesetzt
+	coreState = tstate
 }

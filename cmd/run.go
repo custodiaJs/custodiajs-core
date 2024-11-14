@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/CustodiaJS/custodiajs-core/core"
+	"github.com/CustodiaJS/custodiajs-core/log"
 )
 
 // Wird verwendet um den Core Service Offen zu halten
@@ -60,7 +61,7 @@ func RunCoreConsoleOrBackgroundService() {
 				break
 			} else {
 				// Benutzerdefinierte Signalbehandlung
-				fmt.Println("Received user-defined signal. Performing custom action...")
+				log.InfoLogPrint("Received user-defined signal. Performing custom action...")
 			}
 		} else if runtime.GOOS == "windows" {
 			// Es wird versucht das Signal zu ermitteln

@@ -19,9 +19,10 @@ const (
 
 	// Gibt den Status des Core Osbjektes an
 	NEW      types.CoreState = 1
-	SERVING  types.CoreState = 2
-	SHUTDOWN types.CoreState = 3
-	CLOSED   types.CoreState = 4
+	INITED   types.CoreState = 2
+	SERVING  types.CoreState = 3
+	SHUTDOWN types.CoreState = 4
+	CLOSED   types.CoreState = 5
 
 	// Gibt an ob es sich um CBOR oder JSON Daten handelt
 	HTTP_CONTENT_CBOR types.HttpRequestContentType = 1
