@@ -38,7 +38,7 @@ func Init(localHostCryptoStore *crypto.CryptoStore) error {
 	vmSyncWaitGroup = sync.WaitGroup{}
 
 	// Der VMIPC-Service wird gestartet
-	if err := coreInitVmIpcServer("/tmp", nil, nil); err != nil {
+	if err := coreInitVmIpcServer("/tmp", []*ACL{}); err != nil {
 		coremutex.Unlock()
 		return err
 	}

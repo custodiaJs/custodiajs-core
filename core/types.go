@@ -1,5 +1,7 @@
 package core
 
+import "net"
+
 // Allgemeine Typen die nur im Core benötigt werden
 type _VmIpcServerState uint8
 
@@ -11,4 +13,13 @@ const (
 	CLOSED  _VmIpcServerState = 5
 )
 
-// Gibt einen
+// Gibt die ACL Regeln für einen Benutzer an
+type ACL struct {
+	Username  *string
+	Groupname *string
+}
+
+type _AclListener struct {
+	net.Listener
+	AclRule *ACL
+}

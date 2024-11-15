@@ -1,7 +1,6 @@
 package core
 
 import (
-	"net"
 	"sync"
 
 	"github.com/CustodiaJS/bngsocket"
@@ -15,10 +14,9 @@ var coremutex *sync.Mutex = new(sync.Mutex)
 
 // VM-IPC Sockets
 var (
-	vmipcState             _VmIpcServerState = NEW
-	vmipcRootListener      net.Listener
-	vmipcSpecificListeners map[string]net.Listener
-	vmipcOpenConnections   []*bngsocket.BngConn
+	vmipcState           _VmIpcServerState = NEW
+	vmipcListeners       []*_AclListener
+	vmipcOpenConnections []*bngsocket.BngConn
 )
 
 // Speichert alle VM's ab, welche dem Core bekannt sind
