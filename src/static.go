@@ -29,6 +29,9 @@ const (
 	// Die Repo wird festgelegt
 	C_REPO REPO = "https://github.com/custodia-cenv/cenvx-core"
 
+	// Gibt den Prefix der Core Socket Dateien an
+	CORE_SOCKET_PREFIX string = "cuspp"
+
 	// Gibt an, dass nicht ermittelt werden konnte, ob es sich um eine Tor IP handelt
 	UNKOWN_TOR_IP_STATE TorIpState = false
 )

@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/user"
 
+	cenvxcore "github.com/custodia-cenv/cenvx-core/src"
 	"github.com/custodia-cenv/cenvx-core/src/host/filesystem"
 	"github.com/custodia-cenv/cenvx-core/src/log"
 )
@@ -30,7 +31,18 @@ func createAclListeners(aclList []*ACL, basePath string) ([]*_AclListener, error
 	var listeners []*_AclListener
 
 	for i, acl := range aclList {
-		socketPath := fmt.Sprintf("%s/socket_%d.sock", basePath, i)
+		var socketPath string
+		if acl.Username == nil && acl.Groupname == nil {
+			socketPath = fmt.Sprintf("%s/%s_root.sock", basePath, cenvxcore.CORE_SOCKET_PREFIX)
+		} else if acl.Username != nil && acl.Groupname == nil {
+			socketPath = fmt.Sprintf("%s/%s_%s.sock", basePath, cenvxcore.CORE_SOCKET_PREFIX, *acl.Username)
+		} else if acl.Username != nil && acl.Groupname != nil {
+			socketPath = fmt.Sprintf("%s/%s_%s_%s.sock", basePath, cenvxcore.CORE_SOCKET_PREFIX, *acl.Username, *acl.Groupname)
+		} else if acl.Username == nil && acl.Groupname != nil {
+			socketPath = fmt.Sprintf("%s/%s_%s.sock", basePath, cenvxcore.CORE_SOCKET_PREFIX, *acl.Groupname)
+		} else {
+			panic("unkown acl config")
+		}
 
 		// Listener für Unix-Socket erstellen
 		listener, err := createListenerWithACL(socketPath, *acl)
@@ -44,12 +56,22 @@ func createAclListeners(aclList []*ACL, basePath string) ([]*_AclListener, error
 			AclRule:  acl,
 		}
 		listeners = append(listeners, aclListener)
-		if acl.Groupname != nil && acl.Username != nil {
-			log.DebugLogPrint("VM-IPC Socket created: %s - %s", *acl.Username, *acl.Groupname)
+
+		// Berechtigungen setzen basierend auf ACL
+		if acl.Username == nil && acl.Groupname == nil {
+			// Zugriff nur für root erlauben
+			err = os.Chmod(socketPath, 0600)
+			if err != nil {
+				listener.Close()
+				return nil, fmt.Errorf("error setting root-only permissions: %v", err)
+			}
+			log.DebugLogPrint("VM-IPC Socket created: root -> %s", socketPath)
+		} else if acl.Groupname != nil && acl.Username != nil {
+			log.DebugLogPrint("VM-IPC Socket created: %s - %s -> %s", *acl.Username, *acl.Groupname, socketPath)
 		} else if acl.Username != nil {
-			log.DebugLogPrint("VM-IPC Socket created: %s", *acl.Username)
+			log.DebugLogPrint("VM-IPC Socket created: %s -> %s", *acl.Username, socketPath)
 		} else {
-			log.DebugLogPrint("VM-IPC Socket created: %s", *acl.Groupname)
+			log.DebugLogPrint("VM-IPC Socket created: %s -> %s", *acl.Groupname, socketPath)
 		}
 	}
 

@@ -55,7 +55,10 @@ func coreInitVmIpcServer(basePath string, acls []*ACL) error {
 	var aclListeners []*_AclListener
 	var aclerr error
 	if isRoot {
-		aclListeners, aclerr = createAclListeners(acls, basePath)
+		newList := make([]*ACL, 0)
+		newList = append(newList, &ACL{Username: nil, Groupname: nil})
+		newList = append(newList, acls...)
+		aclListeners, aclerr = createAclListeners(newList, basePath)
 	} else {
 		// Es wird versucht für den Aktuellen Benutzer ein ACL zu erstellen
 		cacl, err := createACLForCurrentUser()
