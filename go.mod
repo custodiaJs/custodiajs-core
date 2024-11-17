@@ -1,4 +1,4 @@
-module github.com/CustodiaJS/custodiajs-core
+module github.com/custodia-cenv/cenvx-core
 
 go 1.22.5
 
