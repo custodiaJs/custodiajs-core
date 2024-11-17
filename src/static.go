@@ -13,4 +13,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package main
+package cenvxcore
+
+const (
+	// Gibt den Status des Core Osbjektes an
+	NEW      CoreState = 1
+	INITED   CoreState = 2
+	SERVING  CoreState = 3
+	SHUTDOWN CoreState = 4
+	CLOSED   CoreState = 5
+
+	// Legt die Aktuelle Version fest
+	C_VESION VERSION = 1000000000
+
+	// Die Repo wird festgelegt
+	C_REPO REPO = "https://github.com/custodia-cenv/cenvx-core"
+
+	// Gibt an, dass nicht ermittelt werden konnte, ob es sich um eine Tor IP handelt
+	UNKOWN_TOR_IP_STATE TorIpState = false
+)

@@ -1,17 +1,32 @@
+// Author: fluffelpuff
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 package core
 
 import (
 	"fmt"
 	"sync"
 
-	"github.com/custodia-cenv/cenvx-core/src/static"
+	cenvxcore "github.com/custodia-cenv/cenvx-core/src"
 )
 
 // Wird verwendet um den Core geöffnet zu halten
 func Serve() {
 	// Der Status wird auf Serving gesetzt
-	coreSetState(static.SERVING, true)
-	defer coreSetState(static.SHUTDOWN, true)
+	coreSetState(cenvxcore.SERVING, true)
+	defer coreSetState(cenvxcore.SHUTDOWN, true)
 
 	// Es wird ein neuer Waiter erzeugt
 	waiter := &sync.WaitGroup{}
@@ -23,7 +38,7 @@ func Serve() {
 	coremutex.Lock()
 
 	// Der Status wird auf Shutdown gesetzt
-	coreSetState(static.SHUTDOWN, false)
+	coreSetState(cenvxcore.SHUTDOWN, false)
 
 	// Es wird allen Virtuellen CJS Vm's mitgeteilt dass der Core beendet wird,
 	// die Funktion trennt nach dem Übermitteln des Signales alle IPC Verbindungen zu den VM's.
@@ -33,7 +48,7 @@ func Serve() {
 	closeVMIpcServer()
 
 	// Der Status wird auf geschlossen gesetzt
-	coreSetState(static.CLOSED, false)
+	coreSetState(cenvxcore.CLOSED, false)
 
 	// Der Objekt Mutex wird freigegeben
 	coremutex.Unlock()

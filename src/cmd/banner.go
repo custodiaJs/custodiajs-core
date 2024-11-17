@@ -1,11 +1,26 @@
+// Author: fluffelpuff
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 package cmd
 
 import (
 	"fmt"
 	"runtime"
 
+	cenvxcore "github.com/custodia-cenv/cenvx-core/src"
 	"github.com/custodia-cenv/cenvx-core/src/host"
-	"github.com/custodia-cenv/cenvx-core/src/static"
 	"github.com/custodia-cenv/cenvx-core/src/utils"
 )
 
@@ -29,10 +44,7 @@ func ShowBanner() {
 	OS: %s
 	Architecture: %s
 	User is Admin: %t
-----------------------------------------------------------------------------------`, utils.FormatNumberWithDots(int(static.C_VESION)), "fluffelpuff", osName, arch, isAdmin)
+----------------------------------------------------------------------------------`, utils.FormatNumberWithDots(int(cenvxcore.C_VESION)), "fluffelpuff", osName, arch, isAdmin)
 	fmt.Println(banner)
 
-	if !static.CHECK_SSL_LOCALHOST_ENABLE {
-		fmt.Printf("Warning: SSL verification for localhost has been completely disabled during compilation.\nThis may lead to unexpected issues, as programs or websites might not be able to communicate with the VNH1 service anymore.\nIf you have downloaded and installed VNH1 and are seeing this message, please be aware that you are not using an official build.\n\n")
-	}
 }

@@ -75,7 +75,7 @@ func RunCoreConsoleOrBackgroundService() {
 				// Die Schleife wird beenndet
 				break
 			} else {
-				fmt.Printf("Unhandled signal: %s\n", sig)
+				log.LogError("Unhandled signal: %s\n", sig)
 			}
 		} else {
 			panic("critical error 1")

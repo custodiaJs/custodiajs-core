@@ -5,7 +5,6 @@ go 1.22.5
 require (
 	github.com/fatih/color v1.17.0
 	golang.org/x/crypto v0.29.0
-	rogchap.com/v8go v0.9.0
 )
 
 require (
@@ -22,6 +21,5 @@ require (
 require (
 	github.com/CustodiaJS/bngsocket v0.0.0-20241114203754-4d2709c6bc85
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
-	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/sys v0.27.0 // indirect
 )

@@ -1,7 +1,21 @@
+// Author: fluffelpuff
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"os/user"
 	"path"
@@ -84,7 +98,7 @@ func CheckFolderAndFileStructureOnHost() {
 	if filesystem.FolderExists(string(hostConfigBaseDirectoryPath)) {
 		hasConfigDir = true
 	} else {
-		fmt.Printf(" -> Host config directory %s not found\n", hostConfigBaseDirectoryPath)
+		log.LogError(" -> Host config directory %s not found\n", hostConfigBaseDirectoryPath)
 		totalFoldersNotFound = totalFoldersNotFound + 1
 	}
 
@@ -92,20 +106,20 @@ func CheckFolderAndFileStructureOnHost() {
 	if hasConfigDir {
 		// Es wird geprüft ob die Host Config vorhanden ist
 		if !filesystem.FileExists(string(hostConfigFile)) {
-			fmt.Printf(" -> Config file %s not found\n", hostConfigFile)
+			log.LogError(" -> Config file %s not found\n", hostConfigFile)
 			totalFoldersNotFound = totalFoldersNotFound + 1
 		}
 
 		// Es wird geprüft ob die Host Config vorhanden ist
 		if !filesystem.FileExists(string(hostConfigFile)) {
-			fmt.Printf(" -> Config file %s not found\n", hostConfigFile)
+			log.LogError(" -> Config file %s not found\n", hostConfigFile)
 			totalFoldersNotFound = totalFoldersNotFound + 1
 		}
 
 		// Es wird geprüft ob der CryptoStore Ordner vorhanden ist
 		hasCryptostoreDirectory := false
 		if !filesystem.FolderExists(string(hostCryptoStoreDirPath)) {
-			fmt.Printf(" -> Cryptostore directory %s not found\n", hostCryptoStoreDirPath)
+			log.LogError(" -> Cryptostore directory %s not found\n", hostCryptoStoreDirPath)
 			totalFoldersNotFound = totalFoldersNotFound + 1
 		} else {
 			hasCryptostoreDirectory = true
@@ -118,19 +132,19 @@ func CheckFolderAndFileStructureOnHost() {
 
 			// Es wirdn geprüft ob der Localhost Ordner vorhanden ist
 			if !filesystem.FolderExists(string(localhostStore)) {
-				fmt.Printf(" -> Cryptostore 'localhost' directory %s not found\n", localhostStore)
+				log.LogError(" -> Cryptostore 'localhost' directory %s not found\n", localhostStore)
 				totalFoldersNotFound = totalFoldersNotFound + 1
 			}
 
 			// Es wird geprüft ob der Trusted ordner vorhanden ist
 			if !filesystem.FolderExists(string(trustedStore)) {
-				fmt.Printf(" -> Cryptostore 'trusted' directory %s not found\n", trustedStore)
+				log.LogError(" -> Cryptostore 'trusted' directory %s not found\n", trustedStore)
 				totalFoldersNotFound = totalFoldersNotFound + 1
 			}
 
 			// Es wird geprüft ob das Localhost Zertifikat sowie der Private Schlüssel vorhanden sind
 			if !filesystem.FileExists(localhostCertKeyFiles) {
-				fmt.Printf(" -> Cryptostore has not localhost API-Certificate Keypair %s found\n", localhostCertKeyFiles)
+				log.LogError(" -> Cryptostore has not localhost API-Certificate Keypair %s found\n", localhostCertKeyFiles)
 				totalFoldersNotFound = totalFoldersNotFound + 1
 			}
 		}
@@ -140,8 +154,8 @@ func CheckFolderAndFileStructureOnHost() {
 	if !filesystem.FolderExists(string(logDirectoryPath)) {
 		// Es wird versucht den Ordner zu erstellen
 		if err := filesystem.CreateDirectory(string(logDirectoryPath)); err != nil {
-			fmt.Printf(" -> Logging directory %s not found\n", logDirectoryPath)
-			fmt.Printf(" -> Creating error %s\n", err.Error())
+			log.LogError(" -> Logging directory %s not found\n", logDirectoryPath)
+			log.LogError(" -> Creating error %s\n", err.Error())
 			totalFoldersNotFound = totalFoldersNotFound + 1
 		}
 	}
@@ -149,7 +163,7 @@ func CheckFolderAndFileStructureOnHost() {
 	// Es wird geprüft ob 'totalNotFound' gleich 0 ist,
 	// wenn nicht wird der Vorgang abgebrochen
 	if totalFoldersNotFound != 0 {
-		log.InfoLogPrint("The folder structure is not complete or it is confirmed, the startup process was aborted")
+		log.LogError("The folder structure is not complete or it is confirmed, the startup process was aborted")
 		os.Exit(1)
 	}
 }

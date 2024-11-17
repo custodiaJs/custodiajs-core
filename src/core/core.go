@@ -1,3 +1,18 @@
+// Author: fluffelpuff
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 package core
 
 import (
@@ -8,8 +23,6 @@ import (
 	cenvxcore "github.com/custodia-cenv/cenvx-core/src"
 	"github.com/custodia-cenv/cenvx-core/src/crypto"
 	"github.com/custodia-cenv/cenvx-core/src/log"
-	"github.com/custodia-cenv/cenvx-core/src/procslog"
-	"github.com/custodia-cenv/cenvx-core/src/static"
 )
 
 // Erstellt einen neuen CustodiaJS Core
@@ -26,7 +39,6 @@ func Init(localHostCryptoStore *crypto.CryptoStore) error {
 	}
 
 	// Die Laufzeitvariabeln werden festgelegt
-	coreLog = procslog.NewProcLogForCore()
 	vmsByName = make(map[string]cenvxcore.VmInterface)
 	vmsByID = make(map[string]cenvxcore.VmInterface)
 	cryptoStore = localHostCryptoStore
@@ -43,7 +55,7 @@ func Init(localHostCryptoStore *crypto.CryptoStore) error {
 	}
 
 	// Der Core Status wird auf Inited geändert
-	coreSetState(static.INITED, false)
+	coreSetState(cenvxcore.INITED, false)
 
 	// Der Core Mutex wird freigegeben
 	coremutex.Unlock()
@@ -56,12 +68,12 @@ func Init(localHostCryptoStore *crypto.CryptoStore) error {
 }
 
 // Gibt das Aktuelle Primäre Host Cert für API Verbindungen zurück
-func GetLocalhostCryptoStore(plog_a cenvxcore.ProcessLogSessionInterface) *crypto.CryptoStore {
+func GetLocalhostCryptoStore() *crypto.CryptoStore {
 	return cryptoStore
 }
 
 // Gibt alle VM-Container zurück
-func GetAllVMs(plog_a cenvxcore.ProcessLogSessionInterface) []cenvxcore.VmInterface {
+func GetAllVMs() []cenvxcore.VmInterface {
 	// Der Mutex wird angewendet
 	// und nach beenden der Funktion freigegeben
 	coremutex.Lock()
@@ -78,17 +90,9 @@ func GetAllVMs(plog_a cenvxcore.ProcessLogSessionInterface) []cenvxcore.VmInterf
 }
 
 // Gibt die ID's der Aktiven VM-Container zurück
-func GetAllActiveVmIDs(plog_a cenvxcore.ProcessLogSessionInterface) []string {
-	// Es wird eine neue Debug einheit erzeugt
-	var plog cenvxcore.ProcessLogSessionInterface
-	if plog_a != nil {
-		plog = procslog.NewChainMergedProcLog(plog_a, coreLog)
-	} else {
-		plog = coreLog
-	}
-
+func GetAllActiveVmIDs() []string {
 	// DEBUG
-	plog.Debug("All active VMs are retrieved")
+	log.DebugLogPrint("All active VMs are retrieved")
 
 	// Der Mutex wird angewendet
 	// und nach beenden der Funktion freigegeben
@@ -102,14 +106,14 @@ func GetAllActiveVmIDs(plog_a cenvxcore.ProcessLogSessionInterface) []string {
 	}
 
 	// DEBUG
-	plog.Debug("%d Active VMs were retrieved", len(extr))
+	log.DebugLogPrint("%d Active VMs were retrieved", len(extr))
 
 	// Die Liste wird zurückgegeben
 	return extr
 }
 
 // Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
-func GetVmByName(vmName string, plog_a cenvxcore.ProcessLogSessionInterface) (cenvxcore.VmInterface, bool, *cenvxcore.SpecificError) {
+func GetVmByName(vmName string) (cenvxcore.VmInterface, bool, error) {
 	// Der Name wird lowercast
 	lowerCaseVmName := strings.ToLower(vmName)
 
@@ -129,7 +133,7 @@ func GetVmByName(vmName string, plog_a cenvxcore.ProcessLogSessionInterface) (ce
 }
 
 // Gibt eine Spezifisichen Container VM anhand ihrer ID zurück
-func GetVmByID(vmid string, plog_a cenvxcore.ProcessLogSessionInterface) (cenvxcore.VmInterface, bool, *cenvxcore.SpecificError) {
+func GetVmByID(vmid string) (cenvxcore.VmInterface, bool, error) {
 	// Die ID wird lowercast
 	lowerCaseId := strings.ToLower(vmid)
 
@@ -149,7 +153,7 @@ func GetVmByID(vmid string, plog_a cenvxcore.ProcessLogSessionInterface) (cenvxc
 }
 
 // Fügt eine neue API hinzu
-func AddVMInstance(vmInstance cenvxcore.VmInterface, plog_a cenvxcore.ProcessLogSessionInterface) error {
+func AddVMInstance(vmInstance cenvxcore.VmInterface) error {
 	// Es wird geprüft das kein Nill Wert übergeben wurde
 	if vmInstance == nil {
 		return fmt.Errorf("Core->AddVMInstance: null vm instance not allowed")
@@ -178,7 +182,7 @@ func AddVMInstance(vmInstance cenvxcore.VmInterface, plog_a cenvxcore.ProcessLog
 	// Der Mutex wird freigegeben
 	coremutex.Unlock()
 
-	coreLog.Log("New VM Instance added, name = '%s', shash = '%s'", vmInstance.GetManifest().Name, vmInstance.GetScriptHash())
+	log.DebugLogPrint("New VM Instance added, name = '%s', shash = '%s'", vmInstance.GetManifest().Name, vmInstance.GetScriptHash())
 
 	/* Die VM wird mit allen Datenbankdiensten Verknüpft
 	for _, item := range vmDbEntry.GetAllDatabaseServices() {
@@ -202,7 +206,7 @@ func AddVMInstance(vmInstance cenvxcore.VmInterface, plog_a cenvxcore.ProcessLog
 // Signalisiert dem Core, dass er beendet werden soll
 func SignalShutdown() {
 	// Log
-	fmt.Println("Closing CustodiaJS...")
+	log.InfoLogPrint("Closing CustodiaJS...")
 
 	// Der Mutex wird angewendet
 	coremutex.Lock()

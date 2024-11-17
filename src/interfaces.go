@@ -17,16 +17,6 @@ package cenvxcore
 
 import "sync"
 
-type ProcessLogSessionInterface interface {
-	GetChildLog(header string) ProcessLogSessionInterface
-	Log(format string, value ...interface{})
-	Debug(format string, value ...interface{})
-	LogPrint(string, string, ...interface{})
-	LogPrintSuccs(string, ...interface{})
-	LogPrintError(string, ...interface{})
-	GetID() string
-}
-
 type VmInterface interface {
 	// Gibt das Manifest zurück
 	GetManifest() *Manifest

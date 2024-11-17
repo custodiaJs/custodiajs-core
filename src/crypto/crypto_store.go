@@ -1,3 +1,18 @@
+// Author: fluffelpuff
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 package crypto
 
 import (
@@ -7,6 +22,7 @@ import (
 
 	cenvxcore "github.com/custodia-cenv/cenvx-core/src"
 	"github.com/custodia-cenv/cenvx-core/src/host/filesystem"
+	"github.com/custodia-cenv/cenvx-core/src/log"
 )
 
 func TryToLoad(hostCryptoStoreDirPath cenvxcore.HOST_CRYPTOSTORE_WATCH_DIR_PATH) (*CryptoStore, error) {
@@ -14,7 +30,7 @@ func TryToLoad(hostCryptoStoreDirPath cenvxcore.HOST_CRYPTOSTORE_WATCH_DIR_PATH)
 	hostCertsAndPrivKeys := make([]*HostCertAndOrPrivateKey, 0)
 
 	// LOG
-	fmt.Printf("Try to load localhost api certificate and private key from '%s'\n", hostCryptoStoreDirPath)
+	log.DebugLogPrint("Try to load localhost api certificate and private key from '%s'\n", hostCryptoStoreDirPath)
 
 	// Es wird versucht das Localhost Zertifikat sowie den Privaten Schlüssel zu laden
 	localhostCertPath := path.Join(string(hostCryptoStoreDirPath), "localhost.pem")
@@ -29,7 +45,7 @@ func TryToLoad(hostCryptoStoreDirPath cenvxcore.HOST_CRYPTOSTORE_WATCH_DIR_PATH)
 	}
 
 	// LOG
-	fmt.Printf("Try to load host keypairs and certificates from '%s'\n", hostCryptoStoreDirPath)
+	log.DebugLogPrint("Try to load host keypairs and certificates from '%s'\n", hostCryptoStoreDirPath)
 
 	// Es wird geprüpft ob der SSL Ordner vorhanden ist
 	// sollte der SSL Ordner vorhanden sein, werden alle SSL Zertfikate Paare geladen
@@ -58,7 +74,7 @@ func TryToLoad(hostCryptoStoreDirPath cenvxcore.HOST_CRYPTOSTORE_WATCH_DIR_PATH)
 			hostCertsAndPrivKeys = append(hostCertsAndPrivKeys, &HostCertAndOrPrivateKey{HostTLSKey: tlsCert})
 
 			// Log
-			fmt.Printf(" -> Host Certificate Keypair %s from %s added\n", certItem.FileHash, certItem.Path)
+			log.DebugLogPrint(" -> Host Certificate Keypair %s from %s added\n", certItem.FileHash, certItem.Path)
 		}
 	}
 

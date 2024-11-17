@@ -1,9 +1,22 @@
+// Author: fluffelpuff
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 package ipnetwork
 
 import (
 	"net"
-
-	"github.com/custodia-cenv/cenvx-core/global/types"
 )
 
 func NewHostNetworkManagmentUnit() *HostNetworkManagmentUnit {
@@ -45,7 +58,7 @@ func (o *HostNetworkManagmentUnit) GetNetworkInterfaceByLocalIp(address *IpAddre
 }
 
 // Wird verwendet um eine IP-Adresse einzulesen
-func (o *HostNetworkManagmentUnit) TryParseIp(ipaddr string) (*IpAddress, *types.SpecificError) {
+func (o *HostNetworkManagmentUnit) TryParseIp(ipaddr string) (*IpAddress, error) {
 	// Es wird mittels "go:net" versucht die IP-Adresse einzulesen
 	rIpAdr := net.ParseIP(ipaddr)
 	if rIpAdr == nil {
