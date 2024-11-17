@@ -19,6 +19,7 @@ import (
 	"os"
 	"runtime"
 
+	cenvxcore "github.com/custodia-cenv/cenvx-core/src"
 	cmd "github.com/custodia-cenv/cenvx-core/src/cmd"
 	"github.com/custodia-cenv/cenvx-core/src/core"
 	"github.com/custodia-cenv/cenvx-core/src/crypto"
@@ -35,17 +36,10 @@ func main() {
 	// Es wird geprüft ob es sich um Unterstützes OS handelt
 	cmd.OSSupportCheck()
 
-	// Es wird geprüft ob die Benötigten Ordner vorhanden sind,
-	// sollten nicht alle Ordner vorhanden sein, wird der Vorgang abegrbrochen
-	cmd.CheckFolderAndFileStructureOnHost()
-
-	// Die Default Pfade werden ermittelt
-	hostCryptoStoreDirPath, _, _, _ := cmd.GetPathsAndDirs()
-
 	// Es wird versucht den CryptoStore zu laden,
 	// sollte kein Crypto Store vorhanden sein,
 	// wird versucht einer zu erstellen
-	cryptoStore, cryptoStoreError := crypto.TryToLoad(hostCryptoStoreDirPath)
+	cryptoStore, cryptoStoreError := crypto.TryToLoad(cenvxcore.CoreCryptoStoreDirPath)
 	if cryptoStoreError != nil {
 		log.LogError(cryptoStoreError.Error())
 		os.Exit(1)

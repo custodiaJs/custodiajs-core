@@ -19,17 +19,17 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os/user"
 	"sync"
 
 	"github.com/CustodiaJS/bngsocket"
 	cenvxcore "github.com/custodia-cenv/cenvx-core/src"
+	usergroups "github.com/custodia-cenv/cenvx-core/src/host/user_groups"
 	"github.com/custodia-cenv/cenvx-core/src/log"
 )
 
 // initVmIpcServer erstellt Sockets für Root, spezifische Gruppen, alle Benutzer und spezifische Benutzer, wenn der Prozess als Root ausgeführt wird.
 // Ist der Prozess nicht Root, wird nur ein Socket für den aktuellen Benutzer erstellt.
-func coreInitVmIpcServer(basePath string, acls []*ACL) error {
+func coreInitVmIpcServer(acls []*ACL) error {
 	// Es wird geprüft ob der VM-IPC Server initalisiert wurde
 	if vmipcState != NEW {
 		return fmt.Errorf("vm ipc always initalized")
@@ -42,30 +42,21 @@ func coreInitVmIpcServer(basePath string, acls []*ACL) error {
 	vmipcOpenConnections = make([]*bngsocket.BngConn, 0)
 	vmipcListeners = make([]*_AclListener, 0)
 
-	// Der Aktuelle Benutzer wird ermittelt
-	currentUser, err := user.Current()
-	if err != nil {
-		return fmt.Errorf("konnte aktuellen benutzer nicht ermitteln: %w", err)
-	}
-
-	// Ermitteln, ob der Prozess als Root ausgeführt wird
-	isRoot := currentUser.Uid == "0"
-
 	// Die Sockets werden erzeugt
 	var aclListeners []*_AclListener
 	var aclerr error
-	if isRoot {
+	if usergroups.UserHasPrivilegedSystemRights() {
 		newList := make([]*ACL, 0)
 		newList = append(newList, &ACL{Username: nil, Groupname: nil})
 		newList = append(newList, acls...)
-		aclListeners, aclerr = createAclListeners(newList, basePath)
+		aclListeners, aclerr = createAclListeners(newList)
 	} else {
 		// Es wird versucht für den Aktuellen Benutzer ein ACL zu erstellen
 		cacl, err := createACLForCurrentUser()
 		if err != nil {
 			return err
 		}
-		aclListeners, aclerr = createAclListeners([]*ACL{cacl}, basePath)
+		aclListeners, aclerr = createAclListeners([]*ACL{cacl})
 	}
 
 	// Es wird geprüft ob ein Fehler beim Erstellen der ACL Sockets aufgetreten ist

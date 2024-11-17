@@ -25,7 +25,7 @@ import (
 	"github.com/custodia-cenv/cenvx-core/src/log"
 )
 
-func TryToLoad(hostCryptoStoreDirPath cenvxcore.HOST_CRYPTOSTORE_WATCH_DIR_PATH) (*CryptoStore, error) {
+func TryToLoad(hostCryptoStoreDirPath cenvxcore.CoreCryptoStorePath) (*CryptoStore, error) {
 	// Speichert alle Verfügbaren Zertifikate und Private Keys ab
 	hostCertsAndPrivKeys := make([]*HostCertAndOrPrivateKey, 0)
 

@@ -39,5 +39,5 @@ type VmInterface interface {
 	// Gibt die ProzessID zurück
 	GetProcessId() VmProcessId
 	// Gibt die Qualified Full VM ID (QVMID) zurück
-	GetQVMID() QualifiedVmID
+	GetQVMID() VmId
 }

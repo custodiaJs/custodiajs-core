@@ -15,23 +15,30 @@
 
 package cenvxcore
 
-type VmWorkingDir string
-type VmProcessId uint64
-type QualifiedVmID string
+// Gibt den Namen der Anwendung an
+type CoreApplicationName string
 
-// VM und Core Status Typen sowie Repo Datentypen
-type ALTERNATIVE_SERVICE_PATH string        // Alternativer Socket Path
-type VmState uint8                          // VM Status
-type CoreState uint8                        // Core Status
-type IPCRight uint8                         // CLI Benutzerrecht
-type VERSION uint32                         // Version des Hauptpgrogrammes
-type REPO string                            // URL der Sourccode Qeulle
-type SOCKET_PATH string                     // Gibt einen Socket Path an
-type LOG_DIR string                         // Gibt den Path des Log Dir's unter
-type HOST_CRYPTOSTORE_WATCH_DIR_PATH string // Gibt den Ordner an, in dem sich alle Zertifikate und Schlüssel des Hosts befinden
-type HOST_CONFIG_FILE_PATH string           // Gibt den Pfad der Config Datei an
-type HOST_CONFIG_PATH string
-type CHN_CORE_SOCKET_PATH string
+// Gibt den Status des Cores an
+type CoreState uint8
+
+// Gibt die Version des Cores an
+type Vesion uint32
+
+// Gibt die Aktuelle Repo des Cores an
+type CoreRepoUrl string
+
+// Gibt den Aktuellen Preifx des Sockets an
+type CoreIpcVmSocketIdentifierPrefix string
+
+// Gibt den Path für die Generelle Core Config an
+type CoreGeneralConfigPath string
+
+// Gibt den Path eines IpcVm Sockets an
+type CoreVmIpcSocketPath string
+type CoreVmIpcSocketPathTemplate string
+
+// Gibt den Path für das Logging dir an
+type LogDirPath string
 
 // Gibt die QUID einer VM an
 type QVMID string
@@ -45,5 +52,11 @@ type ProcessId string
 // Gibt die VmID an
 type VmId string
 
-// Gibt an ob es sich bei einer IP um eine TOR IP-handelt
-type TorIpState bool
+// Gibt den Status einer VM an
+type VmState uint8
+
+// Gibt die Vm Process ID an
+type VmProcessId uint
+
+// Gibt den Path des Crypto Stores an
+type CoreCryptoStorePath string

@@ -44,7 +44,7 @@ func ShowBanner() {
 	OS: %s
 	Architecture: %s
 	User is Admin: %t
-----------------------------------------------------------------------------------`, utils.FormatNumberWithDots(int(cenvxcore.C_VESION)), "fluffelpuff", osName, arch, isAdmin)
+----------------------------------------------------------------------------------`, utils.FormatNumberWithDots(int(cenvxcore.CoreVersion)), "fluffelpuff", osName, arch, isAdmin)
 	fmt.Println(banner)
 
 }

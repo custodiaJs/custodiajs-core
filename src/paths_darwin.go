@@ -1,6 +1,3 @@
-//go:build darwin
-// +build darwin
-
 // Author: fluffelpuff
 //
 // This program is free software: you can redistribute it and/or modify
@@ -19,23 +16,35 @@
 package cenvxcore
 
 import (
+	"fmt"
 	"path/filepath"
 )
 
 var (
 	// Gibt das Standard Config Verzeichniss an
-	//LINUX_HOST_CONFIG_DIR_PATH  types.HOST_CONFIG_PATH = types.HOST_CONFIG_PATH(filepath.Join("/", "etc", "CustodiaJS"))
-	HOST_CONFIG_DIR_PATH HOST_CONFIG_PATH = HOST_CONFIG_PATH(filepath.Join("/", "Library", "Application Support", "CustodiaJS"))
+	CoreGeneralConfigFilePath CoreGeneralConfigPath = CoreGeneralConfigPath("/Library/Application Support/" + ApplicationName + "/core.conf")
 
-	// Log Pfade
-	//LINUX_DEFAULT_LOGGING_DIR_PATH  types.LOG_DIR = types.LOG_DIR(filepath.Join("var", "log", "CustodiaJS"))
-	DEFAULT_LOGGING_DIR_PATH LOG_DIR = LOG_DIR(filepath.Join("/", "Library", "Logs", "CustodiaJS"))
+	// Gibt den Speichertort des CryptoStores an
+	CoreCryptoStoreDirPath CoreCryptoStorePath = CoreCryptoStorePath("/Library/Application Support/" + ApplicationName + "/crypstore")
 
-	// Gibt die Sockets für den Hypervisor an, wird verwendet damit der Hypervisor mit dem Host Kommunizieren kann
-	//LINUX_CNH_SOCKET_PATH  types.CHN_CORE_SOCKET_PATH = types.CHN_CORE_SOCKET_PATH("")
-	DARWIN_CNH_SOCKET_PATH CHN_CORE_SOCKET_PATH = CHN_CORE_SOCKET_PATH("")
+	// Log Dir
+	CoreLoggingDirPath LogDirPath = LogDirPath(filepath.Join("/", "Library", "Logs", string(ApplicationName)))
 
 	// Legt die Dateipfade für z.b Unix Sockets fest
-	NONE_ROOT_UNIX_SOCKET SOCKET_PATH = SOCKET_PATH(filepath.Join("/", "tmp", "cusjs_none_root_sock"))
-	ROOT_UNIX_SOCKET      SOCKET_PATH = SOCKET_PATH(filepath.Join("/", "tmp", "cusjs_root_sock"))
+	CoreVmIpcRootSocketPath           CoreVmIpcSocketPath         = CoreVmIpcSocketPath("/var/run/" + string(ApplicationName) + "/vmipc.sock")
+	CoreVmIpcSocketSpeficUser         CoreVmIpcSocketPathTemplate = CoreVmIpcSocketPathTemplate("/tmp/" + ApplicationName + "_u_%s_vmipc.sock")
+	CoreVmIpcSocketSpeficUserGrpup    CoreVmIpcSocketPathTemplate = CoreVmIpcSocketPathTemplate("/tmp/" + ApplicationName + "_g_%s_vmipc.sock")
+	CoreVmIpcSocketSpeficUserAndGroup CoreVmIpcSocketPathTemplate = CoreVmIpcSocketPathTemplate("/tmp/" + ApplicationName + "_ug_%s_%s_vmipc.sock")
 )
+
+func GetCoreSpeficSocketUserPath(username string) CoreVmIpcSocketPath {
+	return CoreVmIpcSocketPath(fmt.Sprintf(string(CoreVmIpcSocketSpeficUser), username))
+}
+
+func GetCoreSpeficSocketUserGroupPath(groupName string) CoreVmIpcSocketPath {
+	return CoreVmIpcSocketPath(fmt.Sprintf(string(CoreVmIpcSocketSpeficUserGrpup), groupName))
+}
+
+func GetCoreSpeficSocketUserAndGroupPath(username string, groupName string) CoreVmIpcSocketPath {
+	return CoreVmIpcSocketPath(fmt.Sprintf(string(CoreVmIpcSocketSpeficUserAndGroup), username, groupName))
+}

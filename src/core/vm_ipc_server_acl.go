@@ -27,19 +27,19 @@ import (
 )
 
 // createAclListeners erstellt für jede ACL in der Liste einen _AclListener und gibt sie zurück.
-func createAclListeners(aclList []*ACL, basePath string) ([]*_AclListener, error) {
+func createAclListeners(aclList []*ACL) ([]*_AclListener, error) {
 	var listeners []*_AclListener
 
 	for i, acl := range aclList {
-		var socketPath string
+		var socketPath cenvxcore.CoreVmIpcSocketPath
 		if acl.Username == nil && acl.Groupname == nil {
-			socketPath = fmt.Sprintf("%s/%s_root.sock", basePath, cenvxcore.CORE_SOCKET_PREFIX)
+			socketPath = cenvxcore.CoreVmIpcRootSocketPath
 		} else if acl.Username != nil && acl.Groupname == nil {
-			socketPath = fmt.Sprintf("%s/%s_%s.sock", basePath, cenvxcore.CORE_SOCKET_PREFIX, *acl.Username)
+			socketPath = cenvxcore.GetCoreSpeficSocketUserPath(*acl.Username)
 		} else if acl.Username != nil && acl.Groupname != nil {
-			socketPath = fmt.Sprintf("%s/%s_%s_%s.sock", basePath, cenvxcore.CORE_SOCKET_PREFIX, *acl.Username, *acl.Groupname)
+			socketPath = cenvxcore.GetCoreSpeficSocketUserAndGroupPath(*acl.Username, *acl.Groupname)
 		} else if acl.Username == nil && acl.Groupname != nil {
-			socketPath = fmt.Sprintf("%s/%s_%s.sock", basePath, cenvxcore.CORE_SOCKET_PREFIX, *acl.Groupname)
+			socketPath = cenvxcore.GetCoreSpeficSocketUserGroupPath(*acl.Groupname)
 		} else {
 			panic("unkown acl config")
 		}
@@ -60,7 +60,7 @@ func createAclListeners(aclList []*ACL, basePath string) ([]*_AclListener, error
 		// Berechtigungen setzen basierend auf ACL
 		if acl.Username == nil && acl.Groupname == nil {
 			// Zugriff nur für root erlauben
-			err = os.Chmod(socketPath, 0600)
+			err = os.Chmod(string(socketPath), 0600)
 			if err != nil {
 				listener.Close()
 				return nil, fmt.Errorf("error setting root-only permissions: %v", err)
@@ -79,21 +79,21 @@ func createAclListeners(aclList []*ACL, basePath string) ([]*_AclListener, error
 }
 
 // createListenerWithACL erstellt einen Unix-Socket und wendet die ACL-Einstellungen an.
-func createListenerWithACL(socketPath string, acl ACL) (net.Listener, error) {
+func createListenerWithACL(socketPath cenvxcore.CoreVmIpcSocketPath, acl ACL) (net.Listener, error) {
 	// Existierende Datei entfernen, falls vorhanden
-	_ = os.Remove(socketPath)
+	_ = os.Remove(string(socketPath))
 
 	// Unix Listener erstellen
-	listener, err := net.Listen("unix", socketPath)
+	listener, err := net.Listen("unix", string(socketPath))
 	if err != nil {
 		return nil, fmt.Errorf("error creating unix listener: %v", err)
 	}
 
 	// Berechtigungen setzen basierend auf ACL
 	if acl.Username != nil && acl.Groupname == nil {
-		err = filesystem.SetUserFilePermission(socketPath, *acl.Username)
+		err = filesystem.SetUserFilePermission(string(socketPath), *acl.Username)
 	} else if acl.Username != nil && acl.Groupname != nil {
-		err = filesystem.SetUserGroupFilePermission(socketPath, *acl.Username)
+		err = filesystem.SetUserGroupFilePermission(string(socketPath), *acl.Username)
 	}
 	if err != nil {
 		listener.Close()
