@@ -31,20 +31,20 @@ var (
 	CoreLoggingDirPath LogDirPath = LogDirPath(filepath.Join("/", "Library", "Logs", string(ApplicationName)))
 
 	// Legt die Dateipfade für z.b Unix Sockets fest
-	CoreVmIpcRootSocketPath           CoreVmIpcSocketPath         = CoreVmIpcSocketPath("/var/run/" + string(ApplicationName) + "/vmipc.sock")
-	CoreVmIpcSocketSpeficUser         CoreVmIpcSocketPathTemplate = CoreVmIpcSocketPathTemplate("/tmp/" + ApplicationName + "_u_%s_vmipc.sock")
-	CoreVmIpcSocketSpeficUserGrpup    CoreVmIpcSocketPathTemplate = CoreVmIpcSocketPathTemplate("/tmp/" + ApplicationName + "_g_%s_vmipc.sock")
-	CoreVmIpcSocketSpeficUserAndGroup CoreVmIpcSocketPathTemplate = CoreVmIpcSocketPathTemplate("/tmp/" + ApplicationName + "_ug_%s_%s_vmipc.sock")
+	CoreVmIpcRootSocketPath            CoreVmIpcSocketPath         = CoreVmIpcSocketPath("/var/run/" + string(ApplicationName) + "/vmipc.sock")
+	_CoreVmIpcSocketSpeficUser         CoreVmIpcSocketPathTemplate = CoreVmIpcSocketPathTemplate("/tmp/" + ApplicationName + "_u_%s_vmipc.sock")
+	_CoreVmIpcSocketSpeficUserGrpup    CoreVmIpcSocketPathTemplate = CoreVmIpcSocketPathTemplate("/tmp/" + ApplicationName + "_g_%s_vmipc.sock")
+	_CoreVmIpcSocketSpeficUserAndGroup CoreVmIpcSocketPathTemplate = CoreVmIpcSocketPathTemplate("/tmp/" + ApplicationName + "_ug_%s_%s_vmipc.sock")
 )
 
 func GetCoreSpeficSocketUserPath(username string) CoreVmIpcSocketPath {
-	return CoreVmIpcSocketPath(fmt.Sprintf(string(CoreVmIpcSocketSpeficUser), username))
+	return CoreVmIpcSocketPath(fmt.Sprintf(string(_CoreVmIpcSocketSpeficUser), username))
 }
 
 func GetCoreSpeficSocketUserGroupPath(groupName string) CoreVmIpcSocketPath {
-	return CoreVmIpcSocketPath(fmt.Sprintf(string(CoreVmIpcSocketSpeficUserGrpup), groupName))
+	return CoreVmIpcSocketPath(fmt.Sprintf(string(_CoreVmIpcSocketSpeficUserGrpup), groupName))
 }
 
 func GetCoreSpeficSocketUserAndGroupPath(username string, groupName string) CoreVmIpcSocketPath {
-	return CoreVmIpcSocketPath(fmt.Sprintf(string(CoreVmIpcSocketSpeficUserAndGroup), username, groupName))
+	return CoreVmIpcSocketPath(fmt.Sprintf(string(_CoreVmIpcSocketSpeficUserAndGroup), username, groupName))
 }
