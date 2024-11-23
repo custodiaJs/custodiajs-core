@@ -21,7 +21,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/CustodiaJS/bngsocket"
+	"github.com/custodia-cenv/bngsocket-go"
 	cenvxcore "github.com/custodia-cenv/cenvx-core/src"
 	usergroups "github.com/custodia-cenv/cenvx-core/src/host/user_groups"
 	"github.com/custodia-cenv/cenvx-core/src/log"

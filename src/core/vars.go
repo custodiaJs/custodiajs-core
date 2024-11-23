@@ -18,7 +18,7 @@ package core
 import (
 	"sync"
 
-	"github.com/CustodiaJS/bngsocket"
+	"github.com/custodia-cenv/bngsocket-go"
 	cenvxcore "github.com/custodia-cenv/cenvx-core/src"
 	"github.com/custodia-cenv/cenvx-core/src/crypto"
 )

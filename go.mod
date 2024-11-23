@@ -19,7 +19,7 @@ require (
 )
 
 require (
-	github.com/CustodiaJS/bngsocket v0.0.0-20241114203754-4d2709c6bc85
+	github.com/custodia-cenv/bngsocket-go v0.0.0-20241123212228-e8cd05d4e71c // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
 )

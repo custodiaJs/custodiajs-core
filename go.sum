@@ -1,5 +1,7 @@
 github.com/CustodiaJS/bngsocket v0.0.0-20241114203754-4d2709c6bc85 h1:ctT9ZdRGWwL90HuntvNMKskJqQrlYAckmjf+6rHf7jc=
 github.com/CustodiaJS/bngsocket v0.0.0-20241114203754-4d2709c6bc85/go.mod h1:9XKQEuI1oCivdpkb4rT02IT397rYLZDWkIbbJAdQ+i0=
+github.com/custodia-cenv/bngsocket-go v0.0.0-20241123212228-e8cd05d4e71c h1:PNFyLYqFlnuBohli7QLeWGnWpncKQuQUvlUxdwWqnos=
+github.com/custodia-cenv/bngsocket-go v0.0.0-20241123212228-e8cd05d4e71c/go.mod h1:A7bYnDMjVCU70beh5VOvfU/UGqgDb6BR2xdJVjmGBVY=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/fatih/color v1.17.0 h1:GlRw1BRJxkpqUCBKzKOw098ed57fEsKeNjpTe3cSjK4=
