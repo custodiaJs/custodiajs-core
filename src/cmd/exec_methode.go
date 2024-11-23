@@ -63,7 +63,7 @@ func PrintHostInformations() {
 	}
 
 	// Die Host Informationen werden angezigt
-	log.InfoLogPrint("Host OS:", hostInfo)
+	log.InfoLogPrint("Host OS: %s", hostInfo)
 
 	// Es wird ermittelt ob das Programm in einem Container ausgeführt wird
 	isRunningInLinuxContainer := host.IsRunningInContainer()

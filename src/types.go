@@ -60,3 +60,6 @@ type VmProcessId uint
 
 // Gibt den Path des Crypto Stores an
 type CoreCryptoStorePath string
+
+// Gibt den Modus für die Banner Funktion an
+type BannerMode string

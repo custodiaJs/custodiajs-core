@@ -31,7 +31,7 @@ func main() {
 	runtime.GOMAXPROCS(1)
 
 	// Der Willkomensbildschrim wird angezeigt
-	cmd.ShowBanner()
+	cmd.ShowBanner(cenvxcore.CoreBanner)
 
 	// Es wird geprüft ob es sich um Unterstützes OS handelt
 	cmd.OSSupportCheck()

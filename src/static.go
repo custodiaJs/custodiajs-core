@@ -31,4 +31,8 @@ const (
 
 	// Gibt den Prefix der Core Socket Dateien an
 	CoreIpcVmSocketPrefix CoreIpcVmSocketIdentifierPrefix = "cuspp"
+
+	// Gibt die Verschiedenen Banner Modi an
+	CoreBanner BannerMode = BannerMode("Core")
+	VMBanner   BannerMode = BannerMode("VM")
 )
